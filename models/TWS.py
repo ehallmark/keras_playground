@@ -6,13 +6,18 @@ from datetime import datetime
 from IBWrapper import IBWrapper, contract
 from ib.ext.EClientSocket import EClientSocket
 from ib.ext.ScannerSubscription import ScannerSubscription
+import yaml
+import io
 
+conf = yaml.load(open('config.txt','r',encoding='utf8'))
 callback = IBWrapper()
 tws = EClientSocket(callback)
-account = "DU226952"
+account = conf['account']
 host = ""
 port = 6969
 clientId = 1
+
+print("Using account: ",account)
 
 tws.eConnect(host,port,clientId) # connect to TWS
 
@@ -31,9 +36,12 @@ df = pd.DataFrame(callback.update_AccountValue,
 t = callback.update_AccountTime
 
 tws.reqAccountSummary(2,"All","NetLiquidation")
-pd.DataFrame(callback.account_Summary,
-             columns = ['Request_ID','Account','Tag','Value','Curency'])[:2]
+time.sleep(0.5)
 
+pos = pd.DataFrame(callback.account_Summary,
+             columns = ['Request_ID','Account','Tag','Value','Currency'])
+
+print("Positions: ",pos);
 tws.reqPositions()
 
 time.sleep(0.5)
@@ -43,7 +51,7 @@ dat = pd.DataFrame(callback.update_Position,
                             'Include Expired','Local Symbol','Multiplier','Right',
                             'Security Type','Strike','Symbol','Trading Class',
                             'Position','Average Cost'])
-print(dat[dat["Account"] == account])
+print(dat)
 
 print(df)
 print("Time: ", t)
