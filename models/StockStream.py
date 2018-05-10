@@ -35,8 +35,19 @@ tick_type = {0 : "BID SIZE",
              29 : "OPTION CALL VOLUME"}
 
 
-conf = yaml.load(open('config.txt','r',encoding='utf8'))
-callback = IBWrapper()
+# define handlers
+def price_handler(data):
+    print("Found data: ", data)
+
+    
+def size_handler(data):
+    print("Found size: ", data)
+
+
+conf = yaml.load(open('config.txt', 'r', encoding='utf8'))
+callback = IBWrapper({'tick_Price': price_handler, 'tick_Size': size_handler})
+callback.initiate_variables()
+
 tws = EClientSocket(callback)
 account = conf['account']
 host = ""
@@ -55,39 +66,21 @@ contract_info = create_stock(create, 'NVDA')
 
 tws.reqMktData(tickerId, contract_info, "", False)
 
-contract_info = create.create_contract(symbol='NFLX 180615C00300000',
-                                       secType='OPT', exchange='SMART',
-                                       currency='USD',
-                                       right='CALL',
-                                       strike='300',
-                                       expiry='20180615',
-                                       multiplier=100,
-                                       tradingClass="NFLX")
-tickerId = tickerId + 1
-tws.calculateImpliedVolatility(tickerId,
-                               contract_info,
-                               5.89,
-                               89.91)
+for i in range(100):
+    time.sleep(5)
 
-time.sleep(5)
+    tick_Price = pd.DataFrame(callback.tick_Price,
+                             columns = ['tickerId', 'field', 'price', 'canAutoExecute'])
+    tick_Price["Type"] = tick_Price["field"].map(tick_type)
 
-netflix_Option = pd.DataFrame(callback.tick_OptionComputation,
-             columns=["tickerId", "field", "impliedVol", "delta",
-                      "optPrice", "pvDividend", "gamma", "vega",
-                      "theta", "undPrice"])
+    tick_Size = pd.DataFrame(getattr(callback,'tick_Size',[]),
+                             columns=["tickerId", "field", "size"])
 
-tick_Price = pd.DataFrame(callback.tick_Price,
-                         columns = ['tickerId', 'field', 'price', 'canAutoExecute'])
-tick_Price["Type"] = tick_Price["field"].map(tick_type)
-
-tick_Size = pd.DataFrame(getattr(callback,'tick_Size',[]),
-                         columns=["tickerId", "field", "size"])
-tick_Size["Type"] = tick_Size["field"].map(tick_type)
-
-print(tick_Price)
-print(tick_Size)
-print(netflix_Option)
+    tick_Size["Type"] = tick_Size["field"].map(tick_type)
+    print(len(tick_Price))
+    print(len(tick_Size))
 
 tws.cancelMktData(tickerId)
+
 tws.eDisconnect()    # disconnect
 
