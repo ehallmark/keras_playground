@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime
-from IBWrapper import IBWrapper, contract
+from models.IBWrapper import IBWrapper, contract
 from ib.ext.EClientSocket import EClientSocket
 from ib.ext.ScannerSubscription import ScannerSubscription
 import yaml
@@ -24,7 +24,7 @@ tws.eConnect(host,port,clientId) # connect to TWS
 tws.setServerLogLevel(5)           # Set error output to verbose
 
 create = contract()                # Instantiate contract class
-callback.initiate_variables()
+callback.initiate_variables(callback)
 
 tws.reqAccountUpdates(1,account)
 

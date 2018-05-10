@@ -11,6 +11,14 @@ from ib.ext.ExecutionFilter import ExecutionFilter
 from ib.ext.Order import Order
 
 class IBWrapper(EWrapper):
+
+    def __init__(self):
+        self.tick_Price = getattr(self, 'tick_Price', [])
+        self.tick_Size = getattr(self, 'tick_Size', [])
+        self.tick_OptionComputation = getattr(self, 'tick_OptionComputation', [])
+        self.tick_Generic = getattr(self, 'tick_Generic', [])
+        self.tick_String = getattr(self, 'tick_String', [])
+
     def initiate_variables(self):
         # Account and Portfolio
         setattr(self, "accountDownloadEnd_flag", False)
