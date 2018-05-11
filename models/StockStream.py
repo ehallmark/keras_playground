@@ -1,6 +1,6 @@
 import yaml
 from models.TWSUtil import TWSController
-
+from models.Database import commit,insert_stock_price_handler,insert_stock_size_handler
 
 # Step 1 - Initialize configuration and handlers
 
@@ -15,10 +15,12 @@ clientId = 1
 # 1.b Define handlers and create handler map
 def price_handler(data):
     print("Found data: ", data)
+    insert_stock_price_handler("tick_price_aapl", data)
 
 
 def size_handler(data):
     print("Found size: ", data)
+    insert_stock_size_handler("tick_size_aapl", data)
 
 
 handlers = {'tick_Price': price_handler, 'tick_Size': size_handler}
@@ -36,5 +38,8 @@ controller.stream_stock_data('AAPL', time_seconds=10)
 
 # 2.d Disconnect
 controller.disconnect()
+
+# 2.e Commit Database
+commit()
 
 # Step 3 - Check bank account
