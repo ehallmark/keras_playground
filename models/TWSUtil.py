@@ -11,6 +11,7 @@ class TWSController:
     def __init__(self, account, host, port, client_id, handlers):
         self.callback = IBWrapper(handlers)
         self.callback.initiate_variables()
+        self.handlers = handlers
         self.tws = EClientSocket(self.callback)
         self.account = account
         self.host = host
@@ -68,6 +69,8 @@ class TWSController:
         i = 0
         while time_seconds < 0 or i < time_seconds:
             time.sleep(1)
+            if 'listener' in self.handlers:
+                self.handlers['listener'](i)
             i = i + 1
         self.close_market_stream(ticker_id)
 

@@ -23,7 +23,11 @@ def size_handler(data):
     insert_stock_size_handler("tick_size_aapl", data)
 
 
-handlers = {'tick_Price': price_handler, 'tick_Size': size_handler}
+def listener(secondsSinceStart):
+    commit()
+
+
+handlers = {'tick_Price': price_handler, 'tick_Size': size_handler, 'listener': listener}
 
 # Step 2 - TWSController
 
@@ -34,7 +38,7 @@ controller = TWSController(account, host, port, clientId, handlers)
 controller.connect()
 
 # 2.c Whatever stock you want to stream
-controller.stream_stock_data('AAPL', time_seconds=10)
+controller.stream_stock_data('AAPL', time_seconds=-1)   # loop forever by setting time_seconds=-1
 
 # 2.d Disconnect
 controller.disconnect()

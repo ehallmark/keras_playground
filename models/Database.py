@@ -24,8 +24,7 @@ def insert_stock_price(table_name, price, can_auto_execute, tick_type):
 
     cursor.execute('insert into ' + table_name +
                    ' (price,can_auto_execute,tick_type,created_at) values ('
-                   + str(price)+', '+can_auto_execute+','+str(tick_type)+",'"+
-                   datetime.now().strftime('%Y-%m-%d %H:%M:%S')+"')")
+                   + str(price)+', '+can_auto_execute+','+str(tick_type)+",now())")
 
 
 def insert_stock_price_handler(table_name, data):
@@ -35,8 +34,7 @@ def insert_stock_price_handler(table_name, data):
 def insert_stock_size(table_name, size, tick_type):
     cursor.execute('insert into ' + table_name +
                    ' (size,tick_type,created_at) values ('
-                   + str(size)+','+str(tick_type)+",'"+
-                   datetime.now().strftime('%Y-%m-%d %H:%M:%S')+"')")
+                   + str(size)+','+str(tick_type)+",now())")
 
 
 def insert_stock_size_handler(table_name, data):
