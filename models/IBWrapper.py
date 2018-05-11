@@ -15,15 +15,16 @@ class IBWrapper(EWrapper):
         if not self.is_init:
             raise NotInitializedException
 
-    def __init__(self, handler_map={}):
+    def __init__(self, handler_map={}, cacheMarketData=False, maxLen=-1):
         #self.tick_Price = getattr(self, 'tick_Price', [])
         #self.tick_Size = getattr(self, 'tick_Size', [])
         #self.tick_OptionComputation = getattr(self, 'tick_OptionComputation', [])
         #self.tick_Generic = getattr(self, 'tick_Generic', [])
         #self.tick_String = getattr(self, 'tick_String', [])
         self.is_init = False
-        self.maxLen = -1
+        self.maxLen = maxLen
         self.handlerMap = handler_map
+        self.cacheMarketData=cacheMarketData
 
     def initiate_variables(self):
         # Account and Portfolio
@@ -164,38 +165,45 @@ class IBWrapper(EWrapper):
         tick_Price = self.tick_Price
         if 'tick_Price' in self.handlerMap:
             self.handlerMap['tick_Price']((tickerId, field, price, canAutoExecute))
-        tick_Price.append((tickerId, field, price, canAutoExecute))
-        if self.maxLen > 0 and len(tick_Price) > self.maxLen:
-            tick_Price[:] = tick_Price[-self.maxLen:]
+        if self.cacheMarketData:
+            tick_Price.append((tickerId, field, price, canAutoExecute))
+            if self.maxLen > 0 and len(tick_Price) > self.maxLen:
+                tick_Price[:] = tick_Price[-self.maxLen:]
 
 
     def tickSize(self, tickerId, field, size):
         tick_Size = self.tick_Size
         if 'tick_Size' in self.handlerMap:
             self.handlerMap['tick_Size']((tickerId, field, size))
-        tick_Size.append((tickerId, field, size))
-        if self.maxLen > 0 and len(tick_Size) > self.maxLen:
-            tick_Size[:] = tick_Size[-self.maxLen:]
+        if self.cacheMarketData:
+            tick_Size.append((tickerId, field, size))
+            if self.maxLen > 0 and len(tick_Size) > self.maxLen:
+                tick_Size[:] = tick_Size[-self.maxLen:]
 
     def tickOptionComputation(self, tickerId, field, impliedVol, delta, 
                               optPrice, pvDividend, gamma, vega, theta, 
                               undPrice):
         tick_OptionComputation = self.tick_OptionComputation
-        tick_OptionComputation.append((tickerId, field, impliedVol, delta, 
-                                       optPrice, pvDividend, gamma, vega, 
-                                       theta, undPrice))
+        if self.cacheMarketData:
+            tick_OptionComputation.append((tickerId, field, impliedVol, delta,
+                                           optPrice, pvDividend, gamma, vega,
+                                           theta, undPrice))
+            if self.maxLen > 0 and len(tick_OptionComputation) > self.maxLen:
+                tick_OptionComputation[:] = tick_OptionComputation[-self.maxLen:]
 
     def tickGeneric(self, tickerId, tickType, value):
         tick_Generic = self.tick_Generic
-        tick_Generic.append((tickerId, tickType, value))
-        if self.maxLen > 0 and len(tick_Generic) > self.maxLen:
-            tick_Generic[:] = tick_Generic[-self.maxLen:]
+        if self.cacheMarketData:
+            tick_Generic.append((tickerId, tickType, value))
+            if self.maxLen > 0 and len(tick_Generic) > self.maxLen:
+                tick_Generic[:] = tick_Generic[-self.maxLen:]
 
     def tickString(self, tickerId, field, value):
         tick_String = self.tick_String
-        tick_String.append((tickerId, field, value))
-        if self.maxLen > 0 and len(tick_String) > self.maxLen:
-            tick_String[:] = tick_String[-self.maxLen:]
+        if self.cacheMarketData:
+            tick_String.append((tickerId, field, value))
+            if self.maxLen > 0 and len(tick_String) > self.maxLen:
+                tick_String[:] = tick_String[-self.maxLen:]
 
     def tickEFP(self, tickerId, tickType, basisPoints, formattedBasisPoints, 
                 impliedFuture, holdDays, futureExpiry, dividendImpact, 

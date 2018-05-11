@@ -16,3 +16,20 @@ create table tick_size_aapl ( -- creates the table
     size integer,
     created_at timestamp
 );
+
+drop table tick_price_usd_eur; -- drops the table
+create table tick_price_usd_eur ( -- creates the table
+    id serial primary key,
+    tick_type integer,
+    can_auto_execute boolean,
+    price double precision,
+    created_at timestamp
+);
+
+drop table tick_size_usd_eur; -- drops the table
+create table tick_size_usd_eur ( -- creates the table
+    id serial primary key,
+    tick_type integer,
+    size integer,
+    created_at timestamp
+);

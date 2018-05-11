@@ -9,7 +9,7 @@ import time
 class TWSController:
     # controller class to abstract away some of the complexities of IBWrapper
     def __init__(self, account, host, port, client_id, handlers):
-        self.callback = IBWrapper(handlers)
+        self.callback = IBWrapper(handlers, cacheMarketData=False)
         self.callback.initiate_variables()
         self.handlers = handlers
         self.tws = EClientSocket(self.callback)
@@ -37,8 +37,10 @@ class TWSController:
     def create_option(self):
         pass
 
-    def create_forex(self):
-        pass
+    def create_forex(self, symbol,
+                     sec_type='CASH', exchange='IDEALPRO',
+                     currency='USD'):
+        return self.create_stock(symbol,sec_type,exchange,currency)
 
     def create_future(self):
         pass
@@ -79,6 +81,10 @@ class TWSController:
         self.stream_market_data(self.create_stock(symbol, sec_type, exchange, currency),
                                 time_seconds, self.host, snapshot)
 
+    def stream_forex_data(self, symbol, sec_type='CASH', exchange='IDEALPRO', currency='USD',
+                          time_seconds=-1, snapshot=False):
+        self.stream_market_data(self.create_forex(symbol, sec_type, exchange, currency),
+                                time_seconds, self.host, snapshot)
 
 # Helper dictionary to map tick_type to human readable
 tick_type = {0 : "BID SIZE",
