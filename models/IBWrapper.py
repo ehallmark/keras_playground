@@ -11,6 +11,9 @@ from ib.ext.ExecutionFilter import ExecutionFilter
 from ib.ext.Order import Order
 
 class IBWrapper(EWrapper):
+    def check_init(self):
+        if not self.is_init:
+            raise NotInitializedException
 
     def __init__(self, handler_map={}):
         #self.tick_Price = getattr(self, 'tick_Price', [])
@@ -18,11 +21,13 @@ class IBWrapper(EWrapper):
         #self.tick_OptionComputation = getattr(self, 'tick_OptionComputation', [])
         #self.tick_Generic = getattr(self, 'tick_Generic', [])
         #self.tick_String = getattr(self, 'tick_String', [])
+        self.is_init = False
         self.maxLen = -1
         self.handlerMap = handler_map
 
     def initiate_variables(self):
         # Account and Portfolio
+        self.is_init = True
         setattr(self, "accountDownloadEnd_flag", False)
         setattr(self, "update_AccountTime", None)
         setattr(self, "update_AccountValue", [])
@@ -65,20 +70,15 @@ class IBWrapper(EWrapper):
         # Real Time Bars
         setattr(self, 'real_timeBar', [])
 
-        
-        
-            
-        
-
-
-
     # Account and Portfolio ###################################################
     def updateAccountValue(self, key, value, currency, accountName):
+        self.check_init()
         update_AccountValue = self.update_AccountValue
         update_AccountValue.append((key, value, currency, accountName))
         
     def updatePortfolio(self, contract, position, marketPrice, marketValue, 
                         averageCost, unrealizedPnL, realizedPnL, accountName):
+        self.check_init()
         update_Portfolio = self.update_Portfolio
         update_Portfolio.append((contract.m_conId, contract.m_currency, 
                                  contract.m_expiry, contract.m_includeExpired,
@@ -91,22 +91,27 @@ class IBWrapper(EWrapper):
                                  accountName))    
     
     def updateAccountTime(self, timeStamp):
+        self.check_init()
         self.update_AccountTime = timeStamp
         
     def accountDownloadEnd(self, accountName=None):
+        self.check_init()
         self.accountDownloadEnd_accountName = accountName
         self.accountDownloadEnd_flag = True
 
     def accountSummary(self, reqId=None, account=None, tag=None, value=None, 
                        currency=None):
+        self.check_init()
         account_Summary = self.account_Summary
         account_Summary.append((reqId, account, tag, value, currency))
         
     def accountSummaryEnd(self, reqId):
+        self.check_init()
         self.accountSummaryEnd_reqId = reqId
         self.account_SummaryEnd_flag = True
         
     def position(self, account, contract, pos, avgCost):
+        self.check_init()
         update_Position = self.update_Position
         update_Position.append((account, contract.m_conId, contract.m_currency, 
                                 contract.m_exchange, contract.m_expiry, 
@@ -117,35 +122,33 @@ class IBWrapper(EWrapper):
                                 pos, avgCost))
 
     def positionEnd(self):
+        self.check_init()
         setattr(self, 'positionEnd_flag', True)
-
-
-
-    
-    
-    
-
-
 
 
     # Orders ###################################################################
     def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, 
                     permId, parentId, lastFillPrice, clientId, whyHeld):
+        self.check_init()
         order_Status = self.order_Status
         order_Status.append((orderId, status, filled, remaining, avgFillPrice, 
                             permId, parentId, lastFillPrice, clientId, whyHeld))
  
     def openOrder(self, orderId, contract, order, orderState):
+        self.check_init()
         open_Order = self.open_Order
         open_Order.append((orderId, contract, order, orderState))
 
     def openOrderEnd(self):
+        self.check_init()
         setattr(self, 'open_OrderEnd_flag', True)
 
     def nextValidId(self, orderId):
+        self.check_init()
         self.next_ValidId = orderId
         
     def deltaNeutralValidation(self, reqId, underComp):
+        self.check_init()
         pass
 
 
@@ -642,3 +645,8 @@ openOrder contains the following fields:
                     orderState.m_status,
                     orderState.m_warningText]
 '''    
+
+class NotInitializedException(ValueError):
+    """Exception raised when the IBWrapper has not been initialized"""
+    def __repr__(self):
+        return 'Please call IBWrapper::initialize_variables prior to using the instance.'
