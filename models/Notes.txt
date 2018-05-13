@@ -1,0 +1,1 @@
+You need to install version 0.8.0rc1 of statsmodels for it to work on Windows 10 HP Spectre 2018
