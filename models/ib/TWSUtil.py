@@ -1,6 +1,4 @@
-import numpy as np
-import pandas as pd
-from models.IBWrapper import IBWrapper, contract
+from models.ib.IBWrapper import IBWrapper, contract
 from ib.ext.EClientSocket import EClientSocket
 from threading import Lock
 import time

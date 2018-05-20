@@ -1,6 +1,6 @@
 import yaml
-from models.TWSUtil import TWSController
-from models.Database import commit,insert_stock_price_handler,insert_stock_size_handler
+from models.ib.TWSUtil import TWSController
+from models.ib.Database import commit,insert_stock_price_handler,insert_stock_size_handler
 
 # Step 1 - Initialize configuration and handlers
 
