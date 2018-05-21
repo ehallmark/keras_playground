@@ -80,20 +80,41 @@ Kurtosis:                       3.797   Cond. No.                         934.
 ==============================================================================
 '''
 
+team_id = '1610612739'  # cleveland
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-sql = pd.read_sql('select * from nba_games_all where game_date is not null and '+
-                  'season_type = \'Regular Season\' and h_fg3_pct is '+
-                  'not null and a_fg3_pct is not null and season_year >= 2000', conn)
+sql = pd.read_sql('select * from nba_games_all where game_date is not null and ' +
+                  'season_type = \'Regular Season\' and h_fg3_pct is ' +
+                  'not null and a_fg3_pct is not null and \''+team_id+'\'= ANY(ARRAY[h_team_id]) ' +
+                  'and season_year >= 2010 ' +
+                  'order by game_date asc', conn)
+
 test_season = 2017
 
 sql['spread'] = sql['h_pts'] - sql['a_pts']
 sql['total'] = sql['h_pts'] + sql['a_pts']
+home = []
+total = []
+spread = []
+for i in range(len(sql)):
+    if i < len(sql)-1:
+        total.append(sql['total'][i+1])
+        spread.append(sql['spread'][i+1])
+    if sql['h_team_id'][i] == team_id:
+        home.append(1.0)
+    else:
+        home.append(0.0)
+
+sql['home'] = home
+sql = sql[:-1]
+sql['spread'] = spread
+sql['total'] = total
 
 test_data = sql[sql.season_year == test_season]
 sql = sql[sql.season_year != test_season]
 
-input_attributes = ['h_tov', 'a_tov', 'h_oreb', 'a_oreb',
-                    'h_fg_pct', 'a_fg_pct', 'h_fg3m', 'a_fg3m'
+input_attributes = ['h_tov', 'h_oreb',
+                    'h_fg_pct', 'h_fg3m',
+                    #'home'
                     ]
 
 # model to predict point spread (h_pts - a_pts)
@@ -101,26 +122,26 @@ results = smf.ols('spread ~ '+'+'.join(input_attributes), data=sql).fit()
 # Inspect the results
 print(results.summary())
 predictions = results.predict(test_data)
-errors = np.abs(np.array(test_data['spread'])-np.array(predictions))
-print('Average error on totals: ', np.mean(errors, -1))
+errors = np.array(test_data['spread'])-np.array(predictions)
+print('Average error on spread: ', np.mean(np.abs(errors), -1))
 # Inspect
 plt.figure()
 lines_true = plt.plot(errors, color='b')
 plt.show()
 
-input_attributes = ['h_oreb', 'a_oreb',
-                    'h_fg_pct', 'a_fg_pct',
-                    'h_fg3m', 'a_fg3m',
-                     'h_ast', 'a_ast'
-                ]
+input_attributes = ['h_oreb',
+                    'h_fg_pct',
+                    'h_fg3m',
+                    'h_ast'
+                    ]
 
 # model to predict the total score (h_pts + a_pts)
 results = smf.ols('total ~ '+'+'.join(input_attributes), data=sql).fit()
 print(results.summary())
 
 predictions = results.predict(test_data)
-errors = np.abs(np.array(test_data['total'])-np.array(predictions))
-print('Average error on totals: ', np.mean(errors, -1))
+errors = np.array(test_data['total'])-np.array(predictions)
+print('Average error on totals: ', np.mean(np.abs(errors), -1))
 # Inspect the results
 plt.figure()
 lines_true = plt.plot(errors, color='b')
