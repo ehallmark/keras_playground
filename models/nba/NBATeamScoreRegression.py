@@ -1,6 +1,8 @@
 import pandas as pd
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
+import numpy as np
+import matplotlib.pyplot as plt
 '''
     Runs an OLS regression on the spread (home points - away points) during 
     the Regular Season using the following variables for both home and away teams:
@@ -81,7 +83,7 @@ Kurtosis:                       3.797   Cond. No.                         934.
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 sql = pd.read_sql('select * from nba_games_all where game_date is not null and '+
                   'season_type = \'Regular Season\' and h_fg3_pct is '+
-                  'not null and a_fg3_pct is not null', conn)
+                  'not null and a_fg3_pct is not null and season_year >= 2000', conn)
 test_season = 2017
 
 sql['spread'] = sql['h_pts'] - sql['a_pts']
@@ -91,13 +93,20 @@ test_data = sql[sql.season_year == test_season]
 sql = sql[sql.season_year != test_season]
 
 input_attributes = ['h_tov', 'a_tov', 'h_oreb', 'a_oreb',
-                    'h_fg_pct', 'a_fg_pct', 'h_fg3m', 'a_fg3m',
+                    'h_fg_pct', 'a_fg_pct', 'h_fg3m', 'a_fg3m'
                     ]
 
 # model to predict point spread (h_pts - a_pts)
 results = smf.ols('spread ~ '+'+'.join(input_attributes), data=sql).fit()
 # Inspect the results
 print(results.summary())
+predictions = results.predict(test_data)
+errors = np.abs(np.array(test_data['spread'])-np.array(predictions))
+print('Average error on totals: ', np.mean(errors, -1))
+# Inspect
+plt.figure()
+lines_true = plt.plot(errors, color='b')
+plt.show()
 
 input_attributes = ['h_oreb', 'a_oreb',
                     'h_fg_pct', 'a_fg_pct',
@@ -107,5 +116,12 @@ input_attributes = ['h_oreb', 'a_oreb',
 
 # model to predict the total score (h_pts + a_pts)
 results = smf.ols('total ~ '+'+'.join(input_attributes), data=sql).fit()
-# Inspect the results
 print(results.summary())
+
+predictions = results.predict(test_data)
+errors = np.abs(np.array(test_data['total'])-np.array(predictions))
+print('Average error on totals: ', np.mean(errors, -1))
+# Inspect the results
+plt.figure()
+lines_true = plt.plot(errors, color='b')
+plt.show()
