@@ -63,7 +63,17 @@ sql = pd.read_sql('''
         coalesce(mean.second_serve_points_made, 0) as mean_second_serve_points_made,
         coalesce(mean_opp.second_serve_points_made, 0) as mean_opp_second_serve_points_made,
         coalesce(mean.return_points_won, 0) as mean_return_points_made,
-        coalesce(mean_opp.return_points_won, 0) as mean_opp_return_points_made 
+        coalesce(mean_opp.return_points_won, 0) as mean_opp_return_points_made,
+        coalesce(mean.break_points_against, 0) as mean_break_points_against,
+        coalesce(mean_opp.break_points_against, 0) as mean_opp_break_points_against,
+        coalesce(mean.break_points_saved, 0) as mean_break_points_saved,
+        coalesce(mean_opp.break_points_saved, 0) as mean_opp_break_points_saved,
+        coalesce(mean.break_points_attempted, 0) as mean_break_points_attempted,
+        coalesce(mean_opp.break_points_attempted, 0) as mean_opp_break_points_attempted,
+        coalesce(mean.break_points_made, 0) as mean_break_points_made,
+        coalesce(mean_opp.break_points_made, 0) as mean_opp_break_points_made,
+        coalesce(prior_tourney.round, 0) as previous_tournament_round,
+        coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round
     from atp_matches_individual as m
     left outer join atp_matches_prior_h2h as h2h 
         on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -78,8 +88,11 @@ sql = pd.read_sql('''
     left outer join atp_matches_prior_year_avg as mean
         on ((m.player_id,m.tournament,m.year)=(mean.player_id,mean.tournament,mean.year))
     left outer join atp_matches_prior_year_avg as mean_opp
-        on ((m.opponent_id,m.tournament,m.year)=(mean_opp.player_id,mean_opp.tournament,mean_opp.year))    
-    where m.year <= 2017 and m.year >= 2005
+        on ((m.opponent_id,m.tournament,m.year)=(mean_opp.player_id,mean_opp.tournament,mean_opp.year))   
+    left outer join atp_matches_prior_year_tournament_round as prior_tourney
+        on ((m.player_id,m.tournament,m.year)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.year))
+    left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
+        on ((m.opponent_id,m.tournament,m.year)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.year))    where m.year <= 2017 and m.year >= 2005
     and m.first_serve_attempted > 0
 ''', conn)
 
@@ -109,7 +122,11 @@ input_attributes = [
     #'first_serve_made',
     #'first_serve_attempted',
     #'return_points_won',
-    #'return_points_attempted'
+    #'return_points_attempted',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
+    'previous_tournament_round',
+    'opp_previous_tournament_round'
 ]
 all_attributes = list(input_attributes)
 all_attributes.append('y')
