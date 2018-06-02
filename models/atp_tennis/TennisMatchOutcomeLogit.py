@@ -73,7 +73,9 @@ sql = pd.read_sql('''
         coalesce(mean.break_points_made, 0) as mean_break_points_made,
         coalesce(mean_opp.break_points_made, 0) as mean_opp_break_points_made,
         coalesce(prior_tourney.round, 0) as previous_tournament_round,
-        coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round
+        coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round,
+        coalesce(tb.tiebreaks_won,0)::float/(1+coalesce(tb.tiebreaks_total,0)) as tiebreak_win_percent,
+        coalesce(tb_opp.tiebreaks_won,0)::float/(1+coalesce(tb_opp.tiebreaks_total,0)) as opp_tiebreak_win_percent
     from atp_matches_individual as m
     left outer join atp_matches_prior_h2h as h2h 
         on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -92,8 +94,14 @@ sql = pd.read_sql('''
     left outer join atp_matches_prior_year_tournament_round as prior_tourney
         on ((m.player_id,m.tournament,m.year)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.year))
     left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
-        on ((m.opponent_id,m.tournament,m.year)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.year))    where m.year <= 2017 and m.year >= 2005
+        on ((m.opponent_id,m.tournament,m.year)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.year)) 
+    left outer join atp_matches_prior_tiebreak_percentage as tb
+        on ((m.player_id,m.tournament,m.year)=(tb.player_id,tb.tournament,tb.year)) 
+    left outer join atp_matches_prior_tiebreak_percentage as tb_opp
+        on ((m.opponent_id,m.tournament,m.year)=(tb_opp.player_id,tb_opp.tournament,tb_opp.year)) 
+    where m.year <= 2017 and m.year >= 2005 
     and m.first_serve_attempted > 0
+    
 ''', conn)
 
 test_season = 2017
@@ -126,7 +134,9 @@ input_attributes = [
     #'mean_break_points_made',
     #'mean_opp_break_points_made',
     'previous_tournament_round',
-    'opp_previous_tournament_round'
+    'opp_previous_tournament_round',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent'
 ]
 all_attributes = list(input_attributes)
 all_attributes.append('y')
