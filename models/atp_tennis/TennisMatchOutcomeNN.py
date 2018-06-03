@@ -81,6 +81,7 @@ def cell(x1,x2, n_units):
     c = Concatenate()([x1,x2])
     c = BatchNormalization()(c)
     c = Dense(n_units, activation='relu')(c)
+    c = Dropout(0.2)(c)
     return c
 
 X = Input((len(input_attributes),))
@@ -99,15 +100,19 @@ model = Dense(1, activation='sigmoid')(model)
 model = Model(inputs=X, outputs=model)
 model.compile(optimizer=Adam(lr=0.001, decay=0.00001), loss='mean_squared_error', metrics=['accuracy'])
 
-model.fit(data[0], data[1], batch_size=256, epochs=30, validation_data=test_data, shuffle=True)
+model_file = 'tennis_match_keras_nn.h5'
+
+for i in range(30):
+    model.fit(data[0], data[1], batch_size=256, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
+    # save
+    model.save(model_file)
+    print('Saved.')
+
 binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
 
 print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
       ' (' + to_percentage(binary_percent) + ')')
 print('Average error: ', to_percentage(avg_error))
 
-model_file = 'tennis_match_keras_nn.h5'
-model.save(model_file)
-print('Saved.')
-exit(0)
+
 
