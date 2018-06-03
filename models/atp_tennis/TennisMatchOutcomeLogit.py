@@ -86,7 +86,32 @@ def load_data(attributes):
             else coalesce(se_opp.hard,0)::float/(1+coalesce(se_opp.total_matches)) end end as opp_surface_experience,
             case when coalesce(pc.left_handed,false) then 1.0 else 0.0 end as lefty,
             case when coalesce(pc_opp.left_handed,false) then 1.0 else 0.0 end as opp_lefty,
-            
+            coalesce(pc.height,(select avg_height from avg_player_characteristics)) as height,
+            coalesce(pc_opp.height,(select avg_height from avg_player_characteristics)) as opp_height,
+            coalesce(pc.weight,(select avg_weight from avg_player_characteristics)) as weight,
+            coalesce(pc_opp.weight,(select avg_weight from avg_player_characteristics)) as opp_weight,
+            coalesce(var.first_serve_percent,0.5) as var_first_serve_percent,
+            coalesce(var_opp.first_serve_percent,0.5) as opp_var_first_serve_percent,
+            coalesce(var.first_serve_points_percent,0.5) as var_first_serve_points_percent,
+            coalesce(var_opp.first_serve_points_percent,0.5) as opp_var_first_serve_points_percent,
+            coalesce(var.second_serve_points_percent,0.5) as var_second_serve_points_percent,
+            coalesce(var_opp.second_serve_points_percent,0.5) as opp_var_second_serve_points_percent,
+            coalesce(var.break_points_saved_percent,0.5) as var_break_points_saved_percent,
+            coalesce(var_opp.break_points_saved_percent,0.5) as opp_var_break_points_saved_percent,
+            coalesce(var.first_serve_return_points_percent,0.5) as var_first_serve_return_points_percent,
+            coalesce(var_opp.first_serve_return_points_percent,0.5) as opp_var_first_serve_return_points_percent,
+            coalesce(var.second_serve_return_points_percent,0.5) as var_second_serve_return_points_percent,
+            coalesce(var_opp.second_serve_return_points_percent,0.5) as opp_var_second_serve_return_points_percent,
+            coalesce(var.break_points_percent,0.5) as var_break_points_percent,
+            coalesce(var_opp.break_points_percent,0.5) as opp_var_break_points_percent,
+            case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
+                else m.year - extract(year from pc.date_of_birth) end as age,
+            case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
+                else m.year - extract(year from pc_opp.date_of_birth) end as opp_age,
+            case when pc.turned_pro is null then (select avg_experience from avg_player_characteristics)
+                else m.year - pc.turned_pro end as experience,
+            case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
+                else m.year - pc_opp.turned_pro end as opp_experience
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -102,6 +127,10 @@ def load_data(attributes):
             on ((m.player_id,m.tournament,m.year)=(mean.player_id,mean.tournament,mean.year))
         left outer join atp_matches_prior_year_avg as mean_opp
             on ((m.opponent_id,m.tournament,m.year)=(mean_opp.player_id,mean_opp.tournament,mean_opp.year))   
+        left outer join atp_matches_prior_year_var as var
+            on ((m.player_id,m.tournament,m.year)=(var.player_id,var.tournament,var.year))
+        left outer join atp_matches_prior_year_var as var_opp
+            on ((m.opponent_id,m.tournament,m.year)=(var_opp.player_id,var_opp.tournament,var_opp.year))   
         left outer join atp_matches_prior_year_tournament_round as prior_tourney
             on ((m.player_id,m.tournament,m.year)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.year))
         left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
@@ -118,7 +147,7 @@ def load_data(attributes):
             on ((m.player_id,m.tournament,m.year)=(pc.player_id,pc.tournament,pc.year))
         left outer join atp_player_characteristics as pc_opp
             on ((m.opponent_id,m.tournament,m.year)=(pc_opp.player_id,pc_opp.tournament,pc_opp.year))
-        where m.year <= 2017 and m.year >= 2005 
+        where m.year <= 2017 and m.year >= 2003 
         and m.first_serve_attempted > 0
 
     ''', conn)
@@ -166,7 +195,15 @@ if __name__ == '__main__':
         'tiebreak_win_percent',
         'opp_tiebreak_win_percent',
         'surface_experience',
-        'opp_surface_experience'
+        'opp_surface_experience',
+        'experience',
+        'opp_experience',
+        'age',
+        'opp_age',
+        'lefty',
+        'opp_lefty',
+        'weight','opp_weight',
+        'height','opp_height'
     ]
     all_attributes = list(input_attributes)
     all_attributes.append('y')
