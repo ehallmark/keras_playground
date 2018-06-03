@@ -75,7 +75,13 @@ sql = pd.read_sql('''
         coalesce(prior_tourney.round, 0) as previous_tournament_round,
         coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round,
         coalesce(tb.tiebreaks_won,0)::float/(1+coalesce(tb.tiebreaks_total,0)) as tiebreak_win_percent,
-        coalesce(tb_opp.tiebreaks_won,0)::float/(1+coalesce(tb_opp.tiebreaks_total,0)) as opp_tiebreak_win_percent
+        coalesce(tb_opp.tiebreaks_won,0)::float/(1+coalesce(tb_opp.tiebreaks_total,0)) as opp_tiebreak_win_percent,
+        case when m.court_surface='Clay' then coalesce(se.clay,0)::float/(1+coalesce(se.total_matches))
+        else case when m.court_surface='Grass' then coalesce(se.grass,0)::float/(1+coalesce(se.total_matches))
+        else coalesce(se.hard,0)::float/(1+coalesce(se.total_matches)) end end as surface_experience,
+        case when m.court_surface='Clay' then coalesce(se_opp.clay,0)::float/(1+coalesce(se_opp.total_matches))
+        else case when m.court_surface='Grass' then coalesce(se_opp.grass,0)::float/(1+coalesce(se_opp.total_matches))
+        else coalesce(se_opp.hard,0)::float/(1+coalesce(se_opp.total_matches)) end end as opp_surface_experience
     from atp_matches_individual as m
     left outer join atp_matches_prior_h2h as h2h 
         on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -99,6 +105,10 @@ sql = pd.read_sql('''
         on ((m.player_id,m.tournament,m.year)=(tb.player_id,tb.tournament,tb.year)) 
     left outer join atp_matches_prior_tiebreak_percentage as tb_opp
         on ((m.opponent_id,m.tournament,m.year)=(tb_opp.player_id,tb_opp.tournament,tb_opp.year)) 
+    left outer join atp_matches_prior_surface_experience as se 
+        on ((m.player_id,m.tournament,m.year)=(se.player_id,se.tournament,se.year))
+    left outer join atp_matches_prior_surface_experience as se_opp
+        on ((m.opponent_id,m.tournament,m.year)=(se_opp.player_id,se_opp.tournament,se_opp.year))
     where m.year <= 2017 and m.year >= 2005 
     and m.first_serve_attempted > 0
     
@@ -136,7 +146,9 @@ input_attributes = [
     'previous_tournament_round',
     'opp_previous_tournament_round',
     'tiebreak_win_percent',
-    'opp_tiebreak_win_percent'
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience'
 ]
 all_attributes = list(input_attributes)
 all_attributes.append('y')
