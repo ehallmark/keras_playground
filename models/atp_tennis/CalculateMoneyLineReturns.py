@@ -57,6 +57,8 @@ num_bets = 0
 num_wins = 0
 num_losses = 0
 amount_invested = 0
+amount_won = 0
+amount_lost = 0
 for i in range(test_meta_data.shape[0]):
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
@@ -103,15 +105,23 @@ for i in range(test_meta_data.shape[0]):
             else:
                 amount_invested += abs(max_price1)
             if actual_result == 0:  # LOST BET :(
-                ret = - max(-max_price1,100)
+                if max_price1 > 0:
+                    ret = - 100
+                else:
+                    ret = max_price1
                 if ret > 0:
                     raise ArithmeticError("Loss 1 should be positive")
                 num_losses = num_losses + 1
+                amount_lost += abs(ret)
             else:  # WON BET
-                ret = abs(min(-max_price1, 100))
+                if max_price1 > 0:
+                    ret = max_price1
+                else:
+                    ret = 100
                 if ret < 0:
                     raise ArithmeticError("win 1 should be positive")
                 num_wins = num_wins + 1
+                amount_won += abs(ret)
             return_game = return_game + ret
             num_bets = num_bets + 1
         if best_odds2 < (1.0 - prediction) - betting_epsilon:
@@ -121,26 +131,36 @@ for i in range(test_meta_data.shape[0]):
                 amount_invested += abs(max_price2)
             #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
             if actual_result == 0:  # WON BET
-                ret = abs(min(-max_price2, 100))
+                if max_price2 > 0:
+                    ret = max_price2
+                else:
+                    ret = 100
                 if ret < 0:
                     raise ArithmeticError("win 2 should be positive")
                 num_wins = num_wins + 1
+                amount_won += abs(ret)
             else:  # LOST BET :(
-                ret = - max(-max_price2,100)
+                if max_price2 > 0:
+                    ret = - 100
+                else:
+                    ret = max_price2
                 if ret > 0:
                     raise ArithmeticError("loss 2 should be negative")
                 num_losses = num_losses + 1
+                amount_lost += abs(ret)
             return_game = return_game + ret
             num_bets = num_bets + 1
         return_total = return_total + return_game
 
-        print('Num bets: ',num_bets)
+        print('Num bets: ', num_bets)
         print('Return: ', return_total)
 
 
-print('Num bets: ',num_bets)
+print('Num bets: ', num_bets)
 print('Total Return: ', return_total)
 print('Amount invested: ', amount_invested)
+print('Amount won: ', amount_won)
+print('Amount lost: ', amount_lost)
 print('Average Return: ', return_total / amount_invested)
 print('Num correct: ', num_wins)
 print('Num wrong: ', num_losses)
