@@ -49,7 +49,7 @@ betting_data = pd.read_sql('''
     max(price2) as max_price2
     from atp_tennis_betting_link where year=2017 group by year,tournament,team1,team2
 ''', conn)
-
+betting_epsilon = 0.05
 print(betting_data[0:10])
 for i in range(test_meta_data.shape[0]):
     row = test_meta_data.iloc[i]
@@ -61,10 +61,10 @@ for i in range(test_meta_data.shape[0]):
         (betting_data.tournament == row.tournament)]
     if bet_row.shape[0] > 0:
         # make betting decision
-        max_price1 = bet_row['max_price1'][0]
-        max_price2 = bet_row['max_price2'][0]
-        min_price1 = bet_row['min_price1'][0]
-        min_price2 = bet_row['min_price2'][0]
+        max_price1 = np.array(bet_row['max_price1']).flatten()[0]
+        max_price2 = np.array(bet_row['max_price2']).flatten()[0]
+        min_price1 = np.array(bet_row['min_price1']).flatten()[0]
+        min_price2 = np.array(bet_row['min_price2']).flatten()[0]
         # calculate odds ratio
         '''
         Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
@@ -78,7 +78,16 @@ for i in range(test_meta_data.shape[0]):
             best_odds2 = 100.0 / (100.0 + max_price2)
         else:
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
+        best_odds2 = 1.0 - best_odds2  # reverse odds for loss
 
-        print('Found best odds 1: ', best_odds1)
-        print('Found best odds 2: ', best_odds2)
-        print('Found prediction: ', prediction)
+        if best_odds1 < 0.0 or best_odds1 > 1.0:
+            raise ArithmeticError('Best odds1: ' + str(best_odds1))
+        if best_odds2 < 0.0 or best_odds2 > 1.0:
+            raise ArithmeticError('Best odds2: '+str(best_odds2))
+        #print('Found best odds 1: ', best_odds1)
+        #print('Found best odds 2: ', best_odds2)
+        #print('Found prediction: ', prediction)
+        if best_odds1 < prediction - betting_epsilon:
+            print('Make BET! Advantage', prediction-best_odds1)
+        if best_odds2 < (1.0 - prediction) - betting_epsilon:
+            print('Makde BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
