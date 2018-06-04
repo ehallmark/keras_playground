@@ -70,12 +70,14 @@ input_attributes = [
 all_attributes = list(input_attributes)
 all_attributes.append('y')
 all_attributes.append('year')
-
+meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+for meta in meta_attributes:
+    all_attributes.append(meta)
 all_data = load_data(all_attributes)
 data, test_data = all_data
 
 # create inputs
-test_meta_data = test_data[['player_id', 'opponent_id', 'tournament', 'year']]
+test_meta_data = test_data[meta_attributes]
 data = (np.array(data[input_attributes]), np.array(data['y']))
 test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
 
