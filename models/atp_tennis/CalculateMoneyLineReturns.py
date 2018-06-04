@@ -98,7 +98,6 @@ for i in indices:
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
         best_odds2 = 1.0 - best_odds2  # reverse odds for loss
 
-
         if best_odds1 < 0.0 or best_odds1 > 1.0:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
         if best_odds2 < 0.0 or best_odds2 > 1.0:
@@ -137,9 +136,9 @@ for i in indices:
                     num_wins = num_wins + 1
                     num_wins1 += 1
                     amount_won += abs(ret)
-                return_game = return_game + ret
+                return_game += ret
                 available_capital += ret
-                num_bets = num_bets + 1
+                num_bets += 1
                 print('Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
@@ -157,7 +156,7 @@ for i in indices:
                         ret = 100.0 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 2 should be positive")
-                    num_wins = num_wins + 1
+                    num_wins += 1
                     num_wins2 += 1
                     amount_won += abs(ret)
                 else:  # LOST BET :(
@@ -168,10 +167,10 @@ for i in indices:
                     if ret > 0:
                         raise ArithmeticError("loss 2 should be negative")
                     num_losses2 += 1
-                    num_losses = num_losses + 1
+                    num_losses += 1
                     amount_lost += abs(ret)
-                return_game = return_game + ret
-                num_bets = num_bets + 1
+                return_game += ret
+                num_bets += 1
                 available_capital += ret
                 print('Ret 2: ', ret)
         print('Return for the match: ', return_game)
