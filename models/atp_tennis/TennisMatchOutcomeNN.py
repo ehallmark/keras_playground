@@ -71,57 +71,66 @@ all_attributes = list(input_attributes)
 all_attributes.append('y')
 all_attributes.append('year')
 
-data, test_data = load_data(all_attributes)
+all_data = load_data(all_attributes)
+data, test_data = all_data
 
 # create inputs
+test_meta_data = test_data[['player_id', 'opponent_id', 'tournament', 'year']]
 data = (np.array(data[input_attributes]), np.array(data['y']))
 test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
 
-def cell(x1,x2, n_units):
-    c = Concatenate()([x1,x2])
-   # c = BatchNormalization()(c)
-    c = Dense(n_units, activation='tanh')(c)
-    c = Dropout(0.2)(c)
-    return c
+all_data = (data, test_data, test_meta_data)
 
-X = Input((len(input_attributes),))
+if __name__ == '__main__':
+    data, test_data, _ = all_data
 
-hidden_units = 256
-num_cells = 4
+    def cell(x1,x2, n_units):
+        c = Concatenate()([x1,x2])
+        c = BatchNormalization()(c)
+        c = Dense(n_units, activation='relu')(c)
+        c = Dropout(0.2)(c)
+        return c
 
-model1 = BatchNormalization()(X)
-model1 = Dense(512, activation='relu')(model1)
-model1 = Dense(512, activation='relu')(model1)
-model2 = Dense(hidden_units, activation='tanh')(model1)
-for i in range(num_cells):
-    model1 = cell(model1,model2,hidden_units)
-    model2 = cell(model2,model1,hidden_units)
+    X = Input((len(input_attributes),))
 
-model = Dense(hidden_units*2, activation='tanh')(model2)
-model = Dense(1, activation='sigmoid')(model)
-model = Model(inputs=X, outputs=model)
-model.compile(optimizer=Adam(lr=0.001, decay=0.00001), loss='mean_squared_error', metrics=['accuracy'])
+    hidden_units = 256
+    num_cells = 3
+    batch_size = 128
 
-model_file = 'tennis_match_keras_nn.h5'
+    norm = BatchNormalization()(X)
+    model1 = Dense(hidden_units, activation='relu')(norm)
+    model2 = Dense(hidden_units, activation='relu')(norm)
+    for i in range(num_cells):
+        model1 = cell(model1,model2,hidden_units)
+        model2 = cell(model2,model1,hidden_units)
 
-prev_accuracy = 0.0
-best_accuracy = 0.0
-for i in range(30):
-    model.fit(data[0], data[1], batch_size=256, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
-    binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
-    print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-          ' (' + to_percentage(binary_percent) + ')')
-    print('Average error: ', to_percentage(avg_error))
-    if binary_percent > best_accuracy:
-        best_accuracy = binary_percent
-        # save
-        model.save(model_file)
-        print('Saved.')
-    prev_accuracy = binary_percent
+    model = Dense(1, activation='sigmoid')(model2)
+    model = Model(inputs=X, outputs=model)
+    model.compile(optimizer=Adam(lr=0.0005, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+
+    model_file = 'tennis_match_keras_nn.h5'
+
+    prev_accuracy = 0.0
+    best_accuracy = 0.0
+    for i in range(30):
+        model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
+        binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
+        print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
+              ' (' + to_percentage(binary_percent) + ')')
+        print('Average error: ', to_percentage(avg_error))
+        if binary_percent > best_accuracy:
+            best_accuracy = binary_percent
+            # save
+            model.save(model_file)
+            print('Saved.')
+        prev_accuracy = binary_percent
 
 
 
-print(model.summary())
+    print(model.summary())
+
+    print('Most recent accuracy: ', prev_accuracy)
+    print('Best accuracy: ', best_accuracy)
 
 
 
