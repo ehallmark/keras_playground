@@ -159,7 +159,7 @@ def load_data(attributes):
 
     #print('Data: ', sql[:10])
 
-    sql = sql[attributes].astype(np.float64)
+    sql = sql[attributes].astype(np.float64, errors='ignore')
 
     test_data = sql[sql.year == test_season]
     sql = sql[sql.year != test_season]

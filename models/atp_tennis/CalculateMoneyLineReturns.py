@@ -18,7 +18,6 @@ print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
       ' (' + to_percentage(binary_percent) + ')')
 print('Average error: ', to_percentage(avg_error))
 
-
 predictions = model.predict(test_data[0]).flatten()
 binary_predictions = (predictions >= 0.5).astype(int)
 print('predictions: ', binary_predictions)
@@ -42,6 +41,13 @@ print('Test Meta Data Size: ', test_meta_data.shape[0])
 print('Predictions Size: ', len(binary_predictions))
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-sql = pd.read_sql('''
-    select atp_tennis_betting_link
+betting_data = pd.read_sql('''
+    select year,tournament,team1,team2,
+    min(price1) as min_price1, 
+    max(price1) as max_price1,
+    min(price2) as min_price2,
+    max(price2) as max_price2
+    from atp_tennis_betting_link where year=2017 group by year,tournament,team1,team2
 ''')
+
+print(betting_data[0:40])

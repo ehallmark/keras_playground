@@ -69,7 +69,6 @@ input_attributes = [
 
 all_attributes = list(input_attributes)
 all_attributes.append('y')
-all_attributes.append('year')
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
     all_attributes.append(meta)
