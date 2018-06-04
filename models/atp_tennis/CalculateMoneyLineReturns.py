@@ -64,8 +64,8 @@ num_wins1 = 0
 num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
-betting_minimum = 10.0
-initial_capital = 1000.0
+betting_minimum = 1.0
+initial_capital = 100.0
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 shuffle(indices)
@@ -77,7 +77,7 @@ for i in indices:
         (betting_data.team1 == row.player_id) &
         (betting_data.team2 == row.opponent_id) &
         (betting_data.tournament == row.tournament)]
-    if bet_row.shape[0] > 0:
+    if bet_row.shape[0] == 1:
         # make betting decision
         max_price1 = np.array(bet_row['max_price1']).flatten()[0]
         max_price2 = np.array(bet_row['max_price2']).flatten()[0]
