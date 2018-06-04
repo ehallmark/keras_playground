@@ -50,7 +50,7 @@ betting_data = pd.read_sql('''
     max(price2) as max_price2
     from atp_tennis_betting_link where year=2017 group by year,tournament,team1,team2
 ''', conn)
-betting_epsilon = 0.05
+betting_epsilon = 0.01
 print(betting_data[0:10])
 return_total = 0.0
 num_bets = 0
@@ -98,52 +98,54 @@ for i in range(test_meta_data.shape[0]):
         #print('Found prediction: ', prediction)
         return_game = 0.0
         actual_result = test_labels[i]
-        if best_odds1 < prediction - betting_epsilon:
+        if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
             #print('Make BET! Advantage', prediction-best_odds1)
+            confidence = (prediction - best_odds1) * 100
             if max_price1 > 0:
-                amount_invested += 100
+                amount_invested += 100 * confidence
             else:
-                amount_invested += abs(max_price1)
+                amount_invested += abs(max_price1) * confidence
             if actual_result == 0:  # LOST BET :(
                 if max_price1 > 0:
-                    ret = - 100
+                    ret = - 100 * confidence
                 else:
-                    ret = max_price1
+                    ret = max_price1 * confidence
                 if ret > 0:
                     raise ArithmeticError("Loss 1 should be positive")
                 num_losses = num_losses + 1
                 amount_lost += abs(ret)
             else:  # WON BET
                 if max_price1 > 0:
-                    ret = max_price1
+                    ret = max_price1 * confidence
                 else:
-                    ret = 100
+                    ret = 100 * confidence
                 if ret < 0:
                     raise ArithmeticError("win 1 should be positive")
                 num_wins = num_wins + 1
                 amount_won += abs(ret)
             return_game = return_game + ret
             num_bets = num_bets + 1
-        if best_odds2 < (1.0 - prediction) - betting_epsilon:
+        if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
+            confidence = (1.0 - prediction - best_odds2) * 100
             if max_price2 > 0:
-                amount_invested += 100
+                amount_invested += 100 * confidence
             else:
-                amount_invested += abs(max_price2)
+                amount_invested += abs(max_price2) * confidence
             #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
             if actual_result == 0:  # WON BET
                 if max_price2 > 0:
-                    ret = max_price2
+                    ret = max_price2 * confidence
                 else:
-                    ret = 100
+                    ret = 100 * confidence
                 if ret < 0:
                     raise ArithmeticError("win 2 should be positive")
                 num_wins = num_wins + 1
                 amount_won += abs(ret)
             else:  # LOST BET :(
                 if max_price2 > 0:
-                    ret = - 100
+                    ret = - 100 * confidence
                 else:
-                    ret = max_price2
+                    ret = max_price2 * confidence
                 if ret > 0:
                     raise ArithmeticError("loss 2 should be negative")
                 num_losses = num_losses + 1
