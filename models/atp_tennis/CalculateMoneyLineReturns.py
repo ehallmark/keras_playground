@@ -48,6 +48,15 @@ betting_data = pd.read_sql('''
     min(price2) as min_price2,
     max(price2) as max_price2
     from atp_tennis_betting_link where year=2017 group by year,tournament,team1,team2
-''')
+''', conn)
 
-print(betting_data[0:40])
+print(betting_data[0:10])
+for i in range(test_meta_data.shape[0]):
+    row = test_meta_data.iloc[i]
+    bet_row = betting_data[
+        (betting_data.year == row.year) &
+        (betting_data.team1 == row.player_id) &
+        (betting_data.team2 == row.opponent_id) &
+        (betting_data.tournament == row.tournament)]
+    if bet_row.shape[0] > 0:
+        print('Found row: ', bet_row)
