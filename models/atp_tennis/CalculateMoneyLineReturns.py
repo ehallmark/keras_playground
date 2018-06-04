@@ -59,6 +59,10 @@ num_losses = 0
 amount_invested = 0
 amount_won = 0
 amount_lost = 0
+num_wins1 = 0
+num_wins2 = 0
+num_losses1 = 0
+num_losses2 = 0
 betting_minimum = 10.0
 available_capital = 10000.0
 for i in range(test_meta_data.shape[0]):
@@ -112,29 +116,31 @@ for i in range(test_meta_data.shape[0]):
                 available_capital -= capital_requirement
                 if actual_result < 0.5:  # LOST BET :(
                     if max_price1 > 0:
-                        ret = - 100 * confidence
+                        ret = - 100.0 * confidence
                     else:
                         ret = max_price1 * confidence
                     if ret > 0:
                         raise ArithmeticError("Loss 1 should be positive")
                     num_losses = num_losses + 1
                     amount_lost += abs(ret)
+                    num_losses1 += 1
                 else:  # WON BET
                     if max_price1 > 0:
                         ret = max_price1 * confidence
                     else:
-                        ret = 100 * confidence
+                        ret = 100.0 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 1 should be positive")
                     num_wins = num_wins + 1
+                    num_wins1 += 1
                     amount_won += abs(ret)
                 return_game = return_game + ret
                 available_capital += ret
                 num_bets = num_bets + 1
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
-            confidence = (1.0 - prediction - best_odds2) * 100
+            confidence = (1.0 - prediction - best_odds2) * betting_minimum
             if max_price2 > 0:
-                capital_requirement = 100 * confidence
+                capital_requirement = 100.0 * confidence
             else:
                 capital_requirement = abs(max_price2) * confidence
             if capital_requirement < available_capital:
@@ -145,18 +151,20 @@ for i in range(test_meta_data.shape[0]):
                     if max_price2 > 0:
                         ret = max_price2 * confidence
                     else:
-                        ret = 100 * confidence
+                        ret = 100.0 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 2 should be positive")
                     num_wins = num_wins + 1
+                    num_wins2 += 1
                     amount_won += abs(ret)
                 else:  # LOST BET :(
                     if max_price2 > 0:
-                        ret = - 100 * confidence
+                        ret = - 100.0 * confidence
                     else:
                         ret = max_price2 * confidence
                     if ret > 0:
                         raise ArithmeticError("loss 2 should be negative")
+                    num_losses2 += 1
                     num_losses = num_losses + 1
                     amount_lost += abs(ret)
                 return_game = return_game + ret
@@ -176,3 +184,7 @@ print('Amount lost: ', amount_lost)
 print('Average Return: ', return_total / amount_invested)
 print('Num correct: ', num_wins)
 print('Num wrong: ', num_losses)
+print('Num correct1: ', num_wins1)
+print('Num wrong1: ', num_losses1)
+print('Num correct2: ', num_wins2)
+print('Num wrong2: ', num_losses2)
