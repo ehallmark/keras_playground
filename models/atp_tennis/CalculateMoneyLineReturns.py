@@ -177,7 +177,6 @@ for i in range(test_meta_data.shape[0]):
 
 print('Initial Capital: ', initial_capital)
 print('Final Capital: ', available_capital)
-print('')
 print('Num bets: ', num_bets)
 print('Total Return: ', return_total)
 print('Amount invested: ', amount_invested)
