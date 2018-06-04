@@ -7,10 +7,10 @@ import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
 model = k.models.load_model('tennis_match_keras_nn.h5')
-model.compile(optimizer='adam',loss='mean_squared_error',metrics=['accuracy'])
+model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-all_data = tennis_model.all_data
+all_data = tennis_model.get_all_data(2018)
 
 test_meta_data = all_data[2]
 test_data = all_data[1]
@@ -64,8 +64,8 @@ num_wins1 = 0
 num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
-betting_minimum = 1.0
-initial_capital = 100.0
+betting_minimum = 10.0
+initial_capital = 10000.0
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 shuffle(indices)

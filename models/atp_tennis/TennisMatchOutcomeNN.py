@@ -72,18 +72,20 @@ all_attributes.append('y')
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
     all_attributes.append(meta)
-all_data = load_data(all_attributes)
-data, test_data = all_data
 
-# create inputs
-test_meta_data = test_data[meta_attributes]
-data = (np.array(data[input_attributes]), np.array(data['y']))
-test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
 
-all_data = (data, test_data, test_meta_data)
+def get_all_data(test_season=2017):
+    all_data = load_data(all_attributes, test_season=test_season)
+    data, test_data = all_data
+    # create inputs
+    test_meta_data = test_data[meta_attributes]
+    data = (np.array(data[input_attributes]), np.array(data['y']))
+    test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
+    return data, test_data, test_meta_data
+
 
 if __name__ == '__main__':
-    data, test_data, _ = all_data
+    data, test_data, _ = get_all_data()
 
     def cell(x1,x2, n_units):
         c = Concatenate()([x1,x2])
