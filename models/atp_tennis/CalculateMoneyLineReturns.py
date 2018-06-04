@@ -53,10 +53,32 @@ betting_data = pd.read_sql('''
 print(betting_data[0:10])
 for i in range(test_meta_data.shape[0]):
     row = test_meta_data.iloc[i]
+    prediction = predictions[i]
     bet_row = betting_data[
         (betting_data.year == row.year) &
         (betting_data.team1 == row.player_id) &
         (betting_data.team2 == row.opponent_id) &
         (betting_data.tournament == row.tournament)]
     if bet_row.shape[0] > 0:
-        print('Found row: ', bet_row)
+        # make betting decision
+        max_price1 = bet_row['max_price1'][0]
+        max_price2 = bet_row['max_price2'][0]
+        min_price1 = bet_row['min_price1'][0]
+        min_price2 = bet_row['min_price2'][0]
+        # calculate odds ratio
+        '''
+        Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
+        Implied probability	=	100 / ( 'plus' moneyline odds + 100 )
+        '''
+        if max_price1 > 0:
+            best_odds1 = 100.0 / (100.0 + max_price1)
+        else:
+            best_odds1 = -1.0 * (max_price1 / (-1.0 * max_price1 + 100.0))
+        if max_price2 > 0:
+            best_odds2 = 100.0 / (100.0 + max_price2)
+        else:
+            best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
+
+        print('Found best odds 1: ', best_odds1)
+        print('Found best odds 2: ', best_odds2)
+        print('Found prediction: ', prediction)
