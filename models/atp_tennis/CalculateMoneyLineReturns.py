@@ -13,7 +13,8 @@ all_data = tennis_model.all_data
 
 test_meta_data = all_data[2]
 test_data = all_data[1]
-binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
+test_labels = test_data[1]
+binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_labels)
 print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
       ' (' + to_percentage(binary_percent) + ')')
 print('Average error: ', to_percentage(avg_error))
@@ -51,6 +52,11 @@ betting_data = pd.read_sql('''
 ''', conn)
 betting_epsilon = 0.05
 print(betting_data[0:10])
+return_total = 0.0
+num_bets = 0
+num_wins = 0
+num_losses = 0
+amount_invested = 0
 for i in range(test_meta_data.shape[0]):
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
@@ -80,6 +86,7 @@ for i in range(test_meta_data.shape[0]):
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
         best_odds2 = 1.0 - best_odds2  # reverse odds for loss
 
+
         if best_odds1 < 0.0 or best_odds1 > 1.0:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
         if best_odds2 < 0.0 or best_odds2 > 1.0:
@@ -87,7 +94,53 @@ for i in range(test_meta_data.shape[0]):
         #print('Found best odds 1: ', best_odds1)
         #print('Found best odds 2: ', best_odds2)
         #print('Found prediction: ', prediction)
+        return_game = 0.0
+        actual_result = test_labels[i]
         if best_odds1 < prediction - betting_epsilon:
-            print('Make BET! Advantage', prediction-best_odds1)
+            #print('Make BET! Advantage', prediction-best_odds1)
+            if max_price1 > 0:
+                amount_invested += 100
+            else:
+                amount_invested += abs(max_price1)
+            if actual_result == 0:  # LOST BET :(
+                ret = - max(-max_price1,100)
+                if ret > 0:
+                    raise ArithmeticError("Loss 1 should be positive")
+                num_losses = num_losses + 1
+            else:  # WON BET
+                ret = abs(min(-max_price1, 100))
+                if ret < 0:
+                    raise ArithmeticError("win 1 should be positive")
+                num_wins = num_wins + 1
+            return_game = return_game + ret
+            num_bets = num_bets + 1
         if best_odds2 < (1.0 - prediction) - betting_epsilon:
-            print('Makde BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
+            if max_price2 > 0:
+                amount_invested += 100
+            else:
+                amount_invested += abs(max_price2)
+            #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
+            if actual_result == 0:  # WON BET
+                ret = abs(min(-max_price2, 100))
+                if ret < 0:
+                    raise ArithmeticError("win 2 should be positive")
+                num_wins = num_wins + 1
+            else:  # LOST BET :(
+                ret = - max(-max_price2,100)
+                if ret > 0:
+                    raise ArithmeticError("loss 2 should be negative")
+                num_losses = num_losses + 1
+            return_game = return_game + ret
+            num_bets = num_bets + 1
+        return_total = return_total + return_game
+
+        print('Num bets: ',num_bets)
+        print('Return: ', return_total)
+
+
+print('Num bets: ',num_bets)
+print('Total Return: ', return_total)
+print('Amount invested: ', amount_invested)
+print('Average Return: ', return_total / amount_invested)
+print('Num correct: ', num_wins)
+print('Num wrong: ', num_losses)
