@@ -108,12 +108,11 @@ for i in range(test_meta_data.shape[0]):
             #print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
             if max_price1 > 0:
-                capital_requirement = 100 * confidence
+                capital_requirement = 100.0 * confidence
             else:
                 capital_requirement = abs(max_price1) * confidence
             if capital_requirement < available_capital:
                 amount_invested += capital_requirement
-                available_capital -= capital_requirement
                 if actual_result < 0.5:  # LOST BET :(
                     if max_price1 > 0:
                         ret = - 100.0 * confidence
@@ -144,7 +143,6 @@ for i in range(test_meta_data.shape[0]):
             else:
                 capital_requirement = abs(max_price2) * confidence
             if capital_requirement < available_capital:
-                available_capital -= capital_requirement
                 amount_invested += capital_requirement
                 #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
                 if actual_result < 0.5:  # WON BET
