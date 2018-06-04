@@ -2,6 +2,7 @@ import keras as k
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
+from random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
@@ -64,9 +65,11 @@ num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
 betting_minimum = 10.0
-initial_capital = 10000.0
+initial_capital = 1000.0
 available_capital = initial_capital
-for i in range(test_meta_data.shape[0]):
+indices = list(range(test_meta_data.shape[0]))
+shuffle(indices)
+for i in indices:
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
     bet_row = betting_data[
@@ -137,6 +140,7 @@ for i in range(test_meta_data.shape[0]):
                 return_game = return_game + ret
                 available_capital += ret
                 num_bets = num_bets + 1
+                print('Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
             if max_price2 > 0:
@@ -169,10 +173,13 @@ for i in range(test_meta_data.shape[0]):
                 return_game = return_game + ret
                 num_bets = num_bets + 1
                 available_capital += ret
+                print('Ret 2: ', ret)
+        print('Return for the match: ', return_game)
         return_total = return_total + return_game
 
         print('Num bets: ', num_bets)
         print('Capital: ', available_capital)
+        print('Return Total: ', return_total)
 
 
 print('Initial Capital: ', initial_capital)
