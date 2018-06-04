@@ -64,7 +64,8 @@ num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
 betting_minimum = 10.0
-available_capital = 10000.0
+initial_capital = 10000.0
+available_capital = initial_capital
 for i in range(test_meta_data.shape[0]):
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
@@ -174,12 +175,16 @@ for i in range(test_meta_data.shape[0]):
         print('Capital: ', available_capital)
 
 
+print('Initial Capital: ', initial_capital)
+print('Final Capital: ', available_capital)
+print('')
 print('Num bets: ', num_bets)
 print('Total Return: ', return_total)
 print('Amount invested: ', amount_invested)
 print('Amount won: ', amount_won)
 print('Amount lost: ', amount_lost)
-print('Average Return: ', return_total / amount_invested)
+print('Average Return Per Amount Invested: ', return_total / amount_invested)
+print('Overall Return For The Year: ', return_total / initial_capital)
 print('Num correct: ', num_wins)
 print('Num wrong: ', num_losses)
 print('Num correct1: ', num_wins1)
