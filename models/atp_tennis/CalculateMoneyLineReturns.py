@@ -82,6 +82,7 @@ shuffle(indices)
 for i in indices:
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
+    # prediction = np.random.rand(1)  # test on random predictions
     bet_row = betting_data[
         (betting_data.year == row.year) &
         (betting_data.team1 == row.player_id) &

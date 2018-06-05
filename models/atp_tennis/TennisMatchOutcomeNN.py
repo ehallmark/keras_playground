@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     model = Dense(1, activation='sigmoid')(model2)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.0001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001, decay=0.00001), loss='mean_squared_error', metrics=['accuracy'])
 
     #model_file = 'tennis_match_keras_nn.h5'
     model_file = 'tennis_match_keras_nn_v2.h5'
