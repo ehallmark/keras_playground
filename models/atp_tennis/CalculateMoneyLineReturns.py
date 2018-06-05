@@ -48,7 +48,9 @@ betting_data = pd.read_sql('''
     min(price1) as min_price1, 
     max(price1) as max_price1,
     min(price2) as min_price2,
-    max(price2) as max_price2
+    max(price2) as max_price2,
+    sum(price1)/count(price1) as avg_price1,
+    sum(price2)/count(price2) as avg_price2
     from atp_tennis_betting_link where year={{YEAR}} group by year,tournament,team1,team2
 '''.replace('{{YEAR}}', str(test_year)), conn)
 betting_epsilon = 0.01
@@ -65,7 +67,8 @@ num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
 betting_minimum = 10.0
-initial_capital = 10000.0
+initial_capital = 1000.0
+max_loss_percent = 0.1
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 shuffle(indices)
@@ -80,10 +83,8 @@ for i in indices:
     ]
     if bet_row.shape[0] == 1:
         # make betting decision
-        max_price1 = np.array(bet_row['max_price1']).flatten()[0]
-        max_price2 = np.array(bet_row['max_price2']).flatten()[0]
-        min_price1 = np.array(bet_row['min_price1']).flatten()[0]
-        min_price2 = np.array(bet_row['min_price2']).flatten()[0]
+        max_price1 = np.array(bet_row['avg_price1']).flatten()[0]
+        max_price2 = np.array(bet_row['avg_price2']).flatten()[0]
         # calculate odds ratio
         '''
         Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
@@ -111,27 +112,22 @@ for i in indices:
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
             #print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
-            if max_price1 > 0:
-                capital_requirement = 100.0 * confidence
-            else:
-                capital_requirement = abs(max_price1) * confidence
+            capital_requirement = 100.0 * confidence
+            capital_requirement_avail = max(betting_minimum, min(max_loss_percent*available_capital, capital_requirement))
+            capital_ratio = capital_requirement_avail/capital_requirement
+            capital_requirement *= capital_ratio
+            confidence *= capital_ratio
             if capital_requirement < available_capital:
                 amount_invested += capital_requirement
                 if actual_result < 0.5:  # LOST BET :(
-                    if max_price1 > 0:
-                        ret = - 100.0 * confidence
-                    else:
-                        ret = max_price1 * confidence
+                    ret = - 100.0 * confidence
                     if ret > 0:
                         raise ArithmeticError("Loss 1 should be positive")
                     num_losses = num_losses + 1
                     amount_lost += abs(ret)
                     num_losses1 += 1
                 else:  # WON BET
-                    if max_price1 > 0:
-                        ret = max_price1 * confidence
-                    else:
-                        ret = 100.0 * confidence
+                    ret = max_price1 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 1 should be positive")
                     num_wins = num_wins + 1
@@ -143,28 +139,23 @@ for i in indices:
                 print('Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
-            if max_price2 > 0:
-                capital_requirement = 100.0 * confidence
-            else:
-                capital_requirement = abs(max_price2) * confidence
+            capital_requirement = abs(max_price2) * confidence
+            capital_requirement_avail = max(betting_minimum, min(max_loss_percent * available_capital, capital_requirement))
+            capital_ratio = capital_requirement_avail / capital_requirement
+            capital_requirement *= capital_ratio
+            confidence *= capital_ratio
             if capital_requirement < available_capital:
                 amount_invested += capital_requirement
                 #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
                 if actual_result < 0.5:  # WON BET
-                    if max_price2 > 0:
-                        ret = max_price2 * confidence
-                    else:
-                        ret = 100.0 * confidence
+                    ret = max_price2 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 2 should be positive")
                     num_wins += 1
                     num_wins2 += 1
                     amount_won += abs(ret)
                 else:  # LOST BET :(
-                    if max_price2 > 0:
-                        ret = - 100.0 * confidence
-                    else:
-                        ret = max_price2 * confidence
+                    ret = - 100.0 * confidence
                     if ret > 0:
                         raise ArithmeticError("loss 2 should be negative")
                     num_losses2 += 1
