@@ -6,7 +6,7 @@ from random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
-model = k.models.load_model('tennis_match_keras_nn.h5')
+model = k.models.load_model('tennis_match_keras_nn_v2.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
