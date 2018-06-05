@@ -74,8 +74,8 @@ for meta in meta_attributes:
     all_attributes.append(meta)
 
 
-def get_all_data(test_season=2017):
-    all_data = load_data(all_attributes, test_season=test_season)
+def get_all_data(test_season=2017, start_year=2003):
+    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year)
     data, test_data = all_data
     # create inputs
     test_meta_data = test_data[meta_attributes]
@@ -85,20 +85,20 @@ def get_all_data(test_season=2017):
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data()
+    data, test_data, _ = get_all_data(test_season=2017, start_year=1990)
 
     def cell(x1,x2, n_units):
         c = Concatenate()([x1,x2])
         c = BatchNormalization()(c)
         c = Dense(n_units, activation='relu')(c)
-        c = Dropout(0.2)(c)
+        c = Dropout(0.5)(c)
         return c
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 256
-    num_cells = 3
-    batch_size = 128
+    hidden_units = 512
+    num_cells = 4
+    batch_size = 256
 
     norm = BatchNormalization()(X)
     model1 = Dense(hidden_units, activation='relu')(norm)
@@ -109,13 +109,14 @@ if __name__ == '__main__':
 
     model = Dense(1, activation='sigmoid')(model2)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.0005, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
 
-    model_file = 'tennis_match_keras_nn.h5'
+    #model_file = 'tennis_match_keras_nn.h5'
+    model_file = 'tennis_match_keras_nn_v2.h5'
 
     prev_accuracy = 0.0
     best_accuracy = 0.0
-    for i in range(30):
+    for i in range(50):
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
         binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
         print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +

@@ -31,7 +31,7 @@ def bool_to_int(b):
         return 0.0
 
 
-def load_data(attributes, test_season=2017):
+def load_data(attributes, test_season=2017, start_year=2003):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql = pd.read_sql('''
         select 
@@ -149,14 +149,12 @@ def load_data(attributes, test_season=2017):
             on ((m.player_id,m.tournament,m.year)=(pc.player_id,pc.tournament,pc.year))
         left outer join atp_player_characteristics as pc_opp
             on ((m.opponent_id,m.tournament,m.year)=(pc_opp.player_id,pc_opp.tournament,pc_opp.year))
-        where m.year <= {{END_DATE}} and m.year >= 2003 
+        where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
         and m.first_serve_attempted > 0
 
-    '''.replace('{{END_DATE}}', str(test_season)), conn)
+    '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year)), conn)
     #print('Data: ', sql[:10])
-
     sql = sql[attributes].astype(np.float64, errors='ignore')
-
     test_data = sql[sql.year == test_season]
     sql = sql[sql.year != test_season]
     return sql, test_data
