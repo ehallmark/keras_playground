@@ -76,7 +76,8 @@ for i in indices:
         (betting_data.year == row.year) &
         (betting_data.team1 == row.player_id) &
         (betting_data.team2 == row.opponent_id) &
-        (betting_data.tournament == row.tournament)]
+        (betting_data.tournament == row.tournament)
+    ]
     if bet_row.shape[0] == 1:
         # make betting decision
         max_price1 = np.array(bet_row['max_price1']).flatten()[0]
