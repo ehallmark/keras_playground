@@ -85,7 +85,7 @@ def get_all_data(test_season=2017, start_year=2003):
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data(test_season=2017, start_year=1990)
+    data, test_data, _ = get_all_data(test_season=2017, start_year=1996)
 
     def cell(x1,x2, n_units):
         c = Concatenate()([x1,x2])
@@ -96,8 +96,8 @@ if __name__ == '__main__':
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 512
-    num_cells = 4
+    hidden_units = 256
+    num_cells = 6
     batch_size = 256
 
     norm = BatchNormalization()(X)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     model = Dense(1, activation='sigmoid')(model2)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.0001, decay=0.00001), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
 
     #model_file = 'tennis_match_keras_nn.h5'
     model_file = 'tennis_match_keras_nn_v2.h5'
