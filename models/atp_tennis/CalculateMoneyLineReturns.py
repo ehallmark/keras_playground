@@ -10,8 +10,8 @@ model = k.models.load_model('tennis_match_keras_nn.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-all_data = tennis_model.get_all_data(2018)
-
+test_year = 2018  # IMPORTANT!!
+all_data = tennis_model.get_all_data(test_year)
 test_meta_data = all_data[2]
 test_data = all_data[1]
 test_labels = test_data[1]
@@ -49,8 +49,8 @@ betting_data = pd.read_sql('''
     max(price1) as max_price1,
     min(price2) as min_price2,
     max(price2) as max_price2
-    from atp_tennis_betting_link where year=2017 group by year,tournament,team1,team2
-''', conn)
+    from atp_tennis_betting_link where year={{YEAR}} group by year,tournament,team1,team2
+'''.replace('{{YEAR}}', str(test_year)), conn)
 betting_epsilon = 0.01
 print(betting_data[0:10])
 return_total = 0.0
@@ -175,11 +175,9 @@ for i in indices:
                 print('Ret 2: ', ret)
         print('Return for the match: ', return_game)
         return_total = return_total + return_game
-
         print('Num bets: ', num_bets)
         print('Capital: ', available_capital)
         print('Return Total: ', return_total)
-
 
 print('Initial Capital: ', initial_capital)
 print('Final Capital: ', available_capital)
