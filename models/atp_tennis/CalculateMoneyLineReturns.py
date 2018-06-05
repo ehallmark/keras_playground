@@ -53,6 +53,13 @@ betting_data = pd.read_sql('''
     sum(price2)/count(price2) as avg_price2
     from atp_tennis_betting_link where year={{YEAR}} group by year,tournament,team1,team2
 '''.replace('{{YEAR}}', str(test_year)), conn)
+'''
+    Use max_price for the 'best' price,
+    Use min_price for the 'worst' price,
+    Use avg_price for the 'average' price
+'''
+price_str = 'avg_price'
+
 betting_epsilon = 0.01
 print(betting_data[0:10])
 return_total = 0.0
@@ -83,8 +90,8 @@ for i in indices:
     ]
     if bet_row.shape[0] == 1:
         # make betting decision
-        max_price1 = np.array(bet_row['avg_price1']).flatten()[0]
-        max_price2 = np.array(bet_row['avg_price2']).flatten()[0]
+        max_price1 = np.array(bet_row[price_str+'1']).flatten()[0]
+        max_price2 = np.array(bet_row[price_str+'2']).flatten()[0]
         # calculate odds ratio
         '''
         Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
