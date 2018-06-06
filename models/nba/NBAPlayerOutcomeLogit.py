@@ -1,4 +1,7 @@
 import pandas as pd
+from keras.layers import Dense, Reshape, Concatenate, Input, BatchNormalization, Dropout
+from keras.models import Model
+from keras.optimizers import Adam
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
 import numpy as np
@@ -13,7 +16,7 @@ def test_model(model, x, y):
     binary_predictions = (predictions >= 0.5).astype(int)
     binary_errors = np.array(y) != np.array(binary_predictions)
     binary_errors = binary_errors.astype(int)
-    errors = np.array(y - np.array(predictions))
+    errors = np.array(np.array(y).flatten() - np.array(predictions).flatten())
     binary_correct = predictions.shape[0] - int(binary_errors.sum())
     binary_percent = float(binary_correct) / predictions.shape[0]
     avg_error = np.mean(np.abs(errors), -1)
@@ -30,76 +33,122 @@ def bool_to_int(b):
     else:
         return 0.0
 
+def get_all_data(attributes, test_season=2017, start_year=1990):
+    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    sql = pd.read_sql('''
+    select p1.*,p2.plus_minus::double precision/greatest(1,p2.num_games_played) as plus_minus0, p2.fg_pct as fg_pct0, p2.dreb as dreb0, p2.blk as blk0, p2.ast as ast0, p2.pf as pf0,p2.min as min0, p2.fta as fta0, p2.tov as tov0, p2.pts as pts0, p2.oreb as oreb0, p2.fga as fga0, p2.fgm as fgm0, 
+                      p3.plus_minus::double precision/greatest(1,p3.num_games_played) as plus_minus1, p3.fg_pct as fg_pct1, p3.dreb as dreb1, p3.blk as blk1, p3.ast as ast1, p3.pf as pf1, p3.min as min1, p3.fta as fta1, p3.tov as tov1, p3.pts as pts1, p3.oreb as oreb1, p3.fga as fga1, p3.fgm as fgm1 
+                      from nba_players_game_stats as p1 
+                      left join nba_players_game_stats_month_lag as p2 
+                      on ((p1.player_id,p1.game_id)=(p2.player_id,p2.game_id)) 
+                      left join nba_players_game_stats_previous_matchups as p3
+                      on ((p1.player_id,p1.game_id)=(p3.player_id,p3.game_id)) 
+                      where p1.game_date is not null and  
+                      p1.season_year >= {{START}} and p1.season_year<={{END}} and 
+                      p1.season_type = \'Regular Season\' and p1.fg3_pct is 
+                      not null and p1.stl is not null and p1.oreb is not null and p1.plus_minus is not null 
+                      order by p1.game_date asc
+    '''.replace('{{START}}',str(start_year)).replace('{{END}}',str(test_season)), conn)
 
-conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-sql = pd.read_sql('select p1.*,p2.plus_minus::double precision/greatest(1,p2.num_games_played) as plus_minus0, '+
-                  'p2.fg_pct as fg_pct0, '+
-                  'p2.tov as tov0, p2.pts as pts0, p2.oreb as oreb0, p2.fga as fga0, p2.fgm as fgm0 '
-                  'from nba_players_game_stats as p1 join nba_players_game_stats_month_lag as p2 '
-                  'on ((p1.player_id,p1.game_id)=(p2.player_id,p2.game_id)) where p1.game_date is not null and ' +
-                  'p1.season_type = \'Regular Season\' and p1.fg3_pct is ' +
-                  'not null and p1.stl is not null and p1.oreb is not null and p1.plus_minus is not null '+
-                  'order by p1.game_date asc', conn)
+    wins = [bool_to_int(y == 'W') for y in sql['wl']]
+    print("Num wins: " + str(len(wins)))
+    print("Num datapoints: ", str(sql.shape[0]))
+    sql['y'] = wins
+    sql['home'] = [bool_to_int(not '@' in matchup) for matchup in sql['matchup']]
+    sql.fillna(inplace=True,value=0.0)
+    test_data = sql[sql.season_year == test_season]
+    sql = sql[sql.season_year != test_season]
+    y = sql['y'].astype(np.float64)
+    sql = sql[attributes].astype(np.float64)
+    test_y = test_data['y'].astype(np.float64)
+    test_data = test_data[attributes].astype(np.float64)
+    data = np.array(sql)
+    test_data = np.array(test_data)
+    return (data, y), (test_data, test_y)
 
 test_season = 2017
 
-#print('Data: ', sql[:100])
-
-wins = [bool_to_int(y == 'W') for y in sql['wl']]
-print("Num wins: "+str(len(wins)))
-print("Num datapoints: ",str(sql.shape[0]))
-sql['y'] = wins
-sql['home'] = [bool_to_int(not '@' in matchup) for matchup in sql['matchup']]
-
-# fill in nans and infs
-#sql[sql.stl == np.nan] = 1.0
-#sql[sql.stl == np.inf] = 1.0
-#sql[sql.fg3m == np.nan] = 1.0
-#sql[sql.fg3m == np.inf] = 1.0
-
 input_attributes = [
     'home',
-    'oreb',
-    'dreb',
-    'tov',
-    'blk',
-    'fga',
-    'fgm',
-    'ast',
-    #'fg3_pct',
-    'fg3a',
-    'fg3m',
-    'pf',
-    'min',
-    'fta',
-    'plus_minus',
+    'dreb0',
+    'blk0',
+    'ast0',
+    'pf0',
+    'min0',
+    'fta0',
     'plus_minus0',
     'fgm0',
     'fga0',
     'tov0',
     'oreb0',
-    'pts0'
+    'pts0',
+    'dreb1',
+    'blk1',
+    'ast1',
+    'pf1',
+    'min1',
+    'fta1',
+    'plus_minus1',
+    'fgm1',
+    'fga1',
+    'tov1',
+    'oreb1',
+    'pts1'
 ]
-all_attributes = list(input_attributes)
-all_attributes.append('y')
-all_attributes.append('season_year')
 
-sql = sql[all_attributes].astype(np.float64)
+if __name__ == '__main__':
 
-test_data = sql[sql.season_year == test_season]
-sql = sql[sql.season_year != test_season]
+    data, test_data = get_all_data(input_attributes, test_season=test_season)
+    print('Data: ', data[0:10])
+    def cell(x1,x2, n_units):
+        c = Concatenate()([x1,x2])
+        c = BatchNormalization()(c)
+        c = Dense(n_units, activation='relu')(c)
+        c = Dropout(0.5)(c)
+        return c
 
-print('Attrs: ', sql[input_attributes])
+    X = Input((len(input_attributes),))
 
-# model to predict the total score (h_pts + a_pts)
-results = smf.logit('y ~ '+'+'.join(input_attributes), data=sql).fit()
-print(results.summary())
+    hidden_units = 256
+    num_cells = 2
+    batch_size = 256
 
-binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data['y'])
+    norm = BatchNormalization()(X)
+    model1 = Dense(hidden_units, activation='relu')(norm)
+    model2 = Dense(hidden_units, activation='relu')(norm)
+    for i in range(num_cells):
+        model1 = cell(model1,model2,hidden_units)
+        model2 = cell(model2,model1,hidden_units)
 
-print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
-      ' ('+to_percentage(binary_percent)+')')
-print('Average error: ', to_percentage(avg_error))
+    model = Dense(1, activation='sigmoid')(model2)
+    model = Model(inputs=X, outputs=model)
+    model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+
+    model_file = 'nba_player_model_keras_nn.h5'
+
+    prev_accuracy = 0.0
+    best_accuracy = 0.0
+    for i in range(50):
+        model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
+        binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
+        print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
+              ' (' + to_percentage(binary_percent) + ')')
+        print('Average error: ', to_percentage(avg_error))
+        if binary_percent > best_accuracy:
+            best_accuracy = binary_percent
+            # save
+            model.save(model_file)
+            print('Saved.')
+        prev_accuracy = binary_percent
+
+
+
+    print(model.summary())
+
+    print('Most recent accuracy: ', prev_accuracy)
+    print('Best accuracy: ', best_accuracy)
+
 
 exit(0)
+
 
