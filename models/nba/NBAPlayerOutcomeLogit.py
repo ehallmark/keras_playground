@@ -38,6 +38,8 @@ def get_all_data(attributes, test_season=2017, start_year=2003):
     sql = pd.read_sql('''
     select p1.*,p2.plus_minus::double precision/greatest(1,p2.num_games_played) as plus_minus0, p2.fg_pct as fg_pct0, p2.dreb as dreb0, p2.blk as blk0, p2.ast as ast0, p2.pf as pf0,p2.min as min0, p2.fta as fta0, p2.tov as tov0, p2.pts as pts0, p2.oreb as oreb0, p2.fga as fga0, p2.fgm as fgm0, 
                       p3.plus_minus::double precision/greatest(1,p3.num_games_played) as plus_minus1, p3.fg_pct as fg_pct1, p3.dreb as dreb1, p3.blk as blk1, p3.ast as ast1, p3.pf as pf1, p3.min as min1, p3.fta as fta1, p3.tov as tov1, p3.pts as pts1, p3.oreb as oreb1, p3.fga as fga1, p3.fgm as fgm1, 
+                      p4.plus_minus::double precision/greatest(1,p4.num_games_played) as plus_minus2, p4.fg_pct as fg_pct2, p4.dreb as dreb2, p4.blk as blk2, p4.ast as ast2, p4.pf as pf2, p4.min as min2, p4.fta as fta2, p4.tov as tov2, p4.pts as pts2, p4.oreb as oreb2, p4.fga as fga2, p4.fgm as fgm2, 
+                      p5.plus_minus as plus_minus3, p5.fg_pct as fg_pct3, p5.dreb as dreb3, p5.blk as blk3, p5.ast as ast3, p5.pf as pf3, p5.min as min3, p5.fta as fta3, p5.tov as tov3, p5.pts as pts3, p5.oreb as oreb3, p5.fga as fga3, p5.fgm as fgm3, 
                       player.height as height0,
                       player.weight as weight0,
                       extract (year from p1.game_date) - extract(year from player.birth_date) as exp0
@@ -48,6 +50,10 @@ def get_all_data(attributes, test_season=2017, start_year=2003):
                       on ((p1.player_id,p1.game_id)=(p3.player_id,p3.game_id)) 
                       left join nba_players_all as player
                       on (p1.player_id=player.person_id)
+                      left join nba_players_season_stats as p4
+                      on ((p1.player_id,p1.game_id)=(p4.player_id,p4.game_id))
+                      left join nba_players_season_stats_var as p5
+                      on ((p1.player_id,p1.game_id)=(p5.player_id,p5.game_id)) 
                       where p1.game_date is not null and  
                       p1.season_year >= {{START}} and p1.season_year<={{END}} and 
                       p1.season_type = \'Regular Season\' and p1.fg3_pct is not null and 
@@ -103,6 +109,28 @@ input_attributes = [
     'exp0',
     'height0',
     'weight0'
+    'blk2',
+    'ast2',
+    'pf2',
+    'min2',
+    'fta2',
+    'plus_minus2',
+    'fgm2',
+    'fga2',
+    'tov2',
+    'oreb2',
+    'pts2',
+    'blk3',
+    'ast3',
+    'pf3',
+    'min3',
+    'fta3',
+    'plus_minus3',
+    'fgm3',
+    'fga3',
+    'tov3',
+    'oreb3',
+    'pts3',
 ]
 
 if __name__ == '__main__':
