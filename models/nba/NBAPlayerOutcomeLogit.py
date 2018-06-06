@@ -42,6 +42,9 @@ def get_all_data(attributes, test_season=2017, start_year=2003):
                       p5.plus_minus as plus_minus3, p5.fg_pct as fg_pct3, p5.dreb as dreb3, p5.blk as blk3, p5.ast as ast3, p5.pf as pf3, p5.min as min3, p5.fta as fta3, p5.tov as tov3, p5.pts as pts3, p5.oreb as oreb3, p5.fga as fga3, p5.fgm as fgm3, 
                       player.height as height0,
                       player.weight as weight0,
+                      case when player.position ilike '%guard%' then 1.0 else 0.0 as guard,
+                      case when player.position ilike '%forward%' then 1.0 else 0.0 as forward,
+                      case when player.position ilike '%center%' then 1.0 else 0.0 as center,
                       extract (year from p1.game_date) - extract(year from player.birth_date) as exp0
                       from nba_players_game_stats as p1 
                       left join nba_players_game_stats_month_lag as p2 
@@ -131,8 +134,11 @@ input_attributes = [
     'tov3',
     'oreb3',
     'pts3',
-    'w0', 'w1', 'w2', 
+    'w0', 'w1', 'w2',
     'l0', 'l1', 'l2',
+    'guard',
+    'forward',
+    'center'
 ]
 
 if __name__ == '__main__':
