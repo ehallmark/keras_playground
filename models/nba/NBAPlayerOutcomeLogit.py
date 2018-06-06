@@ -108,7 +108,7 @@ input_attributes = [
     'pts1',
     'exp0',
     'height0',
-    'weight0'
+    'weight0',
     'blk2',
     'ast2',
     'pf2',
