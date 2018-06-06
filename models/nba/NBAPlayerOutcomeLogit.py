@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 def test_model(model, x, y):
     predictions = model.predict(x)
     binary_predictions = (predictions >= 0.5).astype(int)
-    binary_errors = np.array(y) != np.array(binary_predictions)
+    binary_errors = np.array(y).flatten() != np.array(binary_predictions).flatten()
     binary_errors = binary_errors.astype(int)
     errors = np.array(np.array(y).flatten() - np.array(predictions).flatten())
     binary_correct = predictions.shape[0] - int(binary_errors.sum())
@@ -50,8 +50,9 @@ def get_all_data(attributes, test_season=2017, start_year=2003):
                       on (p1.player_id=player.person_id)
                       where p1.game_date is not null and  
                       p1.season_year >= {{START}} and p1.season_year<={{END}} and 
-                      p1.season_type = \'Regular Season\' and p1.fg3_pct is 
-                      not null and p1.stl is not null and p1.oreb is not null and p1.plus_minus is not null 
+                      p1.season_type = \'Regular Season\' and p1.fg3_pct is not null and 
+                      p1.stl is not null and p1.oreb is not null and p1.plus_minus is not null and
+                      coalesce(p2.min,0) > 10
                       order by p1.game_date asc
     '''.replace('{{START}}',str(start_year)).replace('{{END}}',str(test_season)), conn)
 
@@ -130,7 +131,7 @@ if __name__ == '__main__':
 
     model = Dense(1, activation='sigmoid')(model2)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
 
     model_file = 'nba_player_model_keras_nn.h5'
 
