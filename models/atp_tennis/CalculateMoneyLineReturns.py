@@ -42,6 +42,7 @@ create table atp_tennis_betting_link (
 print('Test Meta Data Size: ', test_meta_data.shape[0])
 print('Predictions Size: ', len(binary_predictions))
 
+betting_sites = ['Bovada']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 betting_data = pd.read_sql('''
     select year,tournament,team1,team2,
@@ -51,14 +52,16 @@ betting_data = pd.read_sql('''
     max(price2) as max_price2,
     sum(price1)/count(price1) as avg_price1,
     sum(price2)/count(price2) as avg_price2
-    from atp_tennis_betting_link where year={{YEAR}} group by year,tournament,team1,team2
-'''.replace('{{YEAR}}', str(test_year)), conn)
+    from atp_tennis_betting_link 
+    where year={{YEAR}} and book_name in ({{BOOK_NAMES}})
+    group by year,tournament,team1,team2
+'''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
 '''
     Use max_price for the 'best' price,
     Use min_price for the 'worst' price,
     Use avg_price for the 'average' price
 '''
-price_str = 'avg_price'
+price_str = 'max_price'
 
 betting_epsilon = 0.01
 print(betting_data[0:10])
