@@ -87,6 +87,7 @@ for i in indices:
         return_game = 0.0
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
             confidence = (prediction - best_odds1) * betting_minimum
+            initial_confidence = confidence
             capital_requirement = 100.0 * confidence
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent*available_capital, capital_requirement))
             capital_ratio = capital_requirement_avail/capital_requirement
@@ -101,10 +102,11 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['player_id'])
                 print('Bet against player: ', row['opponent_id'])
-                bets_to_make.append((row['player_id'], row['opponent_id'], confidence, capital_requirement, max_price1))
+                bets_to_make.append((row['player_id'], row['opponent_id'], initial_confidence, capital_requirement, max_price1))
 
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
+            initial_confidence = confidence
             capital_requirement = 100.0 * confidence
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent * available_capital, capital_requirement))
             capital_ratio = capital_requirement_avail / capital_requirement
@@ -118,7 +120,7 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['opponent_id'])
                 print('Bet against player: ', row['player_id'])
-                bets_to_make.append((row['opponent_id'], row['player_id'], confidence, capital_requirement, max_price2))
+                bets_to_make.append((row['opponent_id'], row['player_id'], initial_confidence, capital_requirement, max_price2))
 
 
 
