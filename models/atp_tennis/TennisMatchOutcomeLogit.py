@@ -31,7 +31,7 @@ def bool_to_int(b):
         return 0.0
 
 
-def load_data(attributes, test_season=2017, start_year=1990):
+def load_data(attributes, test_season=2017, start_year=1996):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql = pd.read_sql('''
         select 
