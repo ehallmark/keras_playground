@@ -42,7 +42,7 @@ create table atp_tennis_betting_link (
 print('Test Meta Data Size: ', test_meta_data.shape[0])
 print('Predictions Size: ', len(binary_predictions))
 
-betting_sites = ['Bovada']
+betting_sites = ['Bovada', '5Dimes']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 betting_data = pd.read_sql('''
     select year,tournament,team1,team2,
