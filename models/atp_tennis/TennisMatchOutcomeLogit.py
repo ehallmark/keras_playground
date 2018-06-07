@@ -36,8 +36,8 @@ def load_data(attributes, test_season=2017, start_year=2003):
     sql = pd.read_sql('''
         select 
             case when m.player_victory then 1.0 else 0.0 end as y, 
-            case when court_surface = 'Clay' then 1.0 else 0.0 end as clay,
-            case when court_surface = 'Grass' then 1.0 else 0.0 end as grass,
+            case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
+            case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
             m.year as year,
             m.player_id as player_id,
             m.opponent_id as opponent_id,
@@ -106,6 +106,8 @@ def load_data(attributes, test_season=2017, start_year=2003):
             coalesce(var_opp.second_serve_return_points_percent,0.5) as opp_var_second_serve_return_points_percent,
             coalesce(var.break_points_percent,0.5) as var_break_points_percent,
             coalesce(var_opp.break_points_percent,0.5) as opp_var_break_points_percent,
+            extract(epoch from coalesce(prior_match.duration,'00:00:00'::time))/3600.0 as duration_prev_match,
+            extract(epoch from coalesce(prior_match_opp.duration,'00:00:00'::time))/3600.0 as opp_duration_prev_match,         
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
                 else m.year - extract(year from pc.date_of_birth) end as age,
             case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
@@ -149,6 +151,10 @@ def load_data(attributes, test_season=2017, start_year=2003):
             on ((m.player_id,m.tournament,m.year)=(pc.player_id,pc.tournament,pc.year))
         left outer join atp_player_characteristics as pc_opp
             on ((m.opponent_id,m.tournament,m.year)=(pc_opp.player_id,pc_opp.tournament,pc_opp.year))
+        left outer join atp_matches_prior_match as prior_match
+            on ((m.player_id,m.tournament,m.year)=(prior_match.player_id,prior_match.tournament,prior_match.year))
+        left outer join atp_matches_prior_match as prior_match_opp
+            on ((m.opponent_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.tournament,prior_match_opp.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
         and m.first_serve_attempted > 0
 
@@ -200,7 +206,9 @@ if __name__ == '__main__':
         'lefty',
         'opp_lefty',
         'weight','opp_weight',
-        'height','opp_height'
+        'height','opp_height',
+        'duration_prev_match',
+        'opp_duration_prev_match'
     ]
     all_attributes = list(input_attributes)
     all_attributes.append('y')
