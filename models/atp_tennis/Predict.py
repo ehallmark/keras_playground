@@ -11,36 +11,17 @@ model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
 test_year = 2018  # IMPORTANT!!
-all_data = tennis_model.get_all_data(test_year)
+all_data = tennis_model.get_all_data(test_year,test_year,tournament='roland-garros')
 test_meta_data = all_data[2]
-test_data = all_data[1]
-test_labels = test_data[1]
-binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_labels)
-print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-      ' (' + to_percentage(binary_percent) + ')')
-print('Average error: ', to_percentage(avg_error))
+test_data = all_data[1][0]
 
-predictions = model.predict(test_data[0]).flatten()
-binary_predictions = (predictions >= 0.5).astype(int)
-print('predictions: ', binary_predictions)
+print("Meta Data: ", test_meta_data[0:10])
+print('Test data: ', test_data[0:10])
 
-'''
-create table atp_tennis_betting_link (
-    year int not null,
-    book_id integer not null,
-    tournament text not null,
-    book_name text not null,
-    team1 text not null,
-    team2 text not null,
-    price1 decimal(10,2) not null,
-    price2 decimal(10,2) not null,
-    betting_date date not null,
-    primary key(year,book_id,tournament,team1,team2)
-);
-'''
 
-print('Test Meta Data Size: ', test_meta_data.shape[0])
-print('Predictions Size: ', len(binary_predictions))
+predictions = model.predict(test_data).flatten()
+
+# run betting algo
 
 betting_sites = ['Bovada']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
@@ -62,26 +43,13 @@ betting_data = pd.read_sql('''
     Use avg_price for the 'average' price
 '''
 price_str = 'max_price'
-
-betting_epsilon = 0.01
-print(betting_data[0:10])
-return_total = 0.0
-num_bets = 0
-num_wins = 0
-num_losses = 0
-amount_invested = 0
-amount_won = 0
-amount_lost = 0
-num_wins1 = 0
-num_wins2 = 0
-num_losses1 = 0
-num_losses2 = 0
-betting_minimum = 10.0
+betting_minimum = 5.0
 initial_capital = 450.0
 max_loss_percent = 0.1
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
-shuffle(indices)
+round = 'Quarter-Finals'
+betting_epsilon = 0.01
 for i in indices:
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
@@ -92,7 +60,7 @@ for i in indices:
         (betting_data.team2 == row.opponent_id) &
         (betting_data.tournament == row.tournament)
     ]
-    if bet_row.shape[0] == 1:
+    if bet_row.shape[0] == 1 and 'del-potro' in row['player_id']:
         # make betting decision
         max_price1 = np.array(bet_row[price_str+'1']).flatten()[0]
         max_price2 = np.array(bet_row[price_str+'2']).flatten()[0]
@@ -119,7 +87,6 @@ for i in indices:
         #print('Found best odds 2: ', best_odds2)
         #print('Found prediction: ', prediction)
         return_game = 0.0
-        actual_result = test_labels[i]
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
             #print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
@@ -129,25 +96,15 @@ for i in indices:
             capital_requirement *= capital_ratio
             confidence *= capital_ratio
             if capital_requirement < available_capital:
-                amount_invested += capital_requirement
-                if actual_result < 0.5:  # LOST BET :(
-                    ret = - 100.0 * confidence
-                    if ret > 0:
-                        raise ArithmeticError("Loss 1 should be positive")
-                    num_losses = num_losses + 1
-                    amount_lost += abs(ret)
-                    num_losses1 += 1
-                else:  # WON BET
-                    ret = max_price1 * confidence
-                    if ret < 0:
-                        raise ArithmeticError("win 1 should be positive")
-                    num_wins = num_wins + 1
-                    num_wins1 += 1
-                    amount_won += abs(ret)
-                return_game += ret
-                available_capital += ret
-                num_bets += 1
-                print('Ret 1: ', ret)
+                print('make bet!')
+                print('Make bet!')
+                print('Odds: ', best_odds1)
+                print('Price: ', max_price1)
+                print('Prediction: ', prediction)
+                print('Tournament', row['tournament'])
+                print('Bet on player: ', row['player_id'])
+                print('Bet against player: ', row['opponent_id'])
+
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
             capital_requirement = abs(max_price2) * confidence
@@ -156,44 +113,12 @@ for i in indices:
             capital_requirement *= capital_ratio
             confidence *= capital_ratio
             if capital_requirement < available_capital:
-                amount_invested += capital_requirement
-                #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
-                if actual_result < 0.5:  # WON BET
-                    ret = max_price2 * confidence
-                    if ret < 0:
-                        raise ArithmeticError("win 2 should be positive")
-                    num_wins += 1
-                    num_wins2 += 1
-                    amount_won += abs(ret)
-                else:  # LOST BET :(
-                    ret = - 100.0 * confidence
-                    if ret > 0:
-                        raise ArithmeticError("loss 2 should be negative")
-                    num_losses2 += 1
-                    num_losses += 1
-                    amount_lost += abs(ret)
-                return_game += ret
-                num_bets += 1
-                available_capital += ret
-                print('Ret 2: ', ret)
-        print('Return for the match: ', return_game)
-        return_total = return_total + return_game
-        print('Num bets: ', num_bets)
-        print('Capital: ', available_capital)
-        print('Return Total: ', return_total)
+                print('Make bet!')
+                print('Odds: ', best_odds2)
+                print('Price: ', max_price2)
+                print('Prediction', prediction)
+                print('Tournament', row['tournament'])
+                print('Bet on player: ', row['opponent_id'])
+                print('Bet against player: ', row['player_id'])
 
-print('Initial Capital: ', initial_capital)
-print('Final Capital: ', available_capital)
-print('Num bets: ', num_bets)
-print('Total Return: ', return_total)
-print('Amount invested: ', amount_invested)
-print('Amount won: ', amount_won)
-print('Amount lost: ', amount_lost)
-print('Average Return Per Amount Invested: ', return_total / amount_invested)
-print('Overall Return For The Year: ', return_total / initial_capital)
-print('Num correct: ', num_wins)
-print('Num wrong: ', num_losses)
-print('Num correct1: ', num_wins1)
-print('Num wrong1: ', num_losses1)
-print('Num correct2: ', num_wins2)
-print('Num wrong2: ', num_losses2)
+

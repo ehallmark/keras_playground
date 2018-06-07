@@ -31,9 +31,9 @@ def bool_to_int(b):
         return 0.0
 
 
-def load_data(attributes, test_season=2017, start_year=1996):
+def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-    sql = pd.read_sql('''
+    sql_str = '''
         select 
             case when m.player_victory then 1.0 else 0.0 end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
@@ -156,9 +156,10 @@ def load_data(attributes, test_season=2017, start_year=1996):
         left outer join atp_matches_prior_match as prior_match_opp
             on ((m.opponent_id,m.player_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
-        and m.first_serve_attempted > 0
-
-    '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year)), conn)
+    '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
+    if not keep_nulls:
+        sql_str = sql_str + '        and m.first_serve_attempted > 0'
+    sql = pd.read_sql(sql_str, conn)
     #print('Data: ', sql[:10])
     sql = sql[attributes].astype(np.float64, errors='ignore')
     test_data = sql[sql.year == test_season]

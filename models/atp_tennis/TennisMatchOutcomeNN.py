@@ -74,9 +74,12 @@ for meta in meta_attributes:
     all_attributes.append(meta)
 
 
-def get_all_data(test_season=2017, start_year=1996):
-    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year)
+def get_all_data(test_season=2017, start_year=1996, tournament=None):
+    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
     data, test_data = all_data
+    if tournament is not None:
+        data = data[(data.tournament==tournament)&(data.year==test_season)]
+        test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
     # create inputs
     test_meta_data = test_data[meta_attributes]
     data = (np.array(data[input_attributes]), np.array(data['y']))
