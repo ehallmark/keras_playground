@@ -107,7 +107,7 @@ def load_data(attributes, test_season=2017, start_year=1990):
             coalesce(var.break_points_percent,0.5) as var_break_points_percent,
             coalesce(var_opp.break_points_percent,0.5) as opp_var_break_points_percent,
             extract(epoch from coalesce(prior_match.duration,'01:30:00'::time))::float/3600.0 as duration_prev_match,
-            extract(epoch from coalesce(prior_match_opp.duration,'02:00:00'::time))::float/3600.0 as opp_duration_prev_match,         
+            extract(epoch from coalesce(prior_match_opp.duration,'01:30:00'::time))::float/3600.0 as opp_duration_prev_match,         
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
                 else m.year - extract(year from pc.date_of_birth) end as age,
             case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
@@ -152,9 +152,9 @@ def load_data(attributes, test_season=2017, start_year=1990):
         left outer join atp_player_characteristics as pc_opp
             on ((m.opponent_id,m.tournament,m.year)=(pc_opp.player_id,pc_opp.tournament,pc_opp.year))
         left outer join atp_matches_prior_match as prior_match
-            on ((m.player_id,m.tournament,m.year)=(prior_match.player_id,prior_match.tournament,prior_match.year))
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.year))
         left outer join atp_matches_prior_match as prior_match_opp
-            on ((m.opponent_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.tournament,prior_match_opp.year))
+            on ((m.opponent_id,m.player_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
         and m.first_serve_attempted > 0
 
