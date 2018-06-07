@@ -101,7 +101,7 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['player_id'])
                 print('Bet against player: ', row['opponent_id'])
-                bets_to_make.append((row['player_id'], row['opponent_id'], capital_requirement, max_price1))
+                bets_to_make.append((row['player_id'], row['opponent_id'], confidence, capital_requirement, max_price1))
 
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
@@ -118,13 +118,13 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['opponent_id'])
                 print('Bet against player: ', row['player_id'])
-                bets_to_make.append((row['opponent_id'], row['player_id'], capital_requirement, max_price2))
+                bets_to_make.append((row['opponent_id'], row['player_id'], confidence, capital_requirement, max_price2))
 
 
 
 print('Num bets total: ', len(bets_to_make))
-print('Bet On, Bet Against, Amount to Invest, Current Price')
+print('Bet On, Bet Against, Confidence, Amount to Invest, Current Price')
 for bet_to_make in bets_to_make:
-    print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3])]))
+    print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4])]))
 
 
