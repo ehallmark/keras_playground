@@ -109,7 +109,6 @@ for i in indices:
             best_odds2 = 100.0 / (100.0 + max_price2)
         else:
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
-        best_odds2 = 1.0 - best_odds2  # reverse odds for loss
 
         if best_odds1 < 0.0 or best_odds1 > 1.0:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
@@ -121,7 +120,7 @@ for i in indices:
         return_game = 0.0
         actual_result = test_labels[i]
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
-            #print('Make BET! Advantage', prediction-best_odds1)
+            print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
             capital_requirement = 100.0 * confidence
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent*available_capital, capital_requirement))
@@ -147,7 +146,8 @@ for i in indices:
                 return_game += ret
                 available_capital += ret
                 num_bets += 1
-                print('Ret 1: ', ret)
+                print('Max price1: ', max_price1, 'Max price2: ',max_price2)
+                print('Capital Req: ', capital_requirement, 'Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
             capital_requirement = abs(max_price2) * confidence
@@ -157,7 +157,7 @@ for i in indices:
             confidence *= capital_ratio
             if capital_requirement < available_capital:
                 amount_invested += capital_requirement
-                #print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
+                print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
                 if actual_result < 0.5:  # WON BET
                     ret = max_price2 * confidence
                     if ret < 0:
@@ -175,7 +175,8 @@ for i in indices:
                 return_game += ret
                 num_bets += 1
                 available_capital += ret
-                print('Ret 2: ', ret)
+                print('Max price1: ', max_price1, 'Max price2: ', max_price2)
+                print('Capital Req: ', capital_requirement, 'Ret 2: ', ret)
         print('Return for the match: ', return_game)
         return_total = return_total + return_game
         print('Num bets: ', num_bets)
