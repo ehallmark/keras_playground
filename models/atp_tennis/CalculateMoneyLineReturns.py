@@ -129,6 +129,8 @@ for i in indices:
             confidence *= capital_ratio
             if capital_requirement <= available_capital:
                 print('Confidence: ', confidence)
+                print('Max price1: ', max_price1, 'Max price2: ',max_price2)
+                print('Capital Req: ', capital_requirement)
                 print('Make BET! Advantage', prediction - best_odds1)
                 print('Capital ratio: ', capital_ratio)
                 amount_invested += capital_requirement
@@ -151,8 +153,7 @@ for i in indices:
                 return_game += ret
                 available_capital += ret
                 num_bets += 1
-                print('Max price1: ', max_price1, 'Max price2: ',max_price2)
-                print('Capital Req: ', capital_requirement, 'Ret 1: ', ret)
+                print('Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
             capital_requirement = 100.0 * confidence
@@ -163,9 +164,11 @@ for i in indices:
             confidence *= capital_ratio
             if capital_requirement <= available_capital:
                 print('Confidence: ', confidence)
-                amount_invested += capital_requirement
+                print('Max price1: ', max_price1, 'Max price2: ', max_price2)
+                print('Capital Req: ', capital_requirement)
                 print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
                 print('Capital ratio: ', capital_ratio)
+                amount_invested += capital_requirement
                 if actual_result < 0.5:  # WON BET
                     print('WON!!')
                     ret = max_price2 * confidence
@@ -185,13 +188,12 @@ for i in indices:
                 return_game += ret
                 num_bets += 1
                 available_capital += ret
-                print('Max price1: ', max_price1, 'Max price2: ', max_price2)
-                print('Capital Req: ', capital_requirement, 'Ret 2: ', ret)
-        #print('Return for the match: ', return_game)
+                print('Ret 2: ', ret)
+        print('Return for the match: ', return_game)
         return_total = return_total + return_game
-        #print('Num bets: ', num_bets)
-        #print('Capital: ', available_capital)
-        #print('Return Total: ', return_total)
+        print('Num bets: ', num_bets)
+        print('Capital: ', available_capital)
+        print('Return Total: ', return_total)
 
 print('Initial Capital: ', initial_capital)
 print('Final Capital: ', available_capital)
