@@ -31,7 +31,7 @@ def bool_to_int(b):
         return 0.0
 
 
-def load_data(attributes, test_season=2017, start_year=2003):
+def load_data(attributes, test_season=2017, start_year=1990):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql = pd.read_sql('''
         select 
@@ -106,8 +106,8 @@ def load_data(attributes, test_season=2017, start_year=2003):
             coalesce(var_opp.second_serve_return_points_percent,0.5) as opp_var_second_serve_return_points_percent,
             coalesce(var.break_points_percent,0.5) as var_break_points_percent,
             coalesce(var_opp.break_points_percent,0.5) as opp_var_break_points_percent,
-            extract(epoch from coalesce(prior_match.duration,'00:00:00'::time))/3600.0 as duration_prev_match,
-            extract(epoch from coalesce(prior_match_opp.duration,'00:00:00'::time))/3600.0 as opp_duration_prev_match,         
+            extract(epoch from coalesce(prior_match.duration,'01:30:00'::time))::float/3600.0 as duration_prev_match,
+            extract(epoch from coalesce(prior_match_opp.duration,'02:00:00'::time))::float/3600.0 as opp_duration_prev_match,         
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
                 else m.year - extract(year from pc.date_of_birth) end as age,
             case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
