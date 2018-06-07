@@ -85,7 +85,7 @@ def get_all_data(test_season=2017, start_year=1996):
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data(test_season=2017, start_year=1996)
+    data, test_data, _ = get_all_data(test_season=2017, start_year=2000)
 
     def cell(x1,x2, n_units):
         c = Concatenate()([x1,x2])
@@ -96,8 +96,8 @@ if __name__ == '__main__':
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 256
-    num_cells = 6
+    hidden_units = 512
+    num_cells = 3
     batch_size = 256
 
     norm = BatchNormalization()(X)
