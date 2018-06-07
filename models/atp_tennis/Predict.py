@@ -123,7 +123,8 @@ for i in indices:
 
 
 print('Num bets total: ', len(bets_to_make))
+print('Bet On, Bet Against, Amount to Invest, Current Price')
 for bet_to_make in bets_to_make:
-    print('Bet on: ', bet_to_make[0], 'Best Against: ', bet_to_make[1], 'Amount to Invest: ', bet_to_make[2], 'Current price', bet_to_make[3])
+    print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3])]))
 
 
