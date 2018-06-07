@@ -120,16 +120,20 @@ for i in indices:
         return_game = 0.0
         actual_result = test_labels[i]
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
-            print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
             capital_requirement = 100.0 * confidence
+            print('Initial capital requirement1: ', capital_requirement)
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent*available_capital, capital_requirement))
             capital_ratio = capital_requirement_avail/capital_requirement
             capital_requirement *= capital_ratio
             confidence *= capital_ratio
-            if capital_requirement < available_capital:
+            if capital_requirement <= available_capital:
+                print('Confidence: ', confidence)
+                print('Make BET! Advantage', prediction - best_odds1)
+                print('Capital ratio: ', capital_ratio)
                 amount_invested += capital_requirement
                 if actual_result < 0.5:  # LOST BET :(
+                    print('LOST!!')
                     ret = - 100.0 * confidence
                     if ret > 0:
                         raise ArithmeticError("Loss 1 should be positive")
@@ -137,6 +141,7 @@ for i in indices:
                     amount_lost += abs(ret)
                     num_losses1 += 1
                 else:  # WON BET
+                    print('WON!!')
                     ret = max_price1 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 1 should be positive")
@@ -150,15 +155,19 @@ for i in indices:
                 print('Capital Req: ', capital_requirement, 'Ret 1: ', ret)
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
-            capital_requirement = abs(max_price2) * confidence
+            capital_requirement = 100.0 * confidence
+            print('Initial capital requirement1: ', capital_requirement)
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent * available_capital, capital_requirement))
             capital_ratio = capital_requirement_avail / capital_requirement
             capital_requirement *= capital_ratio
             confidence *= capital_ratio
-            if capital_requirement < available_capital:
+            if capital_requirement <= available_capital:
+                print('Confidence: ', confidence)
                 amount_invested += capital_requirement
                 print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
+                print('Capital ratio: ', capital_ratio)
                 if actual_result < 0.5:  # WON BET
+                    print('WON!!')
                     ret = max_price2 * confidence
                     if ret < 0:
                         raise ArithmeticError("win 2 should be positive")
@@ -166,6 +175,7 @@ for i in indices:
                     num_wins2 += 1
                     amount_won += abs(ret)
                 else:  # LOST BET :(
+                    print('LOST!!')
                     ret = - 100.0 * confidence
                     if ret > 0:
                         raise ArithmeticError("loss 2 should be negative")
@@ -177,11 +187,11 @@ for i in indices:
                 available_capital += ret
                 print('Max price1: ', max_price1, 'Max price2: ', max_price2)
                 print('Capital Req: ', capital_requirement, 'Ret 2: ', ret)
-        print('Return for the match: ', return_game)
+        #print('Return for the match: ', return_game)
         return_total = return_total + return_game
-        print('Num bets: ', num_bets)
-        print('Capital: ', available_capital)
-        print('Return Total: ', return_total)
+        #print('Num bets: ', num_bets)
+        #print('Capital: ', available_capital)
+        #print('Return Total: ', return_total)
 
 print('Initial Capital: ', initial_capital)
 print('Final Capital: ', available_capital)
