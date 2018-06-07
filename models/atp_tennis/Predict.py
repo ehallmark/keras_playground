@@ -49,6 +49,7 @@ max_loss_percent = 0.1
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 betting_epsilon = 0.01
+bets_to_make = []
 for i in indices:
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
@@ -75,7 +76,6 @@ for i in indices:
             best_odds2 = 100.0 / (100.0 + max_price2)
         else:
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
-        best_odds2 = 1.0 - best_odds2  # reverse odds for loss
 
         if best_odds1 < 0.0 or best_odds1 > 1.0:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
@@ -101,10 +101,11 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['player_id'])
                 print('Bet against player: ', row['opponent_id'])
+                bets_to_make.append((row['player_id'], row['opponent_id'], capital_requirement, max_price1))
 
         if max_price2 > 0 and best_odds2 < (1.0 - prediction) - betting_epsilon:
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
-            capital_requirement = abs(max_price2) * confidence
+            capital_requirement = 100.0 * confidence
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent * available_capital, capital_requirement))
             capital_ratio = capital_requirement_avail / capital_requirement
             capital_requirement *= capital_ratio
@@ -117,5 +118,12 @@ for i in indices:
                 print('Tournament', row['tournament'])
                 print('Bet on player: ', row['opponent_id'])
                 print('Bet against player: ', row['player_id'])
+                bets_to_make.append((row['opponent_id'], row['player_id'], capital_requirement, max_price2))
+
+
+
+print('Num bets total: ', len(bets_to_make))
+for bet_to_make in bets_to_make:
+    print('Bet on: ', bet_to_make[0], 'Best Against: ', bet_to_make[1], 'Amount to Invest: ', bet_to_make[2], 'Current price', bet_to_make[3])
 
 
