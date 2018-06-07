@@ -23,7 +23,7 @@ predictions = model.predict(test_data).flatten()
 
 # run betting algo
 
-betting_sites = ['Bovada']
+betting_sites = ['Bovada','5Dimes']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 betting_data = pd.read_sql('''
     select year,tournament,team1,team2,
@@ -48,19 +48,17 @@ initial_capital = 450.0
 max_loss_percent = 0.1
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
-round = 'Quarter-Finals'
 betting_epsilon = 0.01
 for i in indices:
     row = test_meta_data.iloc[i]
     prediction = predictions[i]
     # prediction = np.random.rand(1)  # test on random predictions
     bet_row = betting_data[
-        (betting_data.year == row.year) &
         (betting_data.team1 == row.player_id) &
         (betting_data.team2 == row.opponent_id) &
         (betting_data.tournament == row.tournament)
     ]
-    if bet_row.shape[0] == 1 and 'del-potro' in row['player_id']:
+    if bet_row.shape[0] == 1:
         # make betting decision
         max_price1 = np.array(bet_row[price_str+'1']).flatten()[0]
         max_price2 = np.array(bet_row[price_str+'2']).flatten()[0]
@@ -83,12 +81,11 @@ for i in indices:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
         if best_odds2 < 0.0 or best_odds2 > 1.0:
             raise ArithmeticError('Best odds2: '+str(best_odds2))
-        #print('Found best odds 1: ', best_odds1)
-        #print('Found best odds 2: ', best_odds2)
-        #print('Found prediction: ', prediction)
+        print('Found best odds 1: ', row['player_id'], best_odds1)
+        print('Found best odds 2: ', row['opponent_id'], best_odds2)
+        print('Found prediction: ', prediction)
         return_game = 0.0
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
-            #print('Make BET! Advantage', prediction-best_odds1)
             confidence = (prediction - best_odds1) * betting_minimum
             capital_requirement = 100.0 * confidence
             capital_requirement_avail = max(betting_minimum, min(max_loss_percent*available_capital, capital_requirement))

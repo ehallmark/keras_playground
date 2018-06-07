@@ -64,7 +64,10 @@ input_attributes = [
     'weight',
     'opp_weight',
     'height',
-    'opp_height'
+    'opp_height',
+    # Would lead to bad things like not being able to pre compute all match combinations
+    #'duration_prev_match',
+    #'opp_duration_prev_match'
 ]
 
 all_attributes = list(input_attributes)
@@ -99,8 +102,8 @@ if __name__ == '__main__':
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 512
-    num_cells = 3
+    hidden_units = 256
+    num_cells = 4
     batch_size = 256
 
     norm = BatchNormalization()(X)
