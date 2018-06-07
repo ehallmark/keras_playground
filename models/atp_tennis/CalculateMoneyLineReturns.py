@@ -76,9 +76,9 @@ num_wins1 = 0
 num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
-betting_minimum = 5.0
+betting_minimum = 10.0
 initial_capital = 450.0
-max_loss_percent = 0.1
+max_loss_percent = 0.05
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 shuffle(indices)

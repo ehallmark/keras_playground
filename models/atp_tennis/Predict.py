@@ -43,9 +43,9 @@ betting_data = pd.read_sql('''
     Use avg_price for the 'average' price
 '''
 price_str = 'max_price'
-betting_minimum = 5.0
+betting_minimum = 10.0
 initial_capital = 450.0
-max_loss_percent = 0.1
+max_loss_percent = 0.05
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 betting_epsilon = 0.01
