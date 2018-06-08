@@ -83,6 +83,8 @@ def get_all_data(test_season=2017, start_year=1996, tournament=None):
     if tournament is not None:
         data = data[(data.tournament==tournament)&(data.year==test_season)]
         test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
+        #test_data = test_data.sample(frac=1.0, replace=False)
+        #print("TEST DATA: ", test_data)
     # create inputs
     test_meta_data = test_data[meta_attributes]
     data = (np.array(data[input_attributes]), np.array(data['y']))

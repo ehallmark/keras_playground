@@ -76,7 +76,6 @@ for i in indices:
             best_odds2 = 100.0 / (100.0 + max_price2)
         else:
             best_odds2 = -1.0 * (max_price2 / (-1.0 * max_price2 + 100.0))
-
         if best_odds1 < 0.0 or best_odds1 > 1.0:
             raise ArithmeticError('Best odds1: ' + str(best_odds1))
         if best_odds2 < 0.0 or best_odds2 > 1.0:
@@ -84,7 +83,6 @@ for i in indices:
         print('Found best odds 1: ', row['player_id'], best_odds1)
         print('Found best odds 2: ', row['opponent_id'], best_odds2)
         print('Found prediction: ', prediction)
-        return_game = 0.0
         if max_price1 > 0 and best_odds1 < prediction - betting_epsilon:
             confidence = (prediction - best_odds1) * betting_minimum
             initial_confidence = confidence
