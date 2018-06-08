@@ -15,11 +15,11 @@ test_data_2018 = all_data_2018[1][0]
 
 means = test_data.mean(axis=0)
 means_2018 = test_data_2018.mean(axis=0)
-vars = test_data.var(axis=0)
+var = test_data.var(axis=0)
 vars_2018 = test_data_2018.var(axis=0)
 
 average_diff = means_2018-means
-var_diff = vars_2018 - vars
+var_diff = vars_2018 - var
 
 print('Avg avg diff: ', np.abs(average_diff).mean())
 print('Var avg diff: ', np.abs(var_diff).mean(0))
@@ -28,3 +28,10 @@ for i in range(len(input_attributes)):
     print('Mean:', means[i], ' Mean2:', means_2018[i])
     print('Avg diff: ', average_diff[i])
     print('Var diff: ', var_diff[i])
+
+if np.abs(var_diff).mean(0)>1000:
+    print('WARNING: MODEL LIKELY HAS ERRORS. VERY LARGE VARIANCE BETWEEN SAMPLES...')
+elif np.abs(average_diff).mean() > 10:
+    print('WARNING: MODEL LIKELY HAS ERRORS. VERY LARGE MEAN DIFFERENCE BETWEEN SAMPLES...')
+else:
+    print('PASSED VARIANCE TEST AND MEAN TEST!')

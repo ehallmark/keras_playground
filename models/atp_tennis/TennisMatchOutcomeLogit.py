@@ -208,8 +208,8 @@ if __name__ == '__main__':
         'opp_lefty',
         'weight','opp_weight',
         'height','opp_height',
-        'duration_prev_match',
-        'opp_duration_prev_match'
+        #'duration_prev_match',
+        #'opp_duration_prev_match'
     ]
     all_attributes = list(input_attributes)
     all_attributes.append('y')

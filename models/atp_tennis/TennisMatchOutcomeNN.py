@@ -98,19 +98,19 @@ if __name__ == '__main__':
     def cell(x1,x2, n_units):
         c = Concatenate()([x1,x2])
         c = BatchNormalization()(c)
-        c = Dense(n_units, activation='relu')(c)
-        c = Dropout(0.5)(c)
+        c = Dense(n_units, activation='tanh')(c)
+        c = Dropout(0.25)(c)
         return c
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 256
-    num_cells = 4
+    hidden_units = 1000
+    num_cells = 1
     batch_size = 256
 
     norm = BatchNormalization()(X)
-    model1 = Dense(hidden_units, activation='relu')(norm)
-    model2 = Dense(hidden_units, activation='relu')(norm)
+    model1 = Dense(hidden_units, activation='tanh')(norm)
+    model2 = Dense(hidden_units, activation='tanh')(norm)
     for i in range(num_cells):
         model1 = cell(model1,model2,hidden_units)
         model2 = cell(model2,model1,hidden_units)
