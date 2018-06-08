@@ -10,7 +10,7 @@ model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-test_year = 2017  # IMPORTANT!!
+test_year = 2018  # IMPORTANT!!
 all_data = tennis_model.get_all_data(test_year)
 test_meta_data = all_data[2]
 test_data = all_data[1]
@@ -42,7 +42,7 @@ create table atp_tennis_betting_link (
 print('Test Meta Data Size: ', test_meta_data.shape[0])
 print('Predictions Size: ', len(binary_predictions))
 
-betting_sites = ['Bovada']
+betting_sites = ['Bovada','5Dimes','BetOnline']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 betting_data = pd.read_sql('''
     select year,tournament,team1,team2,
@@ -63,13 +63,21 @@ betting_data = pd.read_sql('''
 '''
 price_str = 'max_price'
 
-betting_epsilon = 0.01
+
+def betting_epsilon(price):
+    if price < 0:
+        return 0.25*-price
+    return 0.1*float(abs(price))/100.0
+
+
 print(betting_data[0:10])
 return_total = 0.0
 num_bets = 0
 num_wins = 0
 num_losses = 0
 amount_invested = 0
+max_price_plus = 300
+max_price_minus = -200  # -300
 amount_won = 0
 amount_lost = 0
 num_wins1 = 0
@@ -77,7 +85,7 @@ num_wins2 = 0
 num_losses1 = 0
 num_losses2 = 0
 betting_minimum = 10.0
-initial_capital = 450.0
+initial_capital = 1000.0
 max_loss_percent = 0.05
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
@@ -121,7 +129,7 @@ for i in indices:
         #print('Found prediction: ', prediction)
         return_game = 0.0
         actual_result = test_labels[i]
-        if best_odds1 < prediction - betting_epsilon:
+        if max_price_minus < max_price1 < max_price_plus and best_odds1 < prediction - betting_epsilon(max_price1):
             confidence = (prediction - best_odds1) * betting_minimum
             if is_under1:
                 capital_requirement = -max_price1 * confidence
@@ -165,7 +173,7 @@ for i in indices:
                 available_capital += ret
                 num_bets += 1
                 print('Ret 1: ', ret)
-        if best_odds2 < (1.0 - prediction) - betting_epsilon:
+        if max_price_minus < max_price2 < max_price_plus and best_odds2 < (1.0 - prediction) - betting_epsilon(max_price2):
             confidence = (1.0 - prediction - best_odds2) * betting_minimum
             if is_under2:
                 capital_requirement = -max_price2 * confidence

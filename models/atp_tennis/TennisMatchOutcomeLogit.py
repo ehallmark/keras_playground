@@ -42,6 +42,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.player_id as player_id,
             m.opponent_id as opponent_id,
             m.tournament as tournament,
+            case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
+                then 1.0 else 0.0 end as grand_slam,
             coalesce(h2h.prior_encounters,0) as h2h_prior_encounters,
             coalesce(h2h.prior_victories,0) as h2h_prior_victories,
             coalesce(h2h.prior_losses,0) as h2h_prior_losses,
@@ -51,12 +53,14 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(prev_year.prior_losses,0) as prev_year_prior_losses,
             coalesce(prev_year.prior_victories,0)-coalesce(prev_year.prior_losses,0) as prev_year_prior_win_percent,        
             coalesce(tourney_hist.prior_encounters,0) as tourney_hist_prior_encounters,
+            coalesce(tourney_hist.average_round,0) as tourney_hist_avg_round,
             coalesce(tourney_hist.prior_victories,0) as tourney_hist_prior_victories,
             coalesce(tourney_hist.prior_victories,0)-coalesce(tourney_hist.prior_losses,0) as tourney_hist_prior_win_percent,
             coalesce(tourney_hist.prior_losses,0) as tourney_hist_prior_losses,
             coalesce(prev_year_opp.prior_encounters,0) as opp_prev_year_prior_encounters,
             coalesce(prev_year_opp.prior_victories,0) as opp_prev_year_prior_victories,
             coalesce(prev_year_opp.prior_losses,0) as opp_prev_year_prior_losses,
+            coalesce(tourney_hist_opp.average_round,0) as opp_tourney_hist_avg_round,
             coalesce(prev_year_opp.prior_victories,0)-coalesce(prev_year_opp.prior_losses,0) as opp_prev_year_prior_win_percent,        
             coalesce(tourney_hist_opp.prior_encounters,0) as opp_tourney_hist_prior_encounters,
             coalesce(tourney_hist_opp.prior_victories,0) as opp_tourney_hist_prior_victories,
@@ -208,8 +212,8 @@ if __name__ == '__main__':
         'opp_lefty',
         'weight','opp_weight',
         'height','opp_height',
-        #'duration_prev_match',
-        #'opp_duration_prev_match'
+        'duration_prev_match',
+        'opp_duration_prev_match'
     ]
     all_attributes = list(input_attributes)
     all_attributes.append('y')

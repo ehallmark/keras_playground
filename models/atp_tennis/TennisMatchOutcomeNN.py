@@ -18,28 +18,28 @@ def test_model(model, x, y):
 
 
 input_attributes = [
-    'mean_return_points_made',
-    'mean_opp_return_points_made',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
     'mean_second_serve_points_made',
     'mean_opp_second_serve_points_made',
     'mean_first_serve_points_made',
     'mean_opp_first_serve_points_made',
-    'mean_break_points_made',
-    'mean_opp_break_points_made',
-    'mean_break_points_saved',
-    'mean_opp_break_points_saved',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
+    #'mean_break_points_saved',
+    #'mean_opp_break_points_saved',
     'clay',
     'grass',
     'var_first_serve_points_percent',
     'opp_var_first_serve_points_percent',
     'var_second_serve_points_percent',
     'opp_var_second_serve_points_percent',
-    'var_break_points_saved_percent',
-    'opp_var_break_points_saved_percent',
+    #'var_break_points_saved_percent',
+    #'opp_var_break_points_saved_percent',
     'var_first_serve_return_points_percent',
-    'opp_var_first_serve_return_points_percent',
-    'var_second_serve_return_points_percent',
-    'opp_var_second_serve_return_points_percent',
+    #'opp_var_first_serve_return_points_percent',
+    #'var_second_serve_return_points_percent',
+    #'opp_var_second_serve_return_points_percent',
     'var_break_points_percent',
     'opp_var_break_points_percent',
     'h2h_prior_win_percent',
@@ -49,8 +49,8 @@ input_attributes = [
     'tourney_hist_prior_win_percent',
     'tourney_hist_prior_encounters',
     'opp_tourney_hist_prior_encounters',
-    'previous_tournament_round',
-    'opp_previous_tournament_round',
+    #'previous_tournament_round',
+    #'opp_previous_tournament_round',
     'tiebreak_win_percent',
     'opp_tiebreak_win_percent',
     'surface_experience',
@@ -59,15 +59,15 @@ input_attributes = [
     'opp_experience',
     'age',
     'opp_age',
-    'lefty',
-    'opp_lefty',
-    'weight',
-    'opp_weight',
+    #'lefty',
+    #'opp_lefty',
+    #'weight',
+    #'opp_weight',
     'height',
     'opp_height',
     # Would lead to bad things like not being able to pre compute all match combinations
-    #'duration_prev_match',
-    #'opp_duration_prev_match'
+    'duration_prev_match',
+    'opp_duration_prev_match'
 ]
 
 all_attributes = list(input_attributes)
@@ -95,29 +95,27 @@ def get_all_data(test_season=2017, start_year=1996, tournament=None):
 if __name__ == '__main__':
     data, test_data, _ = get_all_data(test_season=2017, start_year=2000)
 
-    def cell(x1,x2, n_units):
-        c = Concatenate()([x1,x2])
-        c = BatchNormalization()(c)
+    def cell(x1, n_units):
+        c = BatchNormalization()(x1)
         c = Dense(n_units, activation='tanh')(c)
         c = Dropout(0.25)(c)
         return c
 
     X = Input((len(input_attributes),))
 
-    hidden_units = 1000
-    num_cells = 1
-    batch_size = 256
+    hidden_units = 128
+    num_cells = 8
+    batch_size = 64
 
     norm = BatchNormalization()(X)
-    model1 = Dense(hidden_units, activation='tanh')(norm)
-    model2 = Dense(hidden_units, activation='tanh')(norm)
+    model = Dense(hidden_units, activation='tanh')(norm)
     for i in range(num_cells):
-        model1 = cell(model1,model2,hidden_units)
-        model2 = cell(model2,model1,hidden_units)
+        model = cell(model,hidden_units)
 
-    model = Dense(1, activation='sigmoid')(model2)
+    model = Dense(hidden_units*2,activation='tanh')(model)
+    model = Dense(1, activation='sigmoid')(model)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
 
     #model_file = 'tennis_match_keras_nn.h5'
     #model_file = 'tennis_match_keras_nn_v2.h5'
