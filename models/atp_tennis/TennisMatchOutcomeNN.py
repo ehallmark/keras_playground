@@ -67,6 +67,10 @@ input_attributes = [
     'opp_height',
     'grand_slam',
     'round',
+    'mean_duration',
+    'mean_opp_duration',
+    'var_duration',
+    'var_opp_duration',
     # Would lead to bad things like not being able to pre compute all match combinations
     'duration_prev_match',
     'opp_duration_prev_match'
@@ -117,7 +121,7 @@ if __name__ == '__main__':
 
     model = Dense(1, activation='sigmoid')(model)
     model = Model(inputs=X, outputs=model)
-    model.compile(optimizer=Adam(lr=0.01, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
     #model_file = 'tennis_match_keras_nn.h5'
     #model_file = 'tennis_match_keras_nn_v2.h5'
