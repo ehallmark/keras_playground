@@ -53,19 +53,25 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(prev_year.prior_losses,0) as prev_year_prior_losses,
             coalesce(prev_year.prior_victories,0)-coalesce(prev_year.prior_losses,0) as prev_year_prior_win_percent,        
             coalesce(tourney_hist.prior_encounters,0) as tourney_hist_prior_encounters,
-            coalesce(tourney_hist.average_round,0) as tourney_hist_avg_round,
+            coalesce(tourney_hist.avg_round,0) as tourney_hist_avg_round,
+            coalesce(prev_year.avg_round,0) as prev_year_avg_round,
             coalesce(tourney_hist.prior_victories,0) as tourney_hist_prior_victories,
             coalesce(tourney_hist.prior_victories,0)-coalesce(tourney_hist.prior_losses,0) as tourney_hist_prior_win_percent,
             coalesce(tourney_hist.prior_losses,0) as tourney_hist_prior_losses,
             coalesce(prev_year_opp.prior_encounters,0) as opp_prev_year_prior_encounters,
             coalesce(prev_year_opp.prior_victories,0) as opp_prev_year_prior_victories,
             coalesce(prev_year_opp.prior_losses,0) as opp_prev_year_prior_losses,
-            coalesce(tourney_hist_opp.average_round,0) as opp_tourney_hist_avg_round,
+            coalesce(tourney_hist_opp.avg_round,0) as opp_tourney_hist_avg_round,
+            coalesce(prev_year_opp.avg_round,0) as opp_prev_year_avg_round,
             coalesce(prev_year_opp.prior_victories,0)-coalesce(prev_year_opp.prior_losses,0) as opp_prev_year_prior_win_percent,        
             coalesce(tourney_hist_opp.prior_encounters,0) as opp_tourney_hist_prior_encounters,
             coalesce(tourney_hist_opp.prior_victories,0) as opp_tourney_hist_prior_victories,
             coalesce(tourney_hist_opp.prior_victories,0)-coalesce(tourney_hist_opp.prior_losses,0) as opp_tourney_hist_prior_win_percent,
             coalesce(tourney_hist_opp.prior_losses,0) as opp_tourney_hist_prior_losses,
+            coalesce(mean.duration,90.0) as mean_duration,
+            coalesce(mean_opp.duration,90.0) as mean_opp_duration,
+            coalesce(var.duration,1000.0) as var_duration,
+            coalesce(var_opp.duration,1000.0) as var_opp_duration,
             coalesce(mean.first_serve_points_made, 0) as mean_first_serve_points_made,
             coalesce(mean_opp.first_serve_points_made, 0) as mean_opp_first_serve_points_made,
             coalesce(mean.second_serve_points_made, 0) as mean_second_serve_points_made,
@@ -96,20 +102,20 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(pc_opp.height,(select avg_height from avg_player_characteristics)) as opp_height,
             coalesce(pc.weight,(select avg_weight from avg_player_characteristics)) as weight,
             coalesce(pc_opp.weight,(select avg_weight from avg_player_characteristics)) as opp_weight,
-            coalesce(var.first_serve_percent,0.5) as var_first_serve_percent,
-            coalesce(var_opp.first_serve_percent,0.5) as opp_var_first_serve_percent,
-            coalesce(var.first_serve_points_percent,0.5) as var_first_serve_points_percent,
-            coalesce(var_opp.first_serve_points_percent,0.5) as opp_var_first_serve_points_percent,
-            coalesce(var.second_serve_points_percent,0.5) as var_second_serve_points_percent,
-            coalesce(var_opp.second_serve_points_percent,0.5) as opp_var_second_serve_points_percent,
-            coalesce(var.break_points_saved_percent,0.5) as var_break_points_saved_percent,
-            coalesce(var_opp.break_points_saved_percent,0.5) as opp_var_break_points_saved_percent,
-            coalesce(var.first_serve_return_points_percent,0.5) as var_first_serve_return_points_percent,
-            coalesce(var_opp.first_serve_return_points_percent,0.5) as opp_var_first_serve_return_points_percent,
-            coalesce(var.second_serve_return_points_percent,0.5) as var_second_serve_return_points_percent,
-            coalesce(var_opp.second_serve_return_points_percent,0.5) as opp_var_second_serve_return_points_percent,
-            coalesce(var.break_points_percent,0.5) as var_break_points_percent,
-            coalesce(var_opp.break_points_percent,0.5) as opp_var_break_points_percent,
+            coalesce(var.first_serve_percent,0.05) as var_first_serve_percent,
+            coalesce(var_opp.first_serve_percent,0.05) as opp_var_first_serve_percent,
+            coalesce(var.first_serve_points_percent,0.05) as var_first_serve_points_percent,
+            coalesce(var_opp.first_serve_points_percent,0.05) as opp_var_first_serve_points_percent,
+            coalesce(var.second_serve_points_percent,0.05) as var_second_serve_points_percent,
+            coalesce(var_opp.second_serve_points_percent,0.05) as opp_var_second_serve_points_percent,
+            coalesce(var.break_points_saved_percent,0.05) as var_break_points_saved_percent,
+            coalesce(var_opp.break_points_saved_percent,0.05) as opp_var_break_points_saved_percent,
+            coalesce(var.first_serve_return_points_percent,0.05) as var_first_serve_return_points_percent,
+            coalesce(var_opp.first_serve_return_points_percent,0.05) as opp_var_first_serve_return_points_percent,
+            coalesce(var.second_serve_return_points_percent,0.05) as var_second_serve_return_points_percent,
+            coalesce(var_opp.second_serve_return_points_percent,0.05) as opp_var_second_serve_return_points_percent,
+            coalesce(var.break_points_percent,0.05) as var_break_points_percent,
+            coalesce(var_opp.break_points_percent,0.05) as opp_var_break_points_percent,
             extract(epoch from coalesce(prior_match.duration,'01:30:00'::time))::float/3600.0 as duration_prev_match,
             extract(epoch from coalesce(prior_match_opp.duration,'01:30:00'::time))::float/3600.0 as opp_duration_prev_match,         
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
@@ -119,7 +125,15 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when pc.turned_pro is null then (select avg_experience from avg_player_characteristics)
                 else m.year - pc.turned_pro end as experience,
             case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
-                else m.year - pc_opp.turned_pro end as opp_experience
+                else m.year - pc_opp.turned_pro end as opp_experience,
+            case when m.round='Round of 64' then 1
+                when m.round='Round of 32' then 2
+                when m.round='Round of 16' then 3
+                when m.round='Quarter-Finals' then 4
+                when m.round='Semi-Finals' then 5
+                when m.round='Finals' then 6
+                else 0
+            end as round
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -176,20 +190,34 @@ if __name__ == '__main__':
     input_attributes = [
         #'clay',
         #'grass',
-        #'mean_return_points_made',
-        #'mean_opp_return_points_made',
+        'mean_duration',
+        'mean_opp_duration',
+        'var_duration',
+        'var_opp_duration',
+        'opp_var_first_serve_points_percent',
+        'var_first_serve_points_percent',
+        'opp_var_first_serve_percent',
+        'var_first_serve_percent',
+        'opp_var_second_serve_points_percent',
+        'var_second_serve_points_percent',
+        'mean_return_points_made',
+        'mean_opp_return_points_made',
         'mean_second_serve_points_made',
         'mean_opp_second_serve_points_made',
-        #'mean_first_serve_points_made',
-        #'mean_opp_first_serve_points_made',
+        'mean_first_serve_points_made',
+        'mean_opp_first_serve_points_made',
         'h2h_prior_win_percent',
         #'h2h_prior_encounters',
         #'h2h_prior_victories',
         #'prev_year_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
+        'prev_year_avg_round',
+        'opp_prev_year_avg_round',
+        'opp_tourney_hist_avg_round',
+        'tourney_hist_avg_round',
         #'tourney_hist_prior_win_percent',
-        #'tourney_hist_prior_victories',
+        #'grand_slam',
         'tourney_hist_prior_encounters',
         'opp_tourney_hist_prior_encounters',
         #'first_serve_made',
@@ -219,7 +247,7 @@ if __name__ == '__main__':
     all_attributes.append('y')
     all_attributes.append('year')
 
-    sql, test_data = load_data(all_attributes)
+    sql, test_data = load_data(all_attributes, start_year=2010)
     print('Attrs: ', sql[input_attributes])
 
     # model to predict the total score (h_pts + a_pts)

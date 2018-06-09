@@ -65,9 +65,10 @@ price_str = 'max_price'
 
 
 def betting_epsilon(price):
+    return 0.05
     if price < 0:
-        return 0.25*-price
-    return 0.1*float(abs(price))/100.0
+        return 0.1*-price/100.0
+    return 0.25 #*float(abs(price))/100.0
 
 
 print(betting_data[0:10])
@@ -77,7 +78,7 @@ num_wins = 0
 num_losses = 0
 amount_invested = 0
 max_price_plus = 300
-max_price_minus = -200  # -300
+max_price_minus = 0
 amount_won = 0
 amount_lost = 0
 num_wins1 = 0
