@@ -72,6 +72,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(mean_opp.duration,90.0) as mean_opp_duration,
             coalesce(var.duration,1000.0) as var_duration,
             coalesce(var_opp.duration,1000.0) as var_opp_duration,
+            coalesce(h2h2.both_win, 0) as prev_h2h2_both_win,
+            coalesce(h2h2.both_lost, 0) as prev_h2h2_both_lost,
+            coalesce(h2h2.wins_player, 0) as prev_h2h2_wins_player,
+            coalesce(h2h2.wins_opponent,0) as prev_h2h2_wins_opponent,
             coalesce(mean.first_serve_points_made, 0) as mean_first_serve_points_made,
             coalesce(mean_opp.first_serve_points_made, 0) as mean_opp_first_serve_points_made,
             coalesce(mean.second_serve_points_made, 0) as mean_second_serve_points_made,
@@ -133,7 +137,9 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
                 when m.round='Semi-Finals' then 5
                 when m.round='Finals' then 6
                 else 0
-            end as round
+            end as round,
+        coalesce(elo.score1,0) as elo_score,
+        coalesce(elo.score2,0) as opp_elo_score
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -173,6 +179,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.year))
         left outer join atp_matches_prior_match as prior_match_opp
             on ((m.opponent_id,m.player_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.year))
+        left outer join atp_matches_prior_h2h_level2 as h2h2
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h2.player_id,h2h2.opponent_id,h2h2.tournament,h2h2.year))
+        left outer join atp_player_opponent_score as elo
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(elo.player_id,elo.opponent_id,elo.tournament,elo.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
@@ -190,24 +200,28 @@ if __name__ == '__main__':
     input_attributes = [
         #'clay',
         #'grass',
+        'prev_h2h2_both_win',
+        'prev_h2h2_both_lost',
+        'prev_h2h2_wins_player',
+        'prev_h2h2_wins_opponent',
         'mean_duration',
         'mean_opp_duration',
-        'var_duration',
-        'var_opp_duration',
-        'opp_var_first_serve_points_percent',
-        'var_first_serve_points_percent',
-        'opp_var_first_serve_percent',
-        'var_first_serve_percent',
-        'opp_var_second_serve_points_percent',
-        'var_second_serve_points_percent',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
-        'mean_second_serve_points_made',
-        'mean_opp_second_serve_points_made',
-        'mean_first_serve_points_made',
-        'mean_opp_first_serve_points_made',
+        #'var_duration',
+        #'var_opp_duration',
+        #'opp_var_first_serve_points_percent',
+        #'var_first_serve_points_percent',
+        #'opp_var_first_serve_percent',
+        #'var_first_serve_percent',
+        #'opp_var_second_serve_points_percent',
+        #'var_second_serve_points_percent',
+        #'mean_return_points_made',
+        #'mean_opp_return_points_made',
+        #'mean_second_serve_points_made',
+        #'mean_opp_second_serve_points_made',
+        #'mean_first_serve_points_made',
+        #'mean_opp_first_serve_points_made',
         'h2h_prior_win_percent',
-        #'h2h_prior_encounters',
+        'h2h_prior_encounters',
         #'h2h_prior_victories',
         #'prev_year_prior_win_percent',
         'prev_year_prior_encounters',
@@ -241,13 +255,15 @@ if __name__ == '__main__':
         'weight','opp_weight',
         'height','opp_height',
         'duration_prev_match',
-        'opp_duration_prev_match'
+        'opp_duration_prev_match',
+        'elo_score',
+        'opp_elo_score'
     ]
     all_attributes = list(input_attributes)
     all_attributes.append('y')
     all_attributes.append('year')
 
-    sql, test_data = load_data(all_attributes, start_year=2010)
+    sql, test_data = load_data(all_attributes, start_year=2003)
     print('Attrs: ', sql[input_attributes])
 
     # model to predict the total score (h_pts + a_pts)
