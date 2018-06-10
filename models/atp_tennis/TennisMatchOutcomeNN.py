@@ -6,15 +6,12 @@ import numpy as np
 
 
 def test_model(model, x, y):
-    predictions = model.predict(x).flatten()
-    binary_predictions = (predictions >= 0.5).astype(int)
-    binary_errors = np.array(y) != np.array(binary_predictions)
-    binary_errors = binary_errors.astype(int)
-    errors = np.array(y - np.array(predictions))
-    binary_correct = predictions.shape[0] - int(binary_errors.sum())
-    binary_percent = float(binary_correct) / predictions.shape[0]
-    avg_error = np.mean(np.abs(errors), -1)
-    return binary_correct, y.shape[0], binary_percent, avg_error
+    predictions = model.predict(x)
+    avg_error = 0
+    avg_error += np.mean(np.abs(np.array(y[0]) - np.array(predictions[0])))
+    avg_error += np.mean(np.abs(np.array(y[1]) - np.array(predictions[1])))
+    avg_error /= 2
+    return avg_error
 
 
 input_attributes = [
@@ -45,7 +42,7 @@ input_attributes = [
     'round',
     'mean_duration',
     # Would lead to bad things like not being able to pre compute all match combinations
-    'duration_prev_match',
+    #'duration_prev_match',
     'elo_score'
 ]
 
@@ -78,12 +75,13 @@ opp_input_attributes = [
     'round',
     'mean_opp_duration',
     # Would lead to bad things like not being able to pre compute all match combinations
-    'opp_duration_prev_match',
+    #'opp_duration_prev_match',
     'opp_elo_score'
 ]
 
 all_attributes = list(input_attributes)
 all_attributes.append('y')
+all_attributes.append('spread')
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
     all_attributes.append(meta)
@@ -106,35 +104,35 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
     # create inputs
     test_meta_data = test_data[meta_attributes]
     print("Data: ", data[input_attributes])
-    data = ([np.array(data[input_attributes]), np.array(data[opp_input_attributes])], np.array(data['y']))
-    test_data = ([np.array(test_data[input_attributes]), np.array(test_data[opp_input_attributes])], np.array(test_data['y']))
+    data = ([np.array(data[input_attributes]), np.array(data[opp_input_attributes])], [np.array(data['y']), np.array(data['spread'])])
+    test_data = ([np.array(test_data[input_attributes]), np.array(test_data[opp_input_attributes])], [np.array(test_data['y']), np.array(test_data['spread'])])
     return data, test_data, test_meta_data
 
 
 if __name__ == '__main__':
     data, test_data, _ = get_all_data(test_season=2017, start_year=1990)
 
-    def cell(x1, norm1, x2, norm2, n_units):
+    def cell(x1, x2, n_units):
         concat = Concatenate()
         batch_norm = BatchNormalization()
         dense = Dense(n_units, activation='tanh')
         dropout = Dropout(0.5)
-        norm1 = concat([x1, norm1])
-        norm1 = batch_norm(norm1)
+        #norm1 = concat([x1, norm1])
+        norm1 = batch_norm(x1)
         norm1 = dense(norm1)
         norm1 = dropout(norm1)
-        norm2 = concat([x2, norm2])
-        norm2 = batch_norm(norm2)
+        #norm2 = concat([x2, norm2])
+        norm2 = batch_norm(x2)
         norm2 = dense(norm2)
         norm2 = dropout(norm2)
-        return norm1, x1, norm2, x2
+        return norm1, norm2
 
     X1 = Input((len(input_attributes),))
     X2 = Input((len(opp_input_attributes),))
 
     hidden_units = 128 #len(input_attributes)*2
-    num_cells = 6
-    batch_size = 256
+    num_cells = 4
+    batch_size = 128
 
     norm = BatchNormalization()
     norm1 = norm(X1)
@@ -143,34 +141,37 @@ if __name__ == '__main__':
     model1 = model(norm1)
     model2 = model(norm2)
     for i in range(num_cells):
-        model1, norm1, model2, norm2 = cell(model1, norm1, model2, norm2, hidden_units)
+        model1, model2 = cell(model1, model2, hidden_units)
 
+    model = Dense(hidden_units, activation='tanh')
+    _model1 = model(model1)
+    _model2 = model(model2)
+    model = Add()([_model2, Lambda(lambda x: -x)(_model1)])
+    _model = Dense(1, activation='sigmoid')(model)
     model = Dense(hidden_units, activation='tanh')
     model1 = model(model1)
     model2 = model(model2)
     model = Add()([model2, Lambda(lambda x: -x)(model1)])
-    model = Dense(1, activation='sigmoid')(model)
-    model = Model(inputs=[X1, X2], outputs=model)
-    model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
+    model = Dense(1, activation='linear')(model)
+    model = Model(inputs=[X1, X2], outputs=[_model, model])
+    model.compile(optimizer=Adam(lr=0.001, decay=0.1), loss='mean_squared_error', metrics=['accuracy'])
     #model_file = 'tennis_match_keras_nn.h5'
     #model_file = 'tennis_match_keras_nn_v2.h5'
     model_file = 'tennis_match_keras_nn_v3.h5'
-    prev_accuracy = 0.0
-    best_accuracy = 0.0
+    prev_error = None
+    best_error = None
     for i in range(50):
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data, shuffle=True)
-        binary_correct, n, binary_percent, avg_error = test_model(model, test_data[0], test_data[1])
-        print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-              ' (' + to_percentage(binary_percent) + ')')
+        avg_error = test_model(model, test_data[0], test_data[1])
         print('Average error: ', to_percentage(avg_error))
-        if binary_percent > best_accuracy:
-            best_accuracy = binary_percent
+        if best_error is None or best_error > avg_error:
+            best_error = avg_error
             # save
             model.save(model_file)
             print('Saved.')
-        prev_accuracy = binary_percent
+        prev_error = avg_error
 
     print(model.summary())
-    print('Most recent accuracy: ', prev_accuracy)
-    print('Best accuracy: ', best_accuracy)
+    print('Most recent model error: ', prev_error)
+    print('Best model error: ', best_error)
 

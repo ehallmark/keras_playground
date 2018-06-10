@@ -35,6 +35,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 
+            m.games_won-m.games_against as spread,
             case when m.player_victory then 1.0 else 0.0 end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
@@ -200,8 +201,8 @@ if __name__ == '__main__':
     input_attributes = [
         #'clay',
         #'grass',
-        'prev_h2h2_both_win',
-        'prev_h2h2_both_lost',
+        #'prev_h2h2_both_win',
+        #'prev_h2h2_both_lost',
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
         'mean_duration',
@@ -221,56 +222,58 @@ if __name__ == '__main__':
         #'mean_first_serve_points_made',
         #'mean_opp_first_serve_points_made',
         'h2h_prior_win_percent',
-        'h2h_prior_encounters',
+        #'h2h_prior_encounters',
         #'h2h_prior_victories',
         #'prev_year_prior_win_percent',
-        'prev_year_prior_encounters',
-        'opp_prev_year_prior_encounters',
-        'prev_year_avg_round',
-        'opp_prev_year_avg_round',
-        'opp_tourney_hist_avg_round',
-        'tourney_hist_avg_round',
+        #'prev_year_prior_encounters',
+        #'opp_prev_year_prior_encounters',
+        #'prev_year_avg_round',
+        #'opp_prev_year_avg_round',
+        #'opp_tourney_hist_avg_round',
+        #'tourney_hist_avg_round',
         #'tourney_hist_prior_win_percent',
         #'grand_slam',
-        'tourney_hist_prior_encounters',
-        'opp_tourney_hist_prior_encounters',
+        #'tourney_hist_prior_encounters',
+        #'opp_tourney_hist_prior_encounters',
         #'first_serve_made',
         #'first_serve_attempted',
         #'return_points_won',
         #'return_points_attempted',
         #'mean_break_points_made',
         #'mean_opp_break_points_made',
-        'previous_tournament_round',
-        'opp_previous_tournament_round',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
+        #'previous_tournament_round',
+        #'opp_previous_tournament_round',
+        #'tiebreak_win_percent',
+        #'opp_tiebreak_win_percent',
         'surface_experience',
         'opp_surface_experience',
         'experience',
         'opp_experience',
-        'age',
-        'opp_age',
-        'lefty',
-        'opp_lefty',
-        'weight','opp_weight',
-        'height','opp_height',
+        #'age',
+        #'opp_age',
+        #'lefty',
+        #'opp_lefty',
+        #'weight','opp_weight',
+        #'height','opp_height',
         'duration_prev_match',
         'opp_duration_prev_match',
         'elo_score',
         'opp_elo_score'
     ]
+
+    y = 'spread'
     all_attributes = list(input_attributes)
-    all_attributes.append('y')
+    all_attributes.append(y)
     all_attributes.append('year')
 
     sql, test_data = load_data(all_attributes, start_year=2003)
-    print('Attrs: ', sql[input_attributes])
+    print('Attrs: ', sql[all_attributes][0:20])
 
     # model to predict the total score (h_pts + a_pts)
-    results = smf.logit('y ~ '+'+'.join(input_attributes), data=sql).fit()
+    results = smf.ols(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
     print(results.summary())
 
-    binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data['y'])
+    binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
 
     print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
           ' ('+to_percentage(binary_percent)+')')

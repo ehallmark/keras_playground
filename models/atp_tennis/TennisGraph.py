@@ -30,10 +30,7 @@ edges = [
 model = FactorGraph(edges)
 
 factors = [
-    ContinuousFactor(('h2h',), lambda x: ),
-
-}
-
+]
 
 model.add_factors(factors)
 
