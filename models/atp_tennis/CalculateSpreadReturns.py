@@ -33,19 +33,13 @@ betting_data = pd.read_sql('''
     from atp_tennis_betting_link_spread 
     where year={{YEAR}} and book_name in ({{BOOK_NAMES}})
 '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
-'''
-    Use max_price for the 'best' price,
-    Use min_price for the 'worst' price,
-    Use avg_price for the 'average' price
-'''
-price_str = 'max_price'
+
+price_str = 'price'
 
 
+# could be a function of price
 def betting_epsilon(price):
     return 0.05
-    if price < 0:
-        return 0.1*-price/100.0
-    return 0.25 #*float(abs(price))/100.0
 
 
 print(betting_data[0:10])
@@ -54,8 +48,9 @@ num_bets = 0
 num_wins = 0
 num_losses = 0
 amount_invested = 0
-max_price_plus = 300
-max_price_minus = 0
+max_price_plus = 200
+max_price_minus = -200
+spread_epsilon = 1
 amount_won = 0
 amount_lost = 0
 num_wins1 = 0
@@ -65,6 +60,7 @@ num_losses2 = 0
 betting_minimum = 10.0
 initial_capital = 1000.0
 max_loss_percent = 0.05
+num_ties = 0
 available_capital = initial_capital
 indices = list(range(test_meta_data.shape[0]))
 shuffle(indices)
@@ -90,10 +86,12 @@ for i in indices:
             Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
             Implied probability	=	100 / ( 'plus' moneyline odds + 100 )
             '''
-            is_under1 = max_price1 < 0
-            is_under2 = max_price2 < 0
             spread1 = bet_row['spread1']
             spread2 = bet_row['spread2']
+            is_under1 = spread1 < 0
+            is_under2 = spread2 < 0
+            is_price_under1 = max_price1 < 0
+            is_price_under2 = max_price2 < 0
             if max_price1 > 0:
                 best_odds1 = 100.0 / (100.0 + max_price1)
             else:
@@ -111,11 +109,36 @@ for i in indices:
             #print('Found best odds 2: ', best_odds2)
             #print('Found prediction: ', prediction)
             return_game = 0.0
-            actual_result = test_labels[i]
-            print("Spreads: ", spread1, spread2)
+            actual_result = test_labels[0][i]
+            actual_spread = test_labels[1][i]
+            player1_win = None
+            player2_win = None
+            beat_spread1 = None
+            beat_spread2 = None
+            if actual_result > 0.5:  # player 1 wins match
+                player1_win = True
+                player2_win = False
+                if is_under1:  # was favorite
+                    beat_spread1 = abs(spread1) < actual_spread
+                    beat_spread2 = abs(spread2) > actual_spread
+                else:
+                    beat_spread1 = True  # by default
+                    beat_spread2 = False
+            else:
+                player1_win = False
+                player2_win = True
+                if is_under2:  # opponent was favorite
+                    beat_spread1 = abs(spread1) > -actual_spread
+                    beat_spread2 = abs(spread2) < -actual_spread
+                else:
+                    beat_spread1 = False
+                    beat_spread2 = True
+
+            print("Spreads: ", spread1, spread2, actual_spread, spread_prediction)
+            print("Victories: ", player1_win, player2_win, "Beat spreads: ", beat_spread1, beat_spread2)
             if max_price_minus < max_price1 < max_price_plus and best_odds1 < prediction - betting_epsilon(max_price1):
                 confidence = (prediction - best_odds1) * betting_minimum
-                if is_under1:
+                if is_price_under1:
                     capital_requirement = -max_price1 * confidence
                 else:
                     capital_requirement = 100.0 * confidence
@@ -131,20 +154,13 @@ for i in indices:
                     print('Make BET! Advantage', prediction - best_odds1)
                     print('Capital ratio: ', capital_ratio)
                     amount_invested += capital_requirement
-                    if actual_result < 0.5:  # LOST BET :(
-                        print('LOST!!')
-                        if is_under1:
-                            ret = max_price1 * confidence
-                        else:
-                            ret = - 100.0 * confidence
-                        if ret > 0:
-                            raise ArithmeticError("Loss 1 should be positive")
-                        num_losses = num_losses + 1
-                        amount_lost += abs(ret)
-                        num_losses1 += 1
-                    else:  # WON BET
+                    if beat_spread1 is None:  # tie
+                        ret = 0
+                        num_ties += 1
+                        print('TIE!!!!')
+                    elif beat_spread1:  # WON BET
                         print('WON!!')
-                        if is_under1:
+                        if is_price_under1:
                             ret = 100.0 * confidence
                         else:
                             ret = max_price1 * confidence
@@ -153,13 +169,25 @@ for i in indices:
                         num_wins = num_wins + 1
                         num_wins1 += 1
                         amount_won += abs(ret)
+                    else:
+                        print('LOST!!')
+                        if is_price_under1:
+                            ret = max_price1 * confidence
+                        else:
+                            ret = - 100.0 * confidence
+                        if ret > 0:
+                            raise ArithmeticError("Loss 1 should be positive")
+                        num_losses = num_losses + 1
+                        amount_lost += abs(ret)
+                        num_losses1 += 1
+
                     return_game += ret
                     available_capital += ret
                     num_bets += 1
                     print('Ret 1: ', ret)
             if max_price_minus < max_price2 < max_price_plus and best_odds2 < (1.0 - prediction) - betting_epsilon(max_price2):
                 confidence = (1.0 - prediction - best_odds2) * betting_minimum
-                if is_under2:
+                if is_price_under2:
                     capital_requirement = -max_price2 * confidence
                 else:
                     capital_requirement = 100.0 * confidence
@@ -176,9 +204,13 @@ for i in indices:
                     print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
                     print('Capital ratio: ', capital_ratio)
                     amount_invested += capital_requirement
-                    if actual_result < 0.5:  # WON BET
+                    if beat_spread2 is None:
+                        ret = 0  # tie
+                        num_ties += 1
+                        print('TIE!!!!!!!')
+                    elif beat_spread2:  # WON BET
                         print('WON!!')
-                        if is_under2:
+                        if is_price_under2:
                             ret = 100.0 * confidence
                         else:
                             ret = max_price2 * confidence
@@ -189,7 +221,7 @@ for i in indices:
                         amount_won += abs(ret)
                     else:  # LOST BET :(
                         print('LOST!!')
-                        if is_under2:
+                        if is_price_under2:
                             ret = max_price2 * confidence
                         else:
                             ret = - 100.0 * confidence
@@ -223,3 +255,6 @@ print('Num correct1: ', num_wins1)
 print('Num wrong1: ', num_losses1)
 print('Num correct2: ', num_wins2)
 print('Num wrong2: ', num_losses2)
+print('Num ties: ', num_ties)
+
+
