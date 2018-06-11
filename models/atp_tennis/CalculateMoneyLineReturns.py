@@ -84,11 +84,11 @@ best_parameters = None
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = float(0.12 + (np.random.rand(1)*0.02 - 0.01))
-    parameters['betting_epsilon2'] = float(0.26 + (np.random.rand(1)*0.02 - 0.01))
-    parameters['max_price_plus'] = float(200.0 + np.random.rand(1) * 200.0)
-    parameters['max_price_minus'] = float(-100.0 - np.random.rand(1) * 300.0)
-    parameters['max_price_diff'] = 100.0
+    parameters['betting_epsilon1'] = float(0.15 + (np.random.rand(1)*0.05 - 0.025))
+    parameters['betting_epsilon2'] = float(0.30 + (np.random.rand(1)*0.05 - 0.025))
+    parameters['max_price_plus'] = 300.
+    parameters['max_price_minus'] = -250.
+    parameters['max_price_diff'] = 200.0
     regression_data['betting_epsilon1'].append(parameters['betting_epsilon1'])
     regression_data['betting_epsilon2'].append(parameters['betting_epsilon2'])
     regression_data['max_price_minus'].append(parameters['max_price_minus'])
@@ -272,7 +272,7 @@ print('Best Parameters: ', best_parameters)
 print('Worst parameters: ', worst_parameters)
 
 # model to predict the total score (h_pts + a_pts)
-#results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'],regression_data['max_price_minus'],regression_data['max_price_plus'],regression_data['betting_epsilon2']]).transpose()).fit()
-#print(results.summary())
+results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
+print(results.summary())
 
 exit(0)

@@ -67,12 +67,12 @@ num_trials = 50
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = float(0.18 + (np.random.rand(1)*0.02 - 0.01))
-    parameters['betting_epsilon2'] = float(0.07 + (np.random.rand(1)*0.02 - 0.01))
-    parameters['spread_epsilon'] = float(2.0 + (np.random.rand(1) * 1.0))
+    parameters['betting_epsilon1'] = float(0.18 + (np.random.rand(1)*0.04 - 0.02))
+    parameters['betting_epsilon2'] = float(0.07 + (np.random.rand(1)*0.04 - 0.02))
+    parameters['spread_epsilon'] = float(1.5 + (np.random.rand(1) * 2.0))
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
-    max_price_diff = float(10. + np.random.rand(1) * 200.)
+    max_price_diff = 200.
     regression_data['betting_epsilon1'].append(parameters['betting_epsilon1'])
     regression_data['betting_epsilon2'].append(parameters['betting_epsilon2'])
     regression_data['spread_epsilon'].append(parameters['spread_epsilon'])
@@ -124,7 +124,6 @@ for trial in range(num_trials):
                 is_price_under2 = max_price2 < 0
                 price_diff = abs(abs(max_price1)-abs(max_price2))
                 if price_diff > max_price_diff:
-                    #print('Skipping large price diff: ', price_diff)
                     continue
                 if max_price1 > 0:
                     best_odds1 = 100.0 / (100.0 + max_price1)
