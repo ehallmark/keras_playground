@@ -10,7 +10,7 @@ model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-test_year = 2017  # IMPORTANT!!
+test_year = 2018  # IMPORTANT!!
 all_data = tennis_model.get_all_data(test_year)
 test_meta_data = all_data[2]
 test_data = all_data[1]
