@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from numpy.random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
-
+import statsmodels.formula.api as smf
 model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
@@ -17,7 +17,11 @@ test_data = all_data[1]
 test_labels = test_data[1]
 avg_error = test_model(model, test_data[0], test_labels)
 print('Average error: ', to_percentage(avg_error))
-
+regression_data = {}
+regression_data['betting_epsilon1'] = []
+regression_data['betting_epsilon2'] = []
+regression_data['spread_epsilon'] = []
+regression_data['return_total'] = []
 predictions = model.predict(test_data[0])
 predictions[0] = predictions[0].flatten()
 predictions[1] = predictions[1].flatten()
@@ -48,34 +52,30 @@ np.random.seed(1)
 
 def betting_decision(victory_prediction, spread_prediction, odds, spread, underdog, parameters={}):
     if underdog:
-        if victory_prediction > 0.5 + parameters['betting_epsilon1']:
-            return True
-        elif victory_prediction > odds + spread/parameters['spread_beta'] + parameters['betting_epsilon2'] and spread - spread_prediction < parameters['spread_epsilon']:
+        if victory_prediction > odds + parameters['betting_epsilon1'] and spread - spread_prediction < parameters['spread_epsilon']:
             # check spread and prediction
             return True
-        else:
-            return False
+
+        return False
     else:
-        if victory_prediction > odds - spread/parameters['spread_beta'] + parameters['betting_epsilon3']: # formula for spread
+        if victory_prediction > odds + parameters['betting_epsilon2'] and spread + spread_prediction > parameters['spread_epsilon']:
             return True
-        elif victory_prediction > odds + parameters['betting_epsilon4'] and spread + spread_prediction > parameters['spread_epsilon']:
-            return True
-        else:
-            return False
+        return False
 
 
 num_trials = 50
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = 0.15 + (np.random.rand(1)*0.20 - 0.10)
-    parameters['betting_epsilon2'] = 0.15 + (np.random.rand(1)*0.20 - 0.10)
-    parameters['betting_epsilon3'] = 0.15 + (np.random.rand(1) * 0.20 - 0.10)
-    parameters['betting_epsilon4'] = 0.15 + (np.random.rand(1) * 0.20 - 0.10)
-    parameters['spread_epsilon'] = 11.0 + (np.random.rand(1) * 20.0 - 10.0)
-    parameters['spread_beta'] = np.random.rand(1) * 10.0 + 10.0
+    parameters['betting_epsilon1'] = 0.10 + (np.random.rand(1)*0.06 - 0.03)
+    parameters['betting_epsilon2'] = 0.15 + (np.random.rand(1)*0.06 - 0.03)
+    parameters['spread_epsilon'] = 2.0 + (np.random.rand(1) * 4.0)
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
+    max_price_diff = 10. + np.random.rand(1) * 200.
+    regression_data['betting_epsilon1'].append(parameters['betting_epsilon1'])
+    regression_data['betting_epsilon2'].append(parameters['betting_epsilon2'])
+    regression_data['spread_epsilon'].append(parameters['spread_epsilon'])
     return_total = 0.0
     num_bets = 0
     num_wins = 0
@@ -87,7 +87,6 @@ for trial in range(num_trials):
     num_wins2 = 0
     num_losses1 = 0
     num_losses2 = 0
-    max_price_diff = 25.0
     betting_minimum = 10.0
     initial_capital = 1000.0
     num_ties = 0
@@ -300,6 +299,7 @@ for trial in range(num_trials):
     #print('Num wrong2: ', num_losses2)
     #print('Num ties: ', num_ties)
     avg_best += return_total
+    regression_data['return_total'].append(return_total)
     if return_total > prev_best:
         prev_best = return_total
         best_parameters = parameters.copy()
@@ -312,3 +312,11 @@ print('Worst return', prev_worst)
 print('Avg return', avg_best/num_trials)
 print('Best Parameters: ', best_parameters)
 print('Worst parameters: ', worst_parameters)
+
+
+# model to predict the total score (h_pts + a_pts)
+results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],regression_data['spread_epsilon']]).transpose()).fit()
+print(results.summary())
+
+exit(0)
+
