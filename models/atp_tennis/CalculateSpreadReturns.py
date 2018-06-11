@@ -305,6 +305,7 @@ for trial in range(num_trials):
     print('Overall Return For The Year: ', return_total / initial_capital)
     print('Num correct: ', num_wins)
     print('Num wrong: ', num_losses)
+    print('Num ties: ', num_ties)
     #print('Num correct1: ', num_wins1)
     #print('Num wrong1: ', num_losses1)
     #print('Num correct2: ', num_wins2)
