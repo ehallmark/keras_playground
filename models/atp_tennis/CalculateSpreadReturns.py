@@ -2,7 +2,7 @@ import keras as k
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
-from random import shuffle
+from numpy.random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
@@ -36,16 +36,38 @@ betting_data = pd.read_sql('''
 
 price_str = 'price'
 
-prev_best = -100000
+prev_best = -1000000
+prev_worst = 1000000
 avg_best = 0
 count = 0
 best_parameters = None
+worst_parameters = None
 parameters = {}
-for trial in range(50):
+np.random.seed(1)
+
+
+def betting_decision(victory_prediction, spread_prediction, odds, spread, underdog, parameters={}):
+    if underdog:
+        if victory_prediction > 0.5 + parameters['betting_epsilon']:
+            return True
+        elif victory_prediction > odds - spread/20. + parameters['betting_epsilon'] and spread - spread_prediction < parameters['spread_epsilon']:
+            # check spread and prediction
+            return True
+        else:
+            return False
+    else:
+        if victory_prediction > odds - spread/20. + parameters['betting_epsilon']: # formula for spread
+            return True
+        elif victory_prediction > odds - parameters['betting_epsilon'] and spread - spread_prediction > parameters['spread_epsilon']:
+            return True
+        else:
+            return False
+num_trials = 50
+for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon'] = 0.18 # np.random.rand(1) * 0.14 + 0.8
-    parameters['spread_epsilon'] = 6.0  # np.random.rand(1) * 3 + 5
+    parameters['betting_epsilon'] = 0.15 + (np.random.rand(1)*0.02 - 0.01)
+    parameters['spread_epsilon'] = 3.0 + (np.random.rand(1) * 3.0 - 1.5)
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
     return_total = 0.0
@@ -64,8 +86,8 @@ for trial in range(50):
     num_ties = 0
     available_capital = initial_capital
     indices = list(range(test_meta_data.shape[0]))
-    np.random.seed(trial)
     shuffle(indices)
+    print('Indices: ', indices)
     for i in indices:
         row = test_meta_data.iloc[i]
         prediction = predictions[0][i]
@@ -145,7 +167,7 @@ for trial in range(50):
                 #print("Victories: ", player1_win, player2_win, "Beat spreads: ", beat_spread1, beat_spread2)
                 bet1 = spread1 + spread_prediction >= parameters['spread_epsilon'] or (not is_under1 and prediction>0.5+parameters['betting_epsilon'])
                 if bet1 and parameters['max_price_minus'] < max_price1 < parameters['max_price_plus'] and best_odds1 < prediction - parameters['betting_epsilon']:
-                    confidence = (prediction - best_odds1) * betting_minimum
+                    confidence = betting_minimum # (prediction - best_odds1) * betting_minimum
                     if is_price_under1:
                         capital_requirement = -max_price1 * confidence
                     else:
@@ -195,7 +217,7 @@ for trial in range(50):
                         #print('Ret 1: ', ret)
                 bet2 = spread2 - spread_prediction >= parameters['spread_epsilon'] or (not is_under2 and prediction<0.5-parameters['betting_epsilon'])
                 if bet2 and parameters['max_price_minus'] < max_price2 < parameters['max_price_plus'] and best_odds2 < (1.0 - prediction) - parameters['betting_epsilon']:
-                    confidence = (1.0 - prediction - best_odds2) * betting_minimum
+                    confidence = betting_minimum # (1.0 - prediction - best_odds2) * betting_minimum
                     if is_price_under2:
                         capital_requirement = -max_price2 * confidence
                     else:
@@ -270,7 +292,12 @@ for trial in range(50):
     if return_total > prev_best:
         prev_best = return_total
         best_parameters = parameters.copy()
+    if return_total < prev_worst:
+        prev_worst = return_total
+        worst_parameters = parameters.copy()
 
 print('Best return: ', prev_best)
-print('Avg return', avg_best)
-print('Parameters: ', best_parameters)
+print('Worst return', prev_worst)
+print('Avg return', avg_best/num_trials)
+print('Best Parameters: ', best_parameters)
+print('Worst parameters: ', worst_parameters)
