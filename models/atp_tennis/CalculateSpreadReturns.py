@@ -152,7 +152,7 @@ for trial in range(num_trials):
                     player1_win = True
                     player2_win = False
                     if is_under1:  # was favorite
-                        if abs(spread1) == actual_spread:
+                        if abs(abs(spread1) - actual_spread) < 0.000001:
                             beat_spread1 = None
                         else:
                             beat_spread1 = abs(spread1) < actual_spread
@@ -161,7 +161,7 @@ for trial in range(num_trials):
                     if is_under2:
                         beat_spread2 = False
                     else:
-                        if abs(spread2) == actual_spread:
+                        if abs(abs(spread2) - actual_spread) < 0.000001:
                             beat_spread2 = None
                         else:
                             beat_spread2 = abs(spread2) > actual_spread
@@ -172,12 +172,12 @@ for trial in range(num_trials):
                     if is_under1:
                         beat_spread1 = False
                     else:
-                        if abs(spread1) == -actual_spread:
+                        if abs(abs(spread1) - -actual_spread) < 0.000001:
                             beat_spread1 = None
                         else:
                             beat_spread1 = abs(spread1) > -actual_spread
                     if is_under2:  # opponent was favorite
-                        if abs(spread2) == -actual_spread:
+                        if abs(abs(spread2) - -actual_spread) < 0.000001:
                             beat_spread2 = None
                         else:
                             beat_spread2 = abs(spread2) < -actual_spread
