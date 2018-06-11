@@ -2,11 +2,9 @@ import keras as k
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
-from numpy.random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.simulation.Simulate import simulate_spread
-import statsmodels.formula.api as smf
 model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())

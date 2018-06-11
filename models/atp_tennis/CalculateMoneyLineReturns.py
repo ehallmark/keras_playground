@@ -1,10 +1,8 @@
 import keras as k
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
 from sqlalchemy import create_engine
 from models.simulation.Simulate import simulate_money_line
-from random import shuffle
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
@@ -64,8 +62,8 @@ betting_data = pd.read_sql('''
 
 def parameter_update_func(parameters):
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = float(0.15 + (np.random.rand(1) * 0.05 - 0.025))
-    parameters['betting_epsilon2'] = float(0.30 + (np.random.rand(1) * 0.05 - 0.025))
+    parameters['betting_epsilon1'] = float(0.175 + (np.random.rand(1) * 0.05 - 0.025))
+    parameters['betting_epsilon2'] = float(0.20 + (np.random.rand(1) * 0.05 - 0.025))
     parameters['max_price_plus'] = 300.
     parameters['max_price_minus'] = -250.
 
