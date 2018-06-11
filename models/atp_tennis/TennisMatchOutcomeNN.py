@@ -131,9 +131,9 @@ if __name__ == '__main__':
     X2 = Input((len(opp_input_attributes),))
 
     hidden_units = 256 #len(input_attributes)*2
-    num_cells = 4
+    num_cells = 1
     batch_size = 128
-    dropout = 0.5
+    dropout = 0.2
 
     norm = BatchNormalization()
     model1 = norm(X1)
@@ -158,10 +158,11 @@ if __name__ == '__main__':
     model = Dropout(dropout)(model)
     model = Dense(1, activation='linear')(model)
     model = Model(inputs=[X1, X2], outputs=[_model, model])
-    model.compile(optimizer=Adam(lr=0.001, decay=0.1), loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
     #model_file = 'tennis_match_keras_nn.h5'
     #model_file = 'tennis_match_keras_nn_v2.h5'
-    model_file = 'tennis_match_keras_nn_v3.h5'
+    #model_file = 'tennis_match_keras_nn_v3.h5'
+    model_file = 'tennis_match_keras_nn_v4.h5'
     prev_error = None
     best_error = None
     for i in range(50):

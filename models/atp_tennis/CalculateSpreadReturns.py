@@ -41,11 +41,11 @@ best_parameters = None
 parameters = {}
 for trial in range(100):
     print('Trial: ',trial)
-    parameters['max_loss_percent'] = np.random.rand(1)*0.2
-    parameters['betting_epsilon'] = np.random.rand(1)*0.4-0.1
-    parameters['spread_epsilon'] = np.random.rand(1) * 10.0
-    parameters['max_price_plus'] = np.random.rand(1) * 300 + 100
-    parameters['max_price_minus'] = np.random.rand(1) * -300 - 100
+    parameters['max_loss_percent'] = 0.10
+    parameters['betting_epsilon'] = np.random.rand(1) * 0.10 + 0.10
+    parameters['spread_epsilon'] = np.random.rand(1) * 3 + 5
+    parameters['max_price_plus'] = 200
+    parameters['max_price_minus'] = -180
     return_total = 0.0
     num_bets = 0
     num_wins = 0
