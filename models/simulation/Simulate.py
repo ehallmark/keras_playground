@@ -189,6 +189,7 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
     parameter_update_func(parameters)
     for key in parameters:
         regression_data[key] = []
+    regression_data['return_total'] = []
     for trial in range(num_trials):
         print('Trial: ', trial)
         parameter_update_func(parameters)
@@ -257,19 +258,10 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                         raise ArithmeticError('Best odds1: ' + str(best_odds1))
                     if best_odds2 < 0.0 or best_odds2 > 1.0:
                         raise ArithmeticError('Best odds2: ' + str(best_odds2))
-                    # print('Found best odds 1: ', best_odds1)
-                    # print('Found best odds 2: ', best_odds2)
-                    # print('Found prediction: ', prediction)
                     return_game = 0.0
                     actual_result = actual_label_func(i)
                     actual_spread = actual_spread_func(i)
-                    player1_win = None
-                    player2_win = None
-                    beat_spread1 = None
-                    beat_spread2 = None
                     if actual_result > 0.5:  # player 1 wins match
-                        player1_win = True
-                        player2_win = False
                         if is_under1:  # was favorite
                             if abs(abs(spread1) - actual_spread) < 0.000001:
                                 beat_spread1 = None
@@ -286,8 +278,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                                 beat_spread2 = abs(spread2) > actual_spread
 
                     else:
-                        player1_win = False
-                        player2_win = True
                         if is_under1:
                             beat_spread1 = False
                         else:
@@ -303,8 +293,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                         else:
                             beat_spread2 = True
 
-                    # print("Spreads: ", spread1, spread2, actual_spread, spread_prediction)
-                    # print("Victories: ", player1_win, player2_win, "Beat spreads: ", beat_spread1, beat_spread2)
                     bet1 = betting_decision_func(prediction, spread_prediction, best_odds1, spread1, not is_under1,
                                             parameters)
                     if bet1 and parameters['max_price_minus'] < max_price1 < parameters['max_price_plus']:
@@ -321,18 +309,11 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                         capital_requirement *= capital_ratio
                         confidence *= capital_ratio
                         if capital_requirement <= available_capital:
-                            # print('Confidence: ', confidence)
-                            # print('Max price1: ', max_price1, 'Max price2: ',max_price2)
-                            # print('Capital Req: ', capital_requirement)
-                            # print('Make BET! Advantage', prediction - best_odds1)
-                            # print('Capital ratio: ', capital_ratio)
                             amount_invested += capital_requirement
                             if beat_spread1 is None:  # tie
                                 ret = 0
                                 num_ties += 1
-                            #   print('TIE!!!!')
                             elif beat_spread1:  # WON BET
-                                #   print('WON!!')
                                 if is_price_under1:
                                     ret = 100.0 * confidence
                                 else:
@@ -343,7 +324,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                                 num_wins1 += 1
                                 amount_won += abs(ret)
                             else:
-                                #   print('LOST!!')
                                 if is_price_under1:
                                     ret = max_price1 * confidence
                                 else:
@@ -357,7 +337,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                             return_game += ret
                             available_capital += ret
                             num_bets += 1
-                            # print('Ret 1: ', ret)
                     bet2 = betting_decision_func(1.0 - prediction, -spread_prediction, best_odds2, spread2, not is_under2,
                                             parameters)
                     if bet2 and parameters['max_price_minus'] < max_price2 < parameters['max_price_plus']:
@@ -367,7 +346,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                         else:
                             capital_requirement = 100.0 * confidence
 
-                        # print('Initial capital requirement1: ', capital_requirement)
                         capital_requirement_avail = max(betting_minimum,
                                                         min(parameters['max_loss_percent'] * available_capital,
                                                             capital_requirement))
@@ -375,18 +353,12 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                         capital_requirement *= capital_ratio
                         confidence *= capital_ratio
                         if capital_requirement <= available_capital:
-                            # print('Confidence: ', confidence)
-                            # print('Max price1: ', max_price1, 'Max price2: ', max_price2)
-                            # print('Capital Req: ', capital_requirement)
-                            # print('Make BET on OPPONENT! Advantage', (1.0-prediction)-best_odds2)
-                            # print('Capital ratio: ', capital_ratio)
                             amount_invested += capital_requirement
                             if beat_spread2 is None:
                                 ret = 0  # tie
                                 num_ties += 1
                             #   print('TIE!!!!!!!')
                             elif beat_spread2:  # WON BET
-                                #  print('WON!!')
                                 if is_price_under2:
                                     ret = 100.0 * confidence
                                 else:
@@ -397,7 +369,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                                 num_wins2 += 1
                                 amount_won += abs(ret)
                             else:  # LOST BET :(
-                                #  print('LOST!!')
                                 if is_price_under2:
                                     ret = max_price2 * confidence
                                 else:
@@ -410,12 +381,7 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                             return_game += ret
                             num_bets += 1
                             available_capital += ret
-                            # print('Ret 2: ', ret)
-                    # print('Return for the match: ', return_game)
                     return_total = return_total + return_game
-                    # print('Num bets: ', num_bets)
-                    # print('Capital: ', available_capital)
-                    # print('Return Total: ', return_total)
 
         print("Parameters: ", parameters)
         # print('Initial Capital: ', initial_capital)
