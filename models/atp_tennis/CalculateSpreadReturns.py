@@ -10,7 +10,7 @@ model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-test_year = 2018  # IMPORTANT!!
+test_year = 2017  # IMPORTANT!!
 all_data = tennis_model.get_all_data(test_year)
 test_meta_data = all_data[2]
 test_data = all_data[1]
@@ -153,13 +153,19 @@ for trial in range(num_trials):
                     player1_win = True
                     player2_win = False
                     if is_under1:  # was favorite
-                        beat_spread1 = abs(spread1) < actual_spread
+                        if abs(spread1) == actual_spread:
+                            beat_spread1 = None
+                        else:
+                            beat_spread1 = abs(spread1) < actual_spread
                     else:
                         beat_spread1 = True  # by default
                     if is_under2:
                         beat_spread2 = False
                     else:
-                        beat_spread2 = abs(spread2) > actual_spread
+                        if abs(spread2) == actual_spread:
+                            beat_spread2 = None
+                        else:
+                            beat_spread2 = abs(spread2) > actual_spread
 
                 else:
                     player1_win = False
@@ -167,9 +173,15 @@ for trial in range(num_trials):
                     if is_under1:
                         beat_spread1 = False
                     else:
-                        beat_spread1 = abs(spread1) > -actual_spread
+                        if abs(spread1) == -actual_spread:
+                            beat_spread1 = None
+                        else:
+                            beat_spread1 = abs(spread1) > -actual_spread
                     if is_under2:  # opponent was favorite
-                        beat_spread2 = abs(spread2) < -actual_spread
+                        if abs(spread2) == -actual_spread:
+                            beat_spread2 = None
+                        else:
+                            beat_spread2 = abs(spread2) < -actual_spread
                     else:
                         beat_spread2 = True
 

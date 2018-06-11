@@ -11,7 +11,7 @@ model = k.models.load_model('tennis_match_keras_nn_v3.h5')
 model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
 print(model.summary())
 
-test_year = 2018  # IMPORTANT!!
+test_year = 2017  # IMPORTANT!!
 all_data = tennis_model.get_all_data(test_year)
 test_meta_data = all_data[2]
 test_data = all_data[1]
@@ -83,7 +83,7 @@ worst_parameters = None
 best_parameters = None
 for trial in range(num_trials):
     print('Trial: ',trial)
-    parameters['max_loss_percent'] = 0.10
+    parameters['max_loss_percent'] = 0.05
     parameters['betting_epsilon1'] = float(0.12 + (np.random.rand(1)*0.02 - 0.01))
     parameters['betting_epsilon2'] = float(0.26 + (np.random.rand(1)*0.02 - 0.01))
     parameters['max_price_plus'] = float(200.0 + np.random.rand(1) * 200.0)
