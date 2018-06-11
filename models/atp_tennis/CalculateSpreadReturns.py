@@ -37,13 +37,15 @@ betting_data = pd.read_sql('''
 price_str = 'price'
 
 prev_best = -100000
+avg_best = 0
+count = 0
 best_parameters = None
 parameters = {}
-for trial in range(100):
+for trial in range(50):
     print('Trial: ',trial)
-    parameters['max_loss_percent'] = 0.10
-    parameters['betting_epsilon'] = np.random.rand(1) * 0.10 + 0.10
-    parameters['spread_epsilon'] = np.random.rand(1) * 3 + 5
+    parameters['max_loss_percent'] = 0.05
+    parameters['betting_epsilon'] = 0.18 # np.random.rand(1) * 0.14 + 0.8
+    parameters['spread_epsilon'] = 6.0  # np.random.rand(1) * 3 + 5
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
     return_total = 0.0
@@ -264,10 +266,11 @@ for trial in range(100):
     #print('Num correct2: ', num_wins2)
     #print('Num wrong2: ', num_losses2)
     #print('Num ties: ', num_ties)
+    avg_best += return_total
     if return_total > prev_best:
         prev_best = return_total
         best_parameters = parameters.copy()
 
 print('Best return: ', prev_best)
+print('Avg return', avg_best)
 print('Parameters: ', best_parameters)
-
