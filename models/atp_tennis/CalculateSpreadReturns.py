@@ -67,12 +67,12 @@ num_trials = 50
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = 0.10 + (np.random.rand(1)*0.06 - 0.03)
-    parameters['betting_epsilon2'] = 0.15 + (np.random.rand(1)*0.06 - 0.03)
-    parameters['spread_epsilon'] = 2.0 + (np.random.rand(1) * 4.0)
+    parameters['betting_epsilon1'] = float(0.18 + (np.random.rand(1)*0.02 - 0.01))
+    parameters['betting_epsilon2'] = float(0.08 + (np.random.rand(1)*0.02 - 0.01))
+    parameters['spread_epsilon'] = float(2.0 + (np.random.rand(1) * 1.0))
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
-    max_price_diff = 10. + np.random.rand(1) * 200.
+    max_price_diff = float(10. + np.random.rand(1) * 200.)
     regression_data['betting_epsilon1'].append(parameters['betting_epsilon1'])
     regression_data['betting_epsilon2'].append(parameters['betting_epsilon2'])
     regression_data['spread_epsilon'].append(parameters['spread_epsilon'])
@@ -177,7 +177,7 @@ for trial in range(num_trials):
                 #print("Victories: ", player1_win, player2_win, "Beat spreads: ", beat_spread1, beat_spread2)
                 bet1 = betting_decision(prediction, spread_prediction, best_odds1, spread1, not is_under1, parameters)
                 if bet1 and parameters['max_price_minus'] < max_price1 < parameters['max_price_plus']:
-                    confidence = betting_minimum/100.0  # (prediction - best_odds1) * betting_minimum
+                    confidence = betting_minimum  # (prediction - best_odds1) * betting_minimum
                     if is_price_under1:
                         capital_requirement = -max_price1 * confidence
                     else:
@@ -227,7 +227,7 @@ for trial in range(num_trials):
                         #print('Ret 1: ', ret)
                 bet2 = betting_decision(1.0-prediction, -spread_prediction, best_odds2, spread2, not is_under2, parameters)
                 if bet2 and parameters['max_price_minus'] < max_price2 < parameters['max_price_plus']:
-                    confidence = betting_minimum/100.0  # (1.0 - prediction - best_odds2) * betting_minimum
+                    confidence = betting_minimum  # (1.0 - prediction - best_odds2) * betting_minimum
                     if is_price_under2:
                         capital_requirement = -max_price2 * confidence
                     else:
@@ -315,8 +315,8 @@ print('Worst parameters: ', worst_parameters)
 
 
 # model to predict the total score (h_pts + a_pts)
-results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],regression_data['spread_epsilon']]).transpose()).fit()
-print(results.summary())
+#results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],regression_data['spread_epsilon']]).transpose()).fit()
+#print(results.summary())
 
 exit(0)
 
