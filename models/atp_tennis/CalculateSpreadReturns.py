@@ -68,7 +68,7 @@ for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
     parameters['betting_epsilon1'] = float(0.18 + (np.random.rand(1)*0.02 - 0.01))
-    parameters['betting_epsilon2'] = float(0.08 + (np.random.rand(1)*0.02 - 0.01))
+    parameters['betting_epsilon2'] = float(0.07 + (np.random.rand(1)*0.02 - 0.01))
     parameters['spread_epsilon'] = float(2.0 + (np.random.rand(1) * 1.0))
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180

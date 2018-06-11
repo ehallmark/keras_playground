@@ -64,25 +64,35 @@ num_trials = 50
 parameters = {}
 
 def betting_epsilon(price):
-    return parameters['betting_epsilon']
+    if price > 0:
+        return parameters['betting_epsilon1']
+    else:
+        return parameters['betting_epsilon2']
 
 
 avg_best = 0
 prev_worst = 1000000
 prev_best = -1000000
 regression_data = {}
-regression_data['betting_epsilon'] = []
 regression_data['return_total'] = []
+regression_data['betting_epsilon1'] = []
+regression_data['betting_epsilon2'] = []
+regression_data['max_price_plus'] = []
+regression_data['max_price_minus'] = []
 worst_parameters = None
 best_parameters = None
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.10
-    parameters['betting_epsilon'] = float(0.25 + (np.random.rand(1)*0.05 - 0.025))
-    parameters['max_price_plus'] = 200
-    parameters['max_price_minus'] = -180
+    parameters['betting_epsilon1'] = float(0.12 + (np.random.rand(1)*0.02 - 0.01))
+    parameters['betting_epsilon2'] = float(0.26 + (np.random.rand(1)*0.02 - 0.01))
+    parameters['max_price_plus'] = float(200.0 + np.random.rand(1) * 200.0)
+    parameters['max_price_minus'] = float(-100.0 - np.random.rand(1) * 300.0)
     parameters['max_price_diff'] = 100.0
-    regression_data['betting_epsilon'].append(parameters['betting_epsilon'])
+    regression_data['betting_epsilon1'].append(parameters['betting_epsilon1'])
+    regression_data['betting_epsilon2'].append(parameters['betting_epsilon2'])
+    regression_data['max_price_minus'].append(parameters['max_price_minus'])
+    regression_data['max_price_plus'].append(parameters['max_price_plus'])
     return_total = 0.0
     num_bets = 0
     num_wins = 0
@@ -262,7 +272,7 @@ print('Best Parameters: ', best_parameters)
 print('Worst parameters: ', worst_parameters)
 
 # model to predict the total score (h_pts + a_pts)
-#results = smf.OLS(np.array(regression_data['return_total']),np.array(regression_data['betting_epsilon'])).fit()
+#results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'],regression_data['max_price_minus'],regression_data['max_price_plus'],regression_data['betting_epsilon2']]).transpose()).fit()
 #print(results.summary())
 
 exit(0)
