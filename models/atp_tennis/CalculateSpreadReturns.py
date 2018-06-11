@@ -50,24 +50,29 @@ def betting_decision(victory_prediction, spread_prediction, odds, spread, underd
     if underdog:
         if victory_prediction > 0.5 + parameters['betting_epsilon1']:
             return True
-        elif victory_prediction > odds - spread/parameters['spread_beta'] + parameters['betting_epsilon2'] and spread - spread_prediction < parameters['spread_epsilon']:
+        elif victory_prediction > odds + spread/parameters['spread_beta'] + parameters['betting_epsilon2'] and spread - spread_prediction < parameters['spread_epsilon']:
             # check spread and prediction
             return True
         else:
             return False
     else:
-        if victory_prediction > odds - spread/parameters['spread_beta'] + parameters['betting_epsilon1']: # formula for spread
+        if victory_prediction > odds - spread/parameters['spread_beta'] + parameters['betting_epsilon3']: # formula for spread
             return True
-        elif victory_prediction > odds - parameters['betting_epsilon2'] and spread - spread_prediction > parameters['spread_epsilon']:
+        elif victory_prediction > odds + parameters['betting_epsilon4'] and spread + spread_prediction > parameters['spread_epsilon']:
             return True
         else:
             return False
+
+
 num_trials = 50
 for trial in range(num_trials):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon'] = 0.15 + (np.random.rand(1)*0.20 - 0.10)
-    parameters['spread_epsilon'] = 10.0 + (np.random.rand(1) * 10.0 - 5.0)
+    parameters['betting_epsilon1'] = 0.15 + (np.random.rand(1)*0.20 - 0.10)
+    parameters['betting_epsilon2'] = 0.15 + (np.random.rand(1)*0.20 - 0.10)
+    parameters['betting_epsilon3'] = 0.15 + (np.random.rand(1) * 0.20 - 0.10)
+    parameters['betting_epsilon4'] = 0.15 + (np.random.rand(1) * 0.20 - 0.10)
+    parameters['spread_epsilon'] = 11.0 + (np.random.rand(1) * 20.0 - 10.0)
     parameters['spread_beta'] = np.random.rand(1) * 10.0 + 10.0
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
@@ -82,6 +87,7 @@ for trial in range(num_trials):
     num_wins2 = 0
     num_losses1 = 0
     num_losses2 = 0
+    max_price_diff = 25.0
     betting_minimum = 10.0
     initial_capital = 1000.0
     num_ties = 0
@@ -117,6 +123,10 @@ for trial in range(num_trials):
                 is_under2 = spread2 < 0
                 is_price_under1 = max_price1 < 0
                 is_price_under2 = max_price2 < 0
+                price_diff = abs(abs(max_price1)-abs(max_price2))
+                if price_diff > max_price_diff:
+                    #print('Skipping large price diff: ', price_diff)
+                    continue
                 if max_price1 > 0:
                     best_odds1 = 100.0 / (100.0 + max_price1)
                 else:
@@ -166,7 +176,7 @@ for trial in range(num_trials):
 
                 #print("Spreads: ", spread1, spread2, actual_spread, spread_prediction)
                 #print("Victories: ", player1_win, player2_win, "Beat spreads: ", beat_spread1, beat_spread2)
-                bet1 = betting_decision(prediction, spread_prediction, best_odds1, spread1, is_under1, parameters)
+                bet1 = betting_decision(prediction, spread_prediction, best_odds1, spread1, not is_under1, parameters)
                 if bet1 and parameters['max_price_minus'] < max_price1 < parameters['max_price_plus']:
                     confidence = betting_minimum/100.0  # (prediction - best_odds1) * betting_minimum
                     if is_price_under1:
@@ -216,7 +226,7 @@ for trial in range(num_trials):
                         available_capital += ret
                         num_bets += 1
                         #print('Ret 1: ', ret)
-                bet2 = betting_decision(-prediction, -spread_prediction, best_odds2, spread2, is_under2, parameters)
+                bet2 = betting_decision(1.0-prediction, -spread_prediction, best_odds2, spread2, not is_under2, parameters)
                 if bet2 and parameters['max_price_minus'] < max_price2 < parameters['max_price_plus']:
                     confidence = betting_minimum/100.0  # (1.0 - prediction - best_odds2) * betting_minimum
                     if is_price_under2:
