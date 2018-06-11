@@ -36,15 +36,16 @@ betting_data = pd.read_sql('''
 
 price_str = 'price'
 
-
+prev_best = -100000
+best_parameters = None
 parameters = {}
 for trial in range(100):
     print('Trial: ',trial)
     parameters['max_loss_percent'] = np.random.rand(1)*0.2
     parameters['betting_epsilon'] = np.random.rand(1)*0.4-0.1
-    parameters['spread_epsilon'] = np.random.rand(1) * 10
-    parameters['max_price_plus'] = np.random.rand(1) * 500 + 100
-    parameters['max_price_minus'] = np.random.rand(1) * -500 - 100
+    parameters['spread_epsilon'] = np.random.rand(1) * 10.0
+    parameters['max_price_plus'] = np.random.rand(1) * 300 + 100
+    parameters['max_price_minus'] = np.random.rand(1) * -300 - 100
     return_total = 0.0
     num_bets = 0
     num_wins = 0
@@ -247,21 +248,26 @@ for trial in range(100):
                 #print('Return Total: ', return_total)
 
     print("Parameters: ", parameters)
-    print('Initial Capital: ', initial_capital)
+    #print('Initial Capital: ', initial_capital)
     print('Final Capital: ', available_capital)
     print('Num bets: ', num_bets)
     print('Total Return: ', return_total)
-    print('Amount invested: ', amount_invested)
-    print('Amount won: ', amount_won)
-    print('Amount lost: ', amount_lost)
-    print('Average Return Per Amount Invested: ', return_total / amount_invested)
+    #print('Amount invested: ', amount_invested)
+    #print('Amount won: ', amount_won)
+    #print('Amount lost: ', amount_lost)
+    #print('Average Return Per Amount Invested: ', return_total / amount_invested)
     print('Overall Return For The Year: ', return_total / initial_capital)
     print('Num correct: ', num_wins)
     print('Num wrong: ', num_losses)
-    print('Num correct1: ', num_wins1)
-    print('Num wrong1: ', num_losses1)
-    print('Num correct2: ', num_wins2)
-    print('Num wrong2: ', num_losses2)
-    print('Num ties: ', num_ties)
+    #print('Num correct1: ', num_wins1)
+    #print('Num wrong1: ', num_losses1)
+    #print('Num correct2: ', num_wins2)
+    #print('Num wrong2: ', num_losses2)
+    #print('Num ties: ', num_ties)
+    if return_total > prev_best:
+        prev_best = return_total
+        best_parameters = parameters.copy()
 
+print('Best return: ', prev_best)
+print('Parameters: ', best_parameters)
 

@@ -112,46 +112,50 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
 if __name__ == '__main__':
     data, test_data, _ = get_all_data(test_season=2017, start_year=1990)
 
-    def cell(x1, x2, n_units):
+    def cell(x1, x2, n_units, dropout=0.5):
         concat = Concatenate()
         batch_norm = BatchNormalization()
         dense = Dense(n_units, activation='tanh')
-        dropout = Dropout(0.5)
+        dropout_layer = Dropout(dropout)
         #norm1 = concat([x1, norm1])
         norm1 = batch_norm(x1)
         norm1 = dense(norm1)
-        norm1 = dropout(norm1)
+        norm1 = dropout_layer(norm1)
         #norm2 = concat([x2, norm2])
         norm2 = batch_norm(x2)
         norm2 = dense(norm2)
-        norm2 = dropout(norm2)
+        norm2 = dropout_layer(norm2)
         return norm1, norm2
 
     X1 = Input((len(input_attributes),))
     X2 = Input((len(opp_input_attributes),))
 
-    hidden_units = 128 #len(input_attributes)*2
+    hidden_units = 256 #len(input_attributes)*2
     num_cells = 4
     batch_size = 128
+    dropout = 0.5
 
     norm = BatchNormalization()
-    norm1 = norm(X1)
-    norm2 = norm(X2)
-    model = Dense(hidden_units, activation='tanh')
-    model1 = model(norm1)
-    model2 = model(norm2)
+    model1 = norm(X1)
+    model2 = norm(X2)
     for i in range(num_cells):
         model1, model2 = cell(model1, model2, hidden_units)
 
-    model = Dense(hidden_units, activation='tanh')
-    _model1 = model(model1)
-    _model2 = model(model2)
-    model = Add()([_model2, Lambda(lambda x: -x)(_model1)])
-    _model = Dense(1, activation='sigmoid')(model)
-    model = Dense(hidden_units, activation='tanh')
-    model1 = model(model1)
-    model2 = model(model2)
-    model = Add()([model2, Lambda(lambda x: -x)(model1)])
+    model = Dense(hidden_units, activation='sigmoid')
+    _model1 = Dropout(dropout)(model(model1))
+    _model2 = Dropout(dropout)(model(model2))
+    _model = Add()([_model1, Lambda(lambda x: -x)(_model2)])
+    _model = Dense(hidden_units, activation='tanh')(_model)
+    _model = BatchNormalization()(_model)
+    _model = Dropout(dropout)(_model)
+    _model = Dense(1, activation='sigmoid')(_model)
+    model = Dense(hidden_units, activation='sigmoid')
+    model1 = Dropout(dropout)(model(model1))
+    model2 = Dropout(dropout)(model(model2))
+    model = Add()([model1, Lambda(lambda x: -x)(model2)])
+    model = Dense(hidden_units, activation='tanh')(model)
+    model = BatchNormalization()(model)
+    model = Dropout(dropout)(model)
     model = Dense(1, activation='linear')(model)
     model = Model(inputs=[X1, X2], outputs=[_model, model])
     model.compile(optimizer=Adam(lr=0.001, decay=0.1), loss='mean_squared_error', metrics=['accuracy'])
