@@ -77,7 +77,7 @@ worst_parameters = None
 best_parameters = None
 for trial in range(num_trials):
     print('Trial: ',trial)
-    parameters['max_loss_percent'] = 0.05
+    parameters['max_loss_percent'] = 0.10
     parameters['betting_epsilon'] = float(0.25 + (np.random.rand(1)*0.05 - 0.025))
     parameters['max_price_plus'] = 200
     parameters['max_price_minus'] = -180
