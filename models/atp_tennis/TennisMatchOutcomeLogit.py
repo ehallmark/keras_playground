@@ -37,14 +37,14 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         select 
             case when ml.price1 > 0 then 100.0/(100.0 + ml.price1) else -1.0*(ml.price1/(-1.0*ml.price1 + 100.0)) end as ml_odds1,
             case when ml.price2 > 0 then 100.0/(100.0 + ml.price2) else -1.0*(ml.price2/(-1.0*ml.price2 + 100.0)) end as ml_odds2,
-            case when m.player_victory and ml.price1 > 0 then ml.price1
-                when m.player_victory and ml.price1 < 0 then 1.0
+            case when m.player_victory and ml.price1 > 0 then ml.price1/100.0
+                when m.player_victory and ml.price1 < 0 then 100.0/(-ml.price1)
                 when not m.player_victory and ml.price1 > 0 then -1.0
-                else ml.price1/100.0 end as ml_return1,
+                else -1.0 end as ml_return1,
             case when not m.player_victory and ml.price2 > 0 then ml.price2/100.0
-                when not m.player_victory and ml.price2 < 0 then 1.0
+                when not m.player_victory and ml.price2 < 0 then 100.0/(-ml.price2)
                 when m.player_victory and ml.price2 > 0 then -1.0
-                else ml.price2/100.0 end as ml_return2,    
+                else -1.0 end as ml_return2,    
             m.games_won-m.games_against as spread,
             case when m.player_victory then 1.0 else 0.0 end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,

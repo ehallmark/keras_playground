@@ -117,47 +117,49 @@ if __name__ == '__main__':
     X1 = Input((len(input_attributes),))
     X2 = Input((len(opp_input_attributes),))
 
-    hidden_units = 32  # len(input_attributes)*2
-    num_cells = 2
+    hidden_units = 256  # len(input_attributes)*2
+    num_cells = 3
     batch_size = 128
-    dropout = 0.2
+    dropout = 0.5
     load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_keras_nn_v4.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
     else:
         def cell(x1, x2, n_units, dropout=0.5):
             concat = Concatenate()
-            batch_norm = BatchNormalization()
+            #batch_norm = BatchNormalization()
             dense = Dense(n_units, activation='tanh')
             dropout_layer = Dropout(dropout)
             #norm1 = concat([x1, norm1])
-            norm1 = batch_norm(x1)
-            norm1 = dense(norm1)
+            #norm1 = batch_norm(x1)
+            norm1 = dense(x1)
             norm1 = dropout_layer(norm1)
             #norm2 = concat([x2, norm2])
-            norm2 = batch_norm(x2)
-            norm2 = dense(norm2)
+            #norm2 = batch_norm(x2)
+            norm2 = dense(x2)
             norm2 = dropout_layer(norm2)
             return norm1, norm2
 
         norm = BatchNormalization()
         model1 = norm(X1)
         model2 = norm(X2)
-        for i in range(num_cells):
-            model1, model2 = cell(model1, model2, hidden_units)
 
-        model = Dense(hidden_units, activation='linear')
+        model = Dense(hidden_units, activation='tanh')
         model1 = Dropout(dropout)(model(model1))
         model2 = Dropout(dropout)(model(model2))
-        model = Add()([model1, Lambda(lambda x: -x)(model2)])
-        model = BatchNormalization()(model)
-        model = Dense(hidden_units, activation='tanh')(model)
-        model = BatchNormalization()(model)
-        model = Dropout(dropout)(model)
+        out1 = Add()([model1, Lambda(lambda x: -x)(model2)])
+        out2 = Add()([model2, Lambda(lambda x: -x)(model1)])
+        model = BatchNormalization()
+        out1 = model(out1)
+        out2 = model(out2)
+        model = Dense(hidden_units, activation='tanh')
+        out1 = model(out1)
+        out2 = model(out2)
+        out_pre = Dense(10, activation='tanh')
         out = Dense(1, activation='linear')
-        out1 = out(model)
-        out2 = Lambda(lambda x: x*-1.)(out(model))
+        out1 = out(out_pre(out1))
+        out2 = out(out_pre(out2))
         model = Model(inputs=[X1, X2], outputs=[out1, out2])
         model.compile(optimizer=Adam(lr=0.0001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
 
