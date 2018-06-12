@@ -16,6 +16,7 @@ def test_model(model, x, y):
 
 
 input_attributes = [
+    'ml_odds1',
     'prev_h2h2_wins_opponent',
     'mean_return_points_made',
     'prev_year_avg_round',
@@ -24,8 +25,8 @@ input_attributes = [
     'mean_first_serve_points_made',
     'mean_break_points_made',
     'mean_break_points_saved',
-    'clay',
-    'grass',
+    #'clay',
+    #'grass',
     'h2h_prior_win_percent',
     'h2h_prior_encounters',
     'prev_year_prior_encounters',
@@ -41,7 +42,7 @@ input_attributes = [
     'height',
     'grand_slam',
     'round',
-    'mean_duration',
+    #'mean_duration',
     # Would lead to bad things like not being able to pre compute all match combinations
     #'duration_prev_match',
     'elo_score'
@@ -49,6 +50,7 @@ input_attributes = [
 
 
 opp_input_attributes = [
+    'ml_odds2',
     'prev_h2h2_wins_opponent',
     'mean_opp_return_points_made',
     'opp_prev_year_avg_round',
@@ -57,8 +59,8 @@ opp_input_attributes = [
     'mean_opp_first_serve_points_made',
     'mean_opp_break_points_made',
     'mean_opp_break_points_saved',
-    'clay',
-    'grass',
+    #'clay',
+    #'grass',
     'h2h_prior_win_percent',
     'h2h_prior_encounters',
     'opp_prev_year_prior_encounters',
@@ -74,15 +76,15 @@ opp_input_attributes = [
     'opp_height',
     'grand_slam',
     'round',
-    'mean_opp_duration',
+    #'mean_opp_duration',
     # Would lead to bad things like not being able to pre compute all match combinations
     #'opp_duration_prev_match',
     'opp_elo_score'
 ]
 
 all_attributes = list(input_attributes)
-all_attributes.append('y')
-all_attributes.append('spread')
+all_attributes.append('ml_return1')
+all_attributes.append('ml_return2')
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
     all_attributes.append(meta)
@@ -105,24 +107,24 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
     # create inputs
     test_meta_data = test_data[meta_attributes]
     print("Data: ", data[input_attributes])
-    data = ([np.array(data[input_attributes]), np.array(data[opp_input_attributes])], [np.array(data['y']), np.array(data['spread'])])
-    test_data = ([np.array(test_data[input_attributes]), np.array(test_data[opp_input_attributes])], [np.array(test_data['y']), np.array(test_data['spread'])])
+    data = ([np.array(data[input_attributes]), np.array(data[opp_input_attributes])], [np.array(data['ml_return1']), np.array(data['ml_return2'])])
+    test_data = ([np.array(test_data[input_attributes]), np.array(test_data[opp_input_attributes])], [np.array(test_data['ml_return1']), np.array(test_data['ml_return2'])])
     return data, test_data, test_meta_data
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data(test_season=2017, start_year=2003)
+    data, test_data, _ = get_all_data(test_season=2016, start_year=2003)
     X1 = Input((len(input_attributes),))
     X2 = Input((len(opp_input_attributes),))
 
-    hidden_units = 256  # len(input_attributes)*2
+    hidden_units = 32  # len(input_attributes)*2
     num_cells = 2
-    batch_size = 256
-    dropout = 0.4
-    load_previous = True
+    batch_size = 128
+    dropout = 0.2
+    load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_keras_nn_v4.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
     else:
         def cell(x1, x2, n_units, dropout=0.5):
             concat = Concatenate()
@@ -145,16 +147,7 @@ if __name__ == '__main__':
         for i in range(num_cells):
             model1, model2 = cell(model1, model2, hidden_units)
 
-        model = Dense(hidden_units, activation='tanh')
-        _model1 = Dropout(dropout)(model(model1))
-        _model2 = Dropout(dropout)(model(model2))
-        _model = Add()([_model1, Lambda(lambda x: -x)(_model2)])
-        _model = BatchNormalization()(_model)
-        _model = Dense(hidden_units, activation='tanh')(_model)
-        _model = BatchNormalization()(_model)
-        _model = Dropout(dropout)(_model)
-        _model = Dense(1, activation='sigmoid')(_model)
-        model = Dense(hidden_units, activation='tanh')
+        model = Dense(hidden_units, activation='linear')
         model1 = Dropout(dropout)(model(model1))
         model2 = Dropout(dropout)(model(model2))
         model = Add()([model1, Lambda(lambda x: -x)(model2)])
@@ -162,14 +155,13 @@ if __name__ == '__main__':
         model = Dense(hidden_units, activation='tanh')(model)
         model = BatchNormalization()(model)
         model = Dropout(dropout)(model)
-        model = Dense(1, activation='linear')(model)
-        model = Model(inputs=[X1, X2], outputs=[_model, model])
-        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
-    #model_file = 'tennis_match_keras_nn.h5'
-    #model_file = 'tennis_match_keras_nn_v2.h5'
-    #model_file = 'tennis_match_keras_nn_v3.h5'
-    #model_file = 'tennis_match_keras_nn_v4.h5'
-    model_file = 'tennis_match_keras_nn_v5.h5'
+        out = Dense(1, activation='linear')
+        out1 = out(model)
+        out2 = Lambda(lambda x: x*-1.)(out(model))
+        model = Model(inputs=[X1, X2], outputs=[out1, out2])
+        model.compile(optimizer=Adam(lr=0.0001, decay=0.0001), loss='mean_squared_error', metrics=['accuracy'])
+
+    model_file = 'tennis_match_keras_end2end_v1.h5'
     prev_error = None
     best_error = None
     for i in range(50):

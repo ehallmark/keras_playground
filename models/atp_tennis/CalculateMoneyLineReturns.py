@@ -63,8 +63,8 @@ if __name__ == '__main__':
 
 
     # define vars
-    test_year = 2017
-    model = k.models.load_model('tennis_match_keras_nn_v3.h5')
+    test_year = 2018
+    model = k.models.load_model('tennis_match_keras_nn_v4.h5')
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
     price_str = 'max_price'

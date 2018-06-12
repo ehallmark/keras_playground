@@ -35,6 +35,16 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 
+            case when ml.price1 > 0 then 100.0/(100.0 + ml.price1) else -1.0*(ml.price1/(-1.0*ml.price1 + 100.0)) end as ml_odds1,
+            case when ml.price2 > 0 then 100.0/(100.0 + ml.price2) else -1.0*(ml.price2/(-1.0*ml.price2 + 100.0)) end as ml_odds2,
+            case when m.player_victory and ml.price1 > 0 then ml.price1
+                when m.player_victory and ml.price1 < 0 then 1.0
+                when not m.player_victory and ml.price1 > 0 then -1.0
+                else ml.price1/100.0 end as ml_return1,
+            case when not m.player_victory and ml.price2 > 0 then ml.price2/100.0
+                when not m.player_victory and ml.price2 < 0 then 1.0
+                when m.player_victory and ml.price2 > 0 then -1.0
+                else ml.price2/100.0 end as ml_return2,    
             m.games_won-m.games_against as spread,
             case when m.player_victory then 1.0 else 0.0 end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
@@ -142,6 +152,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         coalesce(elo.score1,0) as elo_score,
         coalesce(elo.score2,0) as opp_elo_score
         from atp_matches_individual as m
+        join atp_tennis_betting_link as ml
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(ml.team1,ml.team2,ml.tournament,ml.year))
+        left outer join atp_tennis_betting_link_spread as s
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(s.team1,s.team2,s.tournament,s.year))
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
         left outer join atp_matches_prior_year as prev_year
