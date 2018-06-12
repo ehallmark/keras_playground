@@ -5,49 +5,33 @@ from sqlalchemy import create_engine
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.simulation.Simulate import simulate_spread
-model = k.models.load_model('tennis_match_keras_nn_v3.h5')
-model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
-print(model.summary())
 
-test_year = 2018  # IMPORTANT!!
-all_data = tennis_model.get_all_data(test_year)
-test_meta_data = all_data[2]
-test_data = all_data[1]
-test_labels = test_data[1]
-avg_error = test_model(model, test_data[0], test_labels)
-print('Average error: ', to_percentage(avg_error))
-regression_data = {}
-regression_data['betting_epsilon1'] = []
-regression_data['betting_epsilon2'] = []
-regression_data['spread_epsilon'] = []
-regression_data['return_total'] = []
-predictions = model.predict(test_data[0])
-predictions[0] = predictions[0].flatten()
-predictions[1] = predictions[1].flatten()
 
-betting_sites = ['Bovada','5Dimes','BetOnline']
-conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-betting_data = pd.read_sql('''
-    select year,tournament,team1,team2,
-    price1,
-    price2,
-    spread1,
-    spread2
-    from atp_tennis_betting_link_spread 
-    where year={{YEAR}} and book_name in ({{BOOK_NAMES}})
-'''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
+def load_predictions_and_actuals(model, test_year=2018):
+    all_data = tennis_model.get_all_data(test_year)
+    test_meta_data = all_data[2]
+    test_data = all_data[1]
+    test_labels = test_data[1]
+    avg_error = test_model(model, test_data[0], test_labels)
+    print('Average error: ', to_percentage(avg_error))
+    predictions = model.predict(test_data[0])
+    predictions[0] = predictions[0].flatten()
+    predictions[1] = predictions[1].flatten()
+    return predictions, test_labels, test_meta_data
 
-price_str = 'price'
 
-prev_best = -1000000
-prev_worst = 1000000
-avg_best = 0
-count = 0
-best_parameters = None
-worst_parameters = None
-parameters = {}
-np.random.seed(1)
-num_trials = 50
+def load_betting_data(betting_sites, test_year=2018):
+    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    betting_data = pd.read_sql('''
+        select year,tournament,team1,team2,
+        price1,
+        price2,
+        spread1,
+        spread2
+        from atp_tennis_betting_link_spread 
+        where year={{YEAR}} and book_name in ({{BOOK_NAMES}})
+    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
+    return betting_data
 
 
 def betting_decision(victory_prediction, spread_prediction, odds, spread, underdog, parameters={}):
@@ -88,10 +72,24 @@ def actual_spread_func(i):
     return test_labels[1][i]
 
 
-simulate_spread(predictor_func, predict_spread_func, actual_label_func, actual_spread_func,
-                parameter_update_func, betting_decision, test_meta_data, betting_data, parameters,
-                price_str, num_trials)
+if __name__ == '__main__':
+    # define variables
+    test_year = 2018
+    price_str = 'price'
+    parameters = {}
+    np.random.seed(1)
+    num_trials = 50
+    betting_sites = ['Bovada', '5Dimes', 'BetOnline']
+    betting_data = load_betting_data(betting_sites, test_year=test_year)
+    model = k.models.load_model('tennis_match_keras_nn_v3.h5')
+    model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
+    print(model.summary())
+    predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
 
+    # run simulation
+    simulate_spread(predictor_func, predict_spread_func, actual_label_func, actual_spread_func,
+                    parameter_update_func, betting_decision, test_meta_data, betting_data, parameters,
+                    price_str, num_trials)
 
-exit(0)
+    exit(0)
 
