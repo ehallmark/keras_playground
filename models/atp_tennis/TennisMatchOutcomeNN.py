@@ -24,8 +24,8 @@ input_attributes = [
     'mean_first_serve_points_made',
     'mean_break_points_made',
     'mean_break_points_saved',
-    'clay',
-    'grass',
+    #'clay',
+    #'grass',
     'h2h_prior_win_percent',
     'h2h_prior_encounters',
     'prev_year_prior_encounters',
@@ -57,8 +57,8 @@ opp_input_attributes = [
     'mean_opp_first_serve_points_made',
     'mean_opp_break_points_made',
     'mean_opp_break_points_saved',
-    'clay',
-    'grass',
+    #'clay',
+    #'grass',
     'h2h_prior_win_percent',
     'h2h_prior_encounters',
     'opp_prev_year_prior_encounters',
@@ -111,15 +111,15 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data(test_season=2017, start_year=2003)
+    data, test_data, _ = get_all_data(test_season=2016, start_year=2004)
     X1 = Input((len(input_attributes),))
     X2 = Input((len(opp_input_attributes),))
 
-    hidden_units = 256  # len(input_attributes)*2
-    num_cells = 2
+    hidden_units = 128  # len(input_attributes)*2
+    num_cells = 1
     batch_size = 256
-    dropout = 0.4
-    load_previous = True
+    dropout = 0.5
+    load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_keras_nn_v4.h5')
         model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
@@ -146,15 +146,6 @@ if __name__ == '__main__':
             model1, model2 = cell(model1, model2, hidden_units)
 
         model = Dense(hidden_units, activation='tanh')
-        _model1 = Dropout(dropout)(model(model1))
-        _model2 = Dropout(dropout)(model(model2))
-        _model = Add()([_model1, Lambda(lambda x: -x)(_model2)])
-        _model = BatchNormalization()(_model)
-        _model = Dense(hidden_units, activation='tanh')(_model)
-        _model = BatchNormalization()(_model)
-        _model = Dropout(dropout)(_model)
-        _model = Dense(1, activation='sigmoid')(_model)
-        model = Dense(hidden_units, activation='tanh')
         model1 = Dropout(dropout)(model(model1))
         model2 = Dropout(dropout)(model(model2))
         model = Add()([model1, Lambda(lambda x: -x)(model2)])
@@ -162,9 +153,12 @@ if __name__ == '__main__':
         model = Dense(hidden_units, activation='tanh')(model)
         model = BatchNormalization()(model)
         model = Dropout(dropout)(model)
-        model = Dense(1, activation='linear')(model)
-        model = Model(inputs=[X1, X2], outputs=[_model, model])
-        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
+        out1 = Dense(32, activation='tanh')(model)
+        out1 = Dense(1, activation='sigmoid')(out1)
+        out2 = Dense(32, activation='tanh')(model)
+        out2 = Dense(1, activation='linear')(out2)
+        model = Model(inputs=[X1, X2], outputs=[out1, out2])
+        model.compile(optimizer=Adam(lr=0.01, decay=0.1), loss='mean_squared_error', metrics=['accuracy'])
     #model_file = 'tennis_match_keras_nn.h5'
     #model_file = 'tennis_match_keras_nn_v2.h5'
     #model_file = 'tennis_match_keras_nn_v3.h5'

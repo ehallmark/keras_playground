@@ -157,7 +157,7 @@ if __name__ == '__main__':
         out1 = model(out1)
         out2 = model(out2)
         out_pre = Dense(10, activation='tanh')
-        out = Dense(1, activation='linear')
+        out = Dense(1, activation='tanh')
         out1 = out(out_pre(out1))
         out2 = out(out_pre(out2))
         model = Model(inputs=[X1, X2], outputs=[out1, out2])

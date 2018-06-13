@@ -16,7 +16,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         regression_data[key] = []
     regression_data['return_total'] = []
     for trial in range(num_trials):
-        print('Trial: ',trial)
+        #print('Trial: ',trial)
         parameter_update_func(parameters)
         for key in parameters:  # add params to regression map
             regression_data[key].append(parameters[key])
@@ -149,15 +149,15 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         num_bets += 1
                         available_capital += ret
                 return_total = return_total + return_game
-        print("Parameters: ", parameters)
-        print('Initial Capital: ', initial_capital)
-        print('Final Capital: ', available_capital)
-        print('Num bets: ', num_bets)
-        print('Total Return: ', return_total)
-        print('Average Return Per Amount Invested: ', return_total / amount_invested)
-        print('Overall Return For The Year: ', return_total / initial_capital)
-        print('Num correct: ', num_wins)
-        print('Num wrong: ', num_losses)
+    #    print("Parameters: ", parameters)
+    #    print('Initial Capital: ', initial_capital)
+    #    print('Final Capital: ', available_capital)
+    #    print('Num bets: ', num_bets)
+    #    print('Total Return: ', return_total)
+    #    print('Average Return Per Amount Invested: ', return_total / amount_invested)
+    #    print('Overall Return For The Year: ', return_total / initial_capital)
+    #    print('Num correct: ', num_wins)
+    #    print('Num wrong: ', num_losses)
         regression_data['return_total'].append(return_total)
         avg_best += return_total
         if return_total > prev_best:
@@ -170,12 +170,12 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     print('Best return: ', prev_best)
     print('Worst return', prev_worst)
     print('Avg return', avg_best/num_trials)
-    print('Best Parameters: ', best_parameters)
-    print('Worst parameters: ', worst_parameters)
+    #print('Best Parameters: ', best_parameters)
+    #print('Worst parameters: ', worst_parameters)
 
     # model to predict the total score (h_pts + a_pts)
-    results = smf.OLS(np.array(regression_data['return_total']),np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
-    print(results.summary())
+    #results = smf.OLS(np.array(regression_data['return_total']), np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
+    #print(results.summary())
 
 
 def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, actual_spread_func, parameter_update_func, betting_decision_func, test_meta_data, betting_data, parameters,
@@ -383,19 +383,19 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
                             available_capital += ret
                     return_total = return_total + return_game
 
-        print("Parameters: ", parameters)
+        #print("Parameters: ", parameters)
         # print('Initial Capital: ', initial_capital)
-        print('Final Capital: ', available_capital)
+        #print('Final Capital: ', available_capital)
         print('Num bets: ', num_bets)
-        print('Total Return: ', return_total)
+        #print('Total Return: ', return_total)
         # print('Amount invested: ', amount_invested)
         # print('Amount won: ', amount_won)
         # print('Amount lost: ', amount_lost)
         # print('Average Return Per Amount Invested: ', return_total / amount_invested)
-        print('Overall Return For The Year: ', return_total / initial_capital)
-        print('Num correct: ', num_wins)
-        print('Num wrong: ', num_losses)
-        print('Num ties: ', num_ties)
+        #print('Overall Return For The Year: ', return_total / initial_capital)
+        #print('Num correct: ', num_wins)
+        #print('Num wrong: ', num_losses)
+        #print('Num ties: ', num_ties)
         # print('Num correct1: ', num_wins1)
         # print('Num wrong1: ', num_losses1)
         # print('Num correct2: ', num_wins2)
@@ -413,11 +413,13 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
     print('Best return: ', prev_best)
     print('Worst return', prev_worst)
     print('Avg return', avg_best / num_trials)
-    print('Best Parameters: ', best_parameters)
-    print('Worst parameters: ', worst_parameters)
+    #print('Best Parameters: ', best_parameters)
+    #print('Worst parameters: ', worst_parameters)
 
     # model to predict the total score (h_pts + a_pts)
     results = smf.OLS(np.array(regression_data['return_total']), np.array(
         [regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],
          regression_data['spread_epsilon']]).transpose()).fit()
     print(results.summary())
+
+    return avg_best

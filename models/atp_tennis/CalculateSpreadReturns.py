@@ -49,11 +49,11 @@ def betting_decision(victory_prediction, spread_prediction, odds, spread, underd
 
 def parameter_update_func(parameters):
     parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = float(0.15 + (np.random.rand(1) * 0.1 - 0.05))
-    parameters['betting_epsilon2'] = float(0.25 + (np.random.rand(1) * 0.1 - 0.05))
-    parameters['spread_epsilon'] = float(1.5 + (np.random.rand(1) * 8.0))
+    parameters['betting_epsilon1'] = float(0.27 + (np.random.rand(1) * 0.1 - 0.05))
+    parameters['betting_epsilon2'] = float(0.15 + (np.random.rand(1) * 0.1 - 0.05))
+    parameters['spread_epsilon'] = float(2.0 + (np.random.rand(1) * 1.))
     parameters['max_price_plus'] = 200
-    parameters['max_price_minus'] = -180
+    parameters['max_price_minus'] = -150
 
 
 def predictor_func(i):
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         'BetOnline'
     ]
     betting_data = load_betting_data(betting_sites, test_year=test_year)
-    model = k.models.load_model('tennis_match_keras_nn_v4.h5')
+    model = k.models.load_model('tennis_match_keras_nn_v3.h5')
     model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
     print(model.summary())
     predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
