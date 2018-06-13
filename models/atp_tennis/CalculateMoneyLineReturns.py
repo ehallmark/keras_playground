@@ -44,7 +44,15 @@ if __name__ == '__main__':
         parameters['betting_epsilon1'] = float(0.15 + (np.random.rand(1) * 0.2 - 0.1))
         parameters['betting_epsilon2'] = float(0.20 + (np.random.rand(1) * 0.2 - 0.1))
         parameters['max_price_plus'] = float(0.0 + np.random.rand(1) * 800.)
-        parameters['max_price_minus'] = float(0.0 - np.random.rand(1) * 500)
+        parameters['max_price_minus'] = float(0.0 - np.random.rand(1) * 500.0)
+
+
+    def parameter_tweak_func(parameters):
+        parameters['max_loss_percent'] += float(0.01 - np.random.rand(1) * 0.02)
+        parameters['betting_epsilon1'] += float(0.02 - np.random.rand(1) * 0.04)
+        parameters['betting_epsilon2'] += float(0.02 - np.random.rand(1) * 0.04)
+        parameters['max_price_plus'] += float(50.0 - np.random.rand(1) * 100.)
+        parameters['max_price_minus'] += float(50.0 - np.random.rand(1) * 100.0)
 
 
     def predictor_func(i):
@@ -67,9 +75,9 @@ if __name__ == '__main__':
 
         def score(self, data):
             # run simulation
-            return simulate_money_line(predictor_func, actual_label_func, lambda x: x,
-                                       self.betting_epsilon_func, data[0], data[1], self.parameters,
-                                       price_str, 1)
+            return simulate_money_line(predictor_func, actual_label_func, parameter_tweak_func,
+                                       self.betting_epsilon_func, data, self.parameters,
+                                       price_str, num_samples_per_solution)
 
         def mutate(self):
             mutated_parameters = self.parameters.copy()
@@ -99,13 +107,25 @@ if __name__ == '__main__':
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
     price_str = 'max_price'
-    num_trials = 50
+    num_epochs = 50
+    num_samples_per_solution = 5
     parameters = {}
     betting_sites = ['Bovada', '5Dimes', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
     genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    data = (test_meta_data, betting_data)
-    genetic_algorithm.fit(data)
+    original_len = test_meta_data.shape[0]
+    test_meta_data = pd.DataFrame.merge(
+        test_meta_data,
+        betting_data,
+        'left',
+        left_on=['year', 'player_id', 'opponent_id', 'tournament'],
+        right_on=['year', 'team1', 'team2', 'tournament'])
+    after_len = test_meta_data.shape[0]
+    if original_len != after_len:
+        print('Join data has different length... ', original_len, after_len)
+        exit(1)
+    # fit data
+    genetic_algorithm.fit(test_meta_data, num_epochs=num_epochs)
 
     exit(0)
 

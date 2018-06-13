@@ -3,22 +3,11 @@ import statsmodels.formula.api as smf
 from random import shuffle
 import pandas as pd
 
-def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, betting_epsilon_func, test_meta_data, betting_data, parameters,
+
+def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, betting_epsilon_func, test_meta_data, parameters,
                         price_str='price', num_trials=50):
     worst_parameters = None
     best_parameters = None
-    original_len = test_meta_data.shape[0]
-    test_meta_data = pd.DataFrame.merge(
-        test_meta_data,
-        betting_data,
-        'left',
-        left_on=['year','player_id','opponent_id','tournament'],
-        right_on=['year','team1','team2','tournament'])
-    after_len = test_meta_data.shape[0]
-
-    if original_len != after_len:
-        print('Join data has different length... ', original_len, after_len)
-        exit(1)
 
     #print('Joined data: ', test_meta_data)
     avg_best = 0.0
@@ -53,7 +42,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         for i in indices:
             row = test_meta_data.iloc[i]
             prediction = predictor_func(i)
-            # prediction = np.random.rand(1)  # test on random predictions
+            #prediction = float(np.random.rand(1))  # test on random predictions
             bet_row = row
             if bet_row[price_str+str(1)] != np.nan:
                 # make betting decision
@@ -190,24 +179,10 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
 
 
 def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
-                    betting_sites, betting_decision_func, test_meta_data, betting_data, parameters,
+                    betting_decision_func, test_meta_data, test_data, parameters,
                     price_str='price', num_trials=50):
     worst_parameters = None
     best_parameters = None
-    test_data = []
-    for betting_site in betting_sites:
-        original_len = test_meta_data.shape[0]
-        df = pd.DataFrame.merge(
-            test_meta_data,
-            betting_data[betting_data.book_name == betting_site],
-            'left',
-            left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-            right_on=['year', 'team1', 'team2', 'tournament'])
-        after_len = df.shape[0]
-        test_data.append(df)
-        if original_len != after_len:
-            print('Join data has different length... ', original_len, after_len)
-            exit(1)
 
     avg_best = 0.0
     prev_best = -1000000.0
@@ -241,7 +216,6 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
         indices = list(range(test_meta_data.shape[0]))
         shuffle(indices)
         for i in indices:
-            row = test_meta_data.iloc[i]
             prediction = predictor_func(i)
             spread_prediction = spread_predictor_func(i)
             # prediction = np.random.rand(1)  # test on random predictions
