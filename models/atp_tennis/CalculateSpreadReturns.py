@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.simulation.Simulate import simulate_spread
+from models.genetics.GeneticAlgorithm import GeneticAlgorithm, Solution
 
 
 def load_predictions_and_actuals(model, test_year=2018):
@@ -24,6 +25,7 @@ def load_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select year,tournament,team1,team2,
+        book_name,
         price1,
         price2,
         spread1,
@@ -48,12 +50,12 @@ def betting_decision(victory_prediction, spread_prediction, odds, spread, underd
 
 
 def parameter_update_func(parameters):
-    parameters['max_loss_percent'] = 0.05
-    parameters['betting_epsilon1'] = float(0.27 + (np.random.rand(1) * 0.1 - 0.05))
-    parameters['betting_epsilon2'] = float(0.15 + (np.random.rand(1) * 0.1 - 0.05))
+    parameters['max_loss_percent'] = float(0.01 + np.random.rand(1) * 0.1)
+    parameters['betting_epsilon1'] = float(0.25 + (np.random.rand(1) * 0.2 - 0.1))
+    parameters['betting_epsilon2'] = float(0.15 + (np.random.rand(1) * 0.2 - 0.1))
     parameters['spread_epsilon'] = float(2.0 + (np.random.rand(1) * 1.))
-    parameters['max_price_plus'] = 200
-    parameters['max_price_minus'] = -150
+    parameters['max_price_plus'] = float(0.0 + np.random.rand(1) * 400.0)
+    parameters['max_price_minus'] = float(0.0 - np.random.rand(1) * 400.0)
 
 
 def predictor_func(i):
@@ -73,6 +75,45 @@ def actual_spread_func(i):
 
 
 if __name__ == '__main__':
+
+    class SpreadSolution(Solution):
+        def __init__(self, parameters):
+            self.parameters = parameters.copy()
+
+        def betting_epsilon_func(self, price):
+            if price > 0:
+                return self.parameters['betting_epsilon1']
+            else:
+                return self.parameters['betting_epsilon2']
+
+        def score(self, data):
+            # run simulation
+            return simulate_spread(predictor_func, predict_spread_func, actual_label_func, actual_spread_func,
+                                   parameter_update_func, betting_sites, betting_decision, data[0], data[1], self.parameters,
+                                   price_str, 1)
+
+        def mutate(self):
+            mutated_parameters = self.parameters.copy()
+            second_copy = self.parameters.copy()
+            parameter_update_func(second_copy)
+            for k, v in second_copy.items():
+                if np.random.rand(1) < 2.0/float(len(second_copy)):
+                    mutated_parameters[k] = (mutated_parameters[k]+v)/2.
+            return SpreadSolution(mutated_parameters)
+
+        def cross_over(self, other):
+            cross_parameters = self.parameters.copy()
+            for k in cross_parameters:
+                if np.random.rand(1) < 0.5:
+                    cross_parameters[k] = other.parameters[k]
+            return SpreadSolution(cross_parameters)
+
+
+    def solution_generator():
+        parameters = {}
+        parameter_update_func(parameters)
+        return SpreadSolution(parameters)
+
     # define variables
     test_year = 2018
     price_str = 'price'
@@ -85,15 +126,14 @@ if __name__ == '__main__':
         'BetOnline'
     ]
     betting_data = load_betting_data(betting_sites, test_year=test_year)
-    model = k.models.load_model('tennis_match_keras_nn_v3.h5')
+    model = k.models.load_model('tennis_match_keras_nn_v5.h5')
     model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
     print(model.summary())
     predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
 
     # run simulation
-    simulate_spread(predictor_func, predict_spread_func, actual_label_func, actual_spread_func,
-                    parameter_update_func, betting_decision, test_meta_data, betting_data, parameters,
-                    price_str, num_trials)
-
+    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
+    data = (test_meta_data, betting_data)
+    genetic_algorithm.fit(data)
     exit(0)
 

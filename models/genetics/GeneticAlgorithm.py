@@ -22,12 +22,20 @@ class GeneticAlgorithm:
                     solutions.append(solutions[i].cross_over(solutions[cross_idx]))
 
             # score solutions
-            solutions = [(solution, solution.score(data)) for solution in solutions]
+            solutions_with_scores = [(solution, solution.score(data)) for solution in solutions]
             # sort solutions
-            solutions.sort(key=lambda x: x[1], reverse=True)
+            solutions_with_scores.sort(key=lambda x: x[1], reverse=True)
             # take top n solutions
-            solutions = solutions[0: num_solutions]
-            print('Best solution epoch '+str(epoch)+":", solutions[0].score(data))
+            solutions_with_scores = solutions_with_scores[0: num_solutions]
+            avg_score = 0.0
+            solutions = []
+            for solution_with_score in solutions_with_scores:
+                avg_score += solution_with_score[1]
+                solutions.append(solution_with_score[0])
+            avg_score /= len(solutions_with_scores)
+
+            print('Best solution epoch '+str(epoch)+":", solutions_with_scores[0][1])
+            print('Avg solution epoch '+str(epoch)+":", avg_score)
 
 
 class Solution:

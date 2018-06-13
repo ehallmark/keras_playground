@@ -43,8 +43,8 @@ if __name__ == '__main__':
         parameters['max_loss_percent'] = float(0.01 + np.random.rand(1) * 0.1)
         parameters['betting_epsilon1'] = float(0.15 + (np.random.rand(1) * 0.2 - 0.1))
         parameters['betting_epsilon2'] = float(0.20 + (np.random.rand(1) * 0.2 - 0.1))
-        parameters['max_price_plus'] = float(100. + np.random.rand(1) * 600.)
-        parameters['max_price_minus'] = float(-100. - np.random.rand(1) * 400)
+        parameters['max_price_plus'] = float(0.0 + np.random.rand(1) * 800.)
+        parameters['max_price_minus'] = float(0.0 - np.random.rand(1) * 500)
 
 
     def predictor_func(i):

@@ -1,12 +1,26 @@
 import numpy as np
 import statsmodels.formula.api as smf
 from random import shuffle
-
+import pandas as pd
 
 def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, betting_epsilon_func, test_meta_data, betting_data, parameters,
                         price_str='price', num_trials=50):
     worst_parameters = None
     best_parameters = None
+    original_len = test_meta_data.shape[0]
+    test_meta_data = pd.DataFrame.merge(
+        test_meta_data,
+        betting_data,
+        'left',
+        left_on=['year','player_id','opponent_id','tournament'],
+        right_on=['year','team1','team2','tournament'])
+    after_len = test_meta_data.shape[0]
+
+    if original_len != after_len:
+        print('Join data has different length... ', original_len, after_len)
+        exit(1)
+
+    #print('Joined data: ', test_meta_data)
     avg_best = 0.0
     prev_best = -1000000.0
     prev_worst = 1000000.0
@@ -40,13 +54,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
             row = test_meta_data.iloc[i]
             prediction = predictor_func(i)
             # prediction = np.random.rand(1)  # test on random predictions
-            bet_row = betting_data[
-                (betting_data.year == row.year) &
-                (betting_data.team1 == row.player_id) &
-                (betting_data.team2 == row.opponent_id) &
-                (betting_data.tournament == row.tournament)
-            ]
-            if bet_row.shape[0] == 1:
+            bet_row = row
+            if bet_row[price_str+str(1)] != np.nan:
                 # make betting decision
                 max_price1 = np.array(bet_row[price_str+'1']).flatten()[0]
                 max_price2 = np.array(bet_row[price_str+'2']).flatten()[0]
@@ -152,7 +161,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     #    print("Parameters: ", parameters)
     #    print('Initial Capital: ', initial_capital)
     #    print('Final Capital: ', available_capital)
-    #    print('Num bets: ', num_bets)
+        print('Num bets: ', num_bets)
     #    print('Total Return: ', return_total)
     #    print('Average Return Per Amount Invested: ', return_total / amount_invested)
     #    print('Overall Return For The Year: ', return_total / initial_capital)
@@ -167,21 +176,39 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
             prev_worst = return_total
             worst_parameters = parameters.copy()
 
-    print('Best return: ', prev_best)
-    print('Worst return', prev_worst)
-    print('Avg return', avg_best/num_trials)
+    avg_best /= num_trials
+    #print('Best return: ', prev_best)
+    #print('Worst return', prev_worst)
+    print('Avg return', avg_best)
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
     # model to predict the total score (h_pts + a_pts)
     #results = smf.OLS(np.array(regression_data['return_total']), np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
     #print(results.summary())
+    return avg_best
 
 
-def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, actual_spread_func, parameter_update_func, betting_decision_func, test_meta_data, betting_data, parameters,
-                        price_str='price', num_trials=50):
+def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
+                    betting_sites, betting_decision_func, test_meta_data, betting_data, parameters,
+                    price_str='price', num_trials=50):
     worst_parameters = None
     best_parameters = None
+    test_data = []
+    for betting_site in betting_sites:
+        original_len = test_meta_data.shape[0]
+        df = pd.DataFrame.merge(
+            test_meta_data,
+            betting_data[betting_data.book_name == betting_site],
+            'left',
+            left_on=['year', 'player_id', 'opponent_id', 'tournament'],
+            right_on=['year', 'team1', 'team2', 'tournament'])
+        after_len = df.shape[0]
+        test_data.append(df)
+        if original_len != after_len:
+            print('Join data has different length... ', original_len, after_len)
+            exit(1)
+
     avg_best = 0.0
     prev_best = -1000000.0
     prev_worst = 1000000.0
@@ -213,21 +240,14 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
         shuffle(indices)
-        print('Indices: ', indices)
         for i in indices:
             row = test_meta_data.iloc[i]
             prediction = predictor_func(i)
             spread_prediction = spread_predictor_func(i)
             # prediction = np.random.rand(1)  # test on random predictions
-            bet_rows = betting_data[
-                (betting_data.year == row.year) &
-                (betting_data.team1 == row.player_id) &
-                (betting_data.team2 == row.opponent_id) &
-                (betting_data.tournament == row.tournament)
-                ]
-            if bet_rows.shape[0] >= 1:
-                for r in range(bet_rows.shape[0]):
-                    bet_row = bet_rows.iloc[r]
+            bet_rows = [bet_row.iloc[i] for bet_row in test_data]
+            if len(bet_rows) >= 1:
+                for bet_row in bet_rows:
                     # make betting decision
                     max_price1 = np.array(bet_row[price_str + '1']).flatten()[0]
                     max_price2 = np.array(bet_row[price_str + '2']).flatten()[0]
@@ -410,16 +430,17 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
             prev_worst = return_total
             worst_parameters = parameters.copy()
 
-    print('Best return: ', prev_best)
-    print('Worst return', prev_worst)
-    print('Avg return', avg_best / num_trials)
+    avg_best /= num_trials
+    #print('Best return: ', prev_best)
+    #print('Worst return', prev_worst)
+    print('Avg return', avg_best)
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
     # model to predict the total score (h_pts + a_pts)
-    results = smf.OLS(np.array(regression_data['return_total']), np.array(
-        [regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],
-         regression_data['spread_epsilon']]).transpose()).fit()
-    print(results.summary())
+    #results = smf.OLS(np.array(regression_data['return_total']), np.array(
+    #    [regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],
+    #     regression_data['spread_epsilon']]).transpose()).fit()
+    #print(results.summary())
 
     return avg_best
