@@ -218,7 +218,7 @@ def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, ac
         regression_data[key] = []
     regression_data['return_total'] = []
     for trial in range(num_trials):
-        print('Trial: ', trial)
+        #print('Trial: ', trial)
         parameter_update_func(parameters)
         for key in parameters:  # add params to regression map
             regression_data[key].append(parameters[key])
