@@ -146,8 +146,10 @@ if __name__ == '__main__':
 
     data, test_data = get_all_data(input_attributes, test_season=test_season)
     print('Data: ', data[0:10])
+
+
     def cell(x1,x2, n_units):
-        c = Concatenate()([x1,x2])
+        c = Concatenate()([x1, x2])
         c = BatchNormalization()(c)
         c = Dense(n_units, activation='relu')(c)
         c = Dropout(0.5)(c)
@@ -187,13 +189,9 @@ if __name__ == '__main__':
             print('Saved.')
         prev_accuracy = binary_percent
 
-
-
     print(model.summary())
-
     print('Most recent accuracy: ', prev_accuracy)
     print('Best accuracy: ', best_accuracy)
-
 
 exit(0)
 
