@@ -7,6 +7,20 @@ import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.genetics.GeneticAlgorithm import GeneticAlgorithm, Solution
 
+
+class Return:
+    def __init__(self):
+        self.total_return = 0.0
+        self.count = 0
+
+    def add_return(self, ret):
+        self.count += 1
+        self.total_return += ret
+
+    def get_avg(self):
+        return self.total_return / self.count
+
+
 if __name__ == '__main__':
     def load_predictions_and_actuals(model, test_year=2018):
         all_data = tennis_model.get_all_data(test_year)
@@ -70,18 +84,6 @@ if __name__ == '__main__':
     def actual_label_func_test(i):
         return labels_test[0][i]
 
-    class Return:
-        def __init__(self):
-            self.total_return = 0.0
-            self.count = 0
-
-        def add_return(self, ret):
-            self.count += 1
-            self.total_return += ret
-
-        def get_avg(self):
-            return self.total_return/self.count
-
 
     class MoneyLineSolution(Solution):
         def __init__(self, parameters, return_class):
@@ -112,14 +114,14 @@ if __name__ == '__main__':
             for k, v in second_copy.items():
                 if np.random.rand(1) < 2.0/float(len(second_copy)):
                     mutated_parameters[k] = (mutated_parameters[k]+v)/2.
-            return MoneyLineSolution(mutated_parameters)
+            return MoneyLineSolution(mutated_parameters, self.return_class)
 
         def cross_over(self, other):
             cross_parameters = self.parameters.copy()
             for k in cross_parameters:
                 if np.random.rand(1) < 0.5:
                     cross_parameters[k] = other.parameters[k]
-            return MoneyLineSolution(cross_parameters)
+            return MoneyLineSolution(cross_parameters, self.return_class)
 
 
     def solution_generator():
@@ -146,8 +148,8 @@ if __name__ == '__main__':
         return predictions, test_labels, test_meta_data
 
     # define vars
-    train_year = 2016
-    test_year = 2017
+    train_year = 2017
+    test_year = 2018
     price_str = 'max_price'
     num_epochs = 50
     num_samples_per_solution = 3

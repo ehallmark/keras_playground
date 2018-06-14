@@ -6,7 +6,7 @@ import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.simulation.Simulate import simulate_spread
 from models.genetics.GeneticAlgorithm import GeneticAlgorithm, Solution
-
+from models.atp_tennis.CalculateMoneyLineReturns import Return
 
 def load_predictions_and_actuals(model, test_year=2018):
     all_data = tennis_model.get_all_data(test_year)
@@ -76,18 +76,35 @@ def predict_spread_func(i):
 
 
 def actual_label_func(i):
-    return test_labels[0][i]
+    return labels[0][i]
 
 
 def actual_spread_func(i):
-    return test_labels[1][i]
+    return labels[1][i]
+
+
+def predictor_func_test(i):
+    return predictions_test[0][i]
+
+
+def predict_spread_func_test(i):
+    return predictions_test[1][i]
+
+
+def actual_label_func_test(i):
+    return labels_test[0][i]
+
+
+def actual_spread_func_test(i):
+    return labels_test[1][i]
 
 
 if __name__ == '__main__':
 
     class SpreadSolution(Solution):
-        def __init__(self, parameters):
+        def __init__(self, parameters, return_class):
             self.parameters = parameters.copy()
+            self.return_class = return_class
 
         def betting_epsilon_func(self, price):
             if price > 0:
@@ -97,8 +114,13 @@ if __name__ == '__main__':
 
         def score(self, data):
             # run simulation
+            test_score = simulate_spread(predictor_func_test, predict_spread_func_test, actual_label_func_test,
+                                         actual_spread_func_test, parameter_tweak_function, betting_decision,
+                                         data[1][0], data[1][1], self.parameters, price_str, num_samples_per_solution)
+            self.return_class.add_return(test_score)
+            print('Avg test score: ', self.return_class.get_avg())
             return simulate_spread(predictor_func, predict_spread_func, actual_label_func, actual_spread_func,
-                                   parameter_tweak_function, betting_decision, data[0], data[1], self.parameters,
+                                   parameter_tweak_function, betting_decision, data[0][0], data[0][1], self.parameters,
                                    price_str, num_samples_per_solution)
 
         def mutate(self):
@@ -108,56 +130,64 @@ if __name__ == '__main__':
             for k, v in second_copy.items():
                 if np.random.rand(1) < 2.0/float(len(second_copy)):
                     mutated_parameters[k] = (mutated_parameters[k]+v)/2.
-            return SpreadSolution(mutated_parameters)
+            return SpreadSolution(mutated_parameters, self.return_class)
 
         def cross_over(self, other):
             cross_parameters = self.parameters.copy()
             for k in cross_parameters:
                 if np.random.rand(1) < 0.5:
                     cross_parameters[k] = other.parameters[k]
-            return SpreadSolution(cross_parameters)
+            return SpreadSolution(cross_parameters, self.return_class)
 
 
     def solution_generator():
         parameters = {}
         parameter_update_func(parameters)
-        return SpreadSolution(parameters)
+        return SpreadSolution(parameters, returns)
+
+
+    def load_data(test_year):
+        betting_sites = [
+            'Bovada',
+            '5Dimes',
+            'BetOnline'
+        ]
+        betting_data = load_betting_data(betting_sites, test_year=test_year)
+        predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
+        test_data = []
+        for betting_site in betting_sites:
+            original_len = test_meta_data.shape[0]
+            df = pd.DataFrame.merge(
+                test_meta_data,
+                betting_data[betting_data.book_name == betting_site],
+                'left',
+                left_on=['year', 'player_id', 'opponent_id', 'tournament'],
+                right_on=['year', 'team1', 'team2', 'tournament'])
+            after_len = df.shape[0]
+            test_data.append(df)
+            if original_len != after_len:
+                print('Join data has different length... ', original_len, after_len)
+                exit(1)
+        return (test_meta_data, test_data), predictions, test_labels
+
 
     # define variables
     test_year = 2018
+    train_year = 2017
     price_str = 'price'
     parameters = {}
     np.random.seed(1)
     num_epochs = 50
-    num_samples_per_solution = 5
-    betting_sites = [
-        'Bovada',
-        '5Dimes',
-        'BetOnline'
-    ]
-    betting_data = load_betting_data(betting_sites, test_year=test_year)
+    num_samples_per_solution = 2
     model = k.models.load_model('tennis_match_keras_nn_v5.h5')
-    model.compile(optimizer='adam', loss='mean_squared_error',metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     print(model.summary())
-    predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
-    test_data = []
-    for betting_site in betting_sites:
-        original_len = test_meta_data.shape[0]
-        df = pd.DataFrame.merge(
-            test_meta_data,
-            betting_data[betting_data.book_name == betting_site],
-            'left',
-            left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-            right_on=['year', 'team1', 'team2', 'tournament'])
-        after_len = df.shape[0]
-        test_data.append(df)
-        if original_len != after_len:
-            print('Join data has different length... ', original_len, after_len)
-            exit(1)
+    returns = Return()
 
     # run simulation
     genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    data = (test_meta_data, test_data)
-    genetic_algorithm.fit(data, num_epochs=num_epochs)
+    data, predictions, labels = load_data(train_year)
+    test_data, predictions_test, labels_test = load_data(test_year)
+    genetic_algorithm.fit((data, test_data), num_solutions=10, num_epochs=num_epochs)
     exit(0)
 
