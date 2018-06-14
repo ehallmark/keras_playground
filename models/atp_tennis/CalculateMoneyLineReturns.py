@@ -60,11 +60,32 @@ if __name__ == '__main__':
 
 
     def actual_label_func(i):
-        return test_labels[0][i]
+        return labels[0][i]
+
+
+    def predictor_func_test(i):
+        return predictions_test[0][i]
+
+
+    def actual_label_func_test(i):
+        return labels_test[0][i]
+
+    class Return:
+        def __init__(self):
+            self.total_return = 0.0
+            self.count = 0
+
+        def add_return(self, ret):
+            self.count += 1
+            self.total_return += ret
+
+        def get_avg(self):
+            return self.total_return/self.count
 
 
     class MoneyLineSolution(Solution):
-        def __init__(self, parameters):
+        def __init__(self, parameters, return_class):
+            self.return_class = return_class
             self.parameters = parameters.copy()
 
         def betting_epsilon_func(self, price):
@@ -75,8 +96,13 @@ if __name__ == '__main__':
 
         def score(self, data):
             # run simulation
+            test_score = simulate_money_line(predictor_func_test, actual_label_func_test, parameter_tweak_func,
+                                       self.betting_epsilon_func, data[1], self.parameters,
+                                       price_str, 2)
+            self.return_class.add_return(test_score)
+            print('Avg test score: ', self.return_class.get_avg())
             return simulate_money_line(predictor_func, actual_label_func, parameter_tweak_func,
-                                       self.betting_epsilon_func, data, self.parameters,
+                                       self.betting_epsilon_func, data[0], self.parameters,
                                        price_str, num_samples_per_solution)
 
         def mutate(self):
@@ -99,34 +125,43 @@ if __name__ == '__main__':
     def solution_generator():
         parameters = {}
         parameter_update_func(parameters)
-        return MoneyLineSolution(parameters)
+        return MoneyLineSolution(parameters, returns)
+
+
+    def load_data(test_year):
+        predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
+        betting_sites = ['Bovada', '5Dimes', 'BetOnline']
+        betting_data = load_betting_data(betting_sites, test_year=test_year)
+        original_len = test_meta_data.shape[0]
+        test_meta_data = pd.DataFrame.merge(
+            test_meta_data,
+            betting_data,
+            'left',
+            left_on=['year', 'player_id', 'opponent_id', 'tournament'],
+            right_on=['year', 'team1', 'team2', 'tournament'])
+        after_len = test_meta_data.shape[0]
+        if original_len != after_len:
+            print('Join data has different length... ', original_len, after_len)
+            exit(1)
+        return predictions, test_labels, test_meta_data
 
     # define vars
-    test_year = 2018
-    model = k.models.load_model('tennis_match_keras_nn_v5.h5')
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-    predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
+    train_year = 2016
+    test_year = 2017
     price_str = 'max_price'
     num_epochs = 50
-    num_samples_per_solution = 5
+    num_samples_per_solution = 3
     parameters = {}
-    betting_sites = ['Bovada', '5Dimes', 'BetOnline']
-    betting_data = load_betting_data(betting_sites, test_year=test_year)
-    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    original_len = test_meta_data.shape[0]
-    test_meta_data = pd.DataFrame.merge(
-        test_meta_data,
-        betting_data,
-        'left',
-        left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['year', 'team1', 'team2', 'tournament'])
-    after_len = test_meta_data.shape[0]
-    if original_len != after_len:
-        print('Join data has different length... ', original_len, after_len)
-        exit(1)
-    # fit data
-    genetic_algorithm.fit(test_meta_data, num_epochs=num_epochs)
+    model = k.models.load_model('tennis_match_keras_nn_v5.h5')
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    predictions, labels, meta_data = load_data(test_year=train_year)
+    predictions_test, labels_test, meta_data_test = load_data(test_year=test_year)
 
+    returns = Return()
+    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
+
+    # fit data
+    genetic_algorithm.fit((meta_data, meta_data_test), num_epochs=num_epochs, num_solutions=10)
     exit(0)
 
 
