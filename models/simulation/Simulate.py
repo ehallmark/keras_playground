@@ -170,7 +170,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     avg_best /= num_trials
     #print('Best return: ', prev_best)
     #print('Worst return', prev_worst)
-    #print('Avg return', avg_best)
+    print('Avg return', avg_best)
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
