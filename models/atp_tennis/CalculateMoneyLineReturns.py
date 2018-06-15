@@ -146,9 +146,9 @@ if __name__ == '__main__':
             for k in parameters_avg:
                 parameters_avg[k] /= len(solutions)
 
-            test_score = simulate_money_line(predictor_func_test, actual_label_func_test, parameter_update_func,
+            test_score = simulate_money_line(predictor_func_test, actual_label_func_test, lambda _: None,
                                              betting_epsilon_func, meta_data_test, parameters_avg,
-                                             price_str, 5)
+                                             price_str, 1)
             returns.add_return(test_score)
             print('Avg test score: ', returns.get_avg())
 
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         return predictions, test_labels, test_meta_data
 
     # define vars
-    train_year = 2017
+    train_year = 2016
     test_year = 2018
     price_str = 'max_price'
     num_epochs = 50
