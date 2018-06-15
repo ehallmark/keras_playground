@@ -59,10 +59,10 @@ def parameter_update_func(parameters):
 
 
 def parameter_tweak_function(parameters):
-    parameters['max_loss_percent'] += float(0.01 - np.random.rand(1) * 0.02)
-    parameters['betting_epsilon1'] += float(0.02 - np.random.rand(1) * 0.04)
-    parameters['betting_epsilon2'] += float(0.02 - np.random.rand(1) * 0.04)
-    parameters['spread_epsilon'] += float(0.5 - (np.random.rand(1) * 1.))
+    parameters['max_loss_percent'] += float(0.02 - np.random.rand(1) * 0.04)
+    parameters['betting_epsilon1'] += float(0.04 - np.random.rand(1) * 0.08)
+    parameters['betting_epsilon2'] += float(0.04 - np.random.rand(1) * 0.08)
+    parameters['spread_epsilon'] += float(1.0 - (np.random.rand(1) * 2.0))
     parameters['max_price_plus'] += float(50.0 - np.random.rand(1) * 100.0)
     parameters['max_price_minus'] += float(50.0 - np.random.rand(1) * 100.0)
 

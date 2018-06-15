@@ -33,11 +33,13 @@ def bool_to_int(b):
 test_season = 2017
 start_season = 1990
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-sql = pd.read_sql('select * from nba_games_all where game_date is not null and ' +
-                  'season_type = \'Regular Season\' and h_fg3_pct is ' +
-                  'not null and a_fg3_pct is not null and a_stl is not null and h_oreb is not null '+
-                  'season_year>='+str(start_season)+' and season_year<=' + str(test_season) +
-                  'order by game_date asc', conn)
+sql = pd.read_sql('''select * from nba_games_all  as h
+            join nba_games_all as a on (h.game_id,h.a_team_id)=(a.game_id,a.team_id)
+            where a.game_date is not null and a.season_type = \'Regular Season\' and 
+            a.fg3_pct is not null and a.stl is not null and a.oreb is not null and 
+            a.season_year>={{START}} and a.season_year<={{END}}
+            order by a.game_date asc
+'''.replace("{{START}}", str(start_season)).replace("{{END}}", str(test_season)), conn)
 
 input_attributes = [
      'h_stl', 'h_oreb', 'h_tov', 'h_fgm', 'h_fga', 'h_fg3a', 'h_fg3m', 'h_pf',
