@@ -10,11 +10,11 @@ from sklearn.externals import joblib
 
 if __name__ == '__main__':
     model_file = 'tennis_match_outcome_model_'
-    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1998)
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
     lr = LogisticRegression()
     gnb = GaussianNB()
     svc = LinearSVC(C=1.0)
-    rfc = RandomForestClassifier(n_estimators=100)
+    rfc = RandomForestClassifier(n_estimators=10)
     print('Attrs: ', sql[all_attributes][0:20])
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -30,14 +30,16 @@ if __name__ == '__main__':
         X_test = np.array(test_data[input_attributes])
         y_test = np.array(test_data[y_str]).flatten()
         model.fit(X, y)
+        file_name = model_file+name.lower().replace(' ', '_')
         print('Fit.')
-
+        joblib.dump(model, file_name)
+        model = joblib.load(file_name)
+        print('Saved and reloaded.')
         binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
 
         print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
               ' ('+to_percentage(binary_percent)+')')
         print('Average error: ', to_percentage(avg_error))
-        joblib.dump(model, model_file+name.lower().replace(' ', '_'))
         if hasattr(model, "predict_proba"):
             prob_pos = model.predict_proba(X_test)[:, 1]
         else:  # use decision function
