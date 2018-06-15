@@ -6,13 +6,15 @@ from sklearn.svm import LinearSVC
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 import numpy as np
+from sklearn.externals import joblib
 
 if __name__ == '__main__':
-    sql, test_data = load_data(all_attributes, test_season=2016, start_year=2005)
+    model_file = 'tennis_match_outcome_model_'
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1998)
     lr = LogisticRegression()
     gnb = GaussianNB()
     svc = LinearSVC(C=1.0)
-    rfc = RandomForestClassifier(n_estimators=500)
+    rfc = RandomForestClassifier(n_estimators=100)
     print('Attrs: ', sql[all_attributes][0:20])
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -35,7 +37,7 @@ if __name__ == '__main__':
         print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
               ' ('+to_percentage(binary_percent)+')')
         print('Average error: ', to_percentage(avg_error))
-        #model..save(model_file)
+        joblib.dump(model, model_file+name.lower().replace(' ', '_'))
         if hasattr(model, "predict_proba"):
             prob_pos = model.predict_proba(X_test)[:, 1]
         else:  # use decision function
