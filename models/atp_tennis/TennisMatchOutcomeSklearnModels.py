@@ -14,16 +14,17 @@ if __name__ == '__main__':
     lr = LogisticRegression()
     gnb = GaussianNB()
     svc = LinearSVC(C=1.0)
-    rfc = RandomForestClassifier(n_estimators=10)
+    #rfc = RandomForestClassifier(n_estimators=300)
     print('Attrs: ', sql[all_attributes][0:20])
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
     for model, name in [(lr, 'Logistic'),
-                      (gnb, 'Naive Bayes'),
-                      (svc, 'Support Vector Classification'),
-                      (rfc, 'Random Forest')]:
+                        (gnb, 'Naive Bayes'),
+                        (svc, 'Support Vector Classification'),
+                        #(rfc, 'Random Forest')
+                        ]:
         y_str = 'y'
         X = np.array(sql[input_attributes])
         y = np.array(sql[y_str]).flatten()
