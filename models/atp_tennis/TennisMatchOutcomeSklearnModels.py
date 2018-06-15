@@ -12,7 +12,7 @@ if __name__ == '__main__':
     lr = LogisticRegression()
     gnb = GaussianNB()
     svc = LinearSVC(C=1.0)
-    rfc = RandomForestClassifier(n_estimators=300)
+    rfc = RandomForestClassifier(n_estimators=500)
     print('Attrs: ', sql[all_attributes][0:20])
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
