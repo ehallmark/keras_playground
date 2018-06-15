@@ -90,9 +90,6 @@ for opp in opp_input_attributes:
     if not opp in all_attributes:
         all_attributes.append(opp)
 
-print('Num input attrs: ', len(input_attributes))
-print('Num opponent attrs: ', len(opp_input_attributes))
-
 
 def get_all_data(test_season=2017, start_year=2003, tournament=None):
     all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)

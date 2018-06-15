@@ -2,10 +2,12 @@ import keras as k
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
+import statsmodels.formula.api as smf
 from models.simulation.Simulate import simulate_money_line
-import models.atp_tennis.TennisMatchOutcomeNN as tennis_model
+import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 from models.genetics.GeneticAlgorithm import GeneticAlgorithm, Solution
+from statsmodels.regression.linear_model import RegressionResults
 
 
 class Return:
@@ -23,7 +25,7 @@ class Return:
 
 if __name__ == '__main__':
     def load_predictions_and_actuals(model, test_year=2018):
-        all_data = tennis_model.get_all_data(test_year)
+        all_data = tennis_model.get_all_data(test_season=test_year, start_year=test_year)
         test_meta_data = all_data[2]
         test_data = all_data[1]
         test_labels = test_data[1]
@@ -31,8 +33,6 @@ if __name__ == '__main__':
         print('Average error: ', to_percentage(avg_error))
         print('Test Meta Data Size: ', test_meta_data.shape[0])
         predictions = model.predict(test_data[0])
-        predictions[0] = predictions[0].flatten()
-        predictions[1] = predictions[1].flatten()
         return predictions, test_labels, test_meta_data
 
 
@@ -70,19 +70,19 @@ if __name__ == '__main__':
 
 
     def predictor_func(i):
-        return predictions[0][i]
+        return predictions[i]
 
 
     def actual_label_func(i):
-        return labels[0][i]
+        return labels[i]
 
 
     def predictor_func_test(i):
-        return predictions_test[0][i]
+        return predictions_test[i]
 
 
     def actual_label_func_test(i):
-        return labels_test[0][i]
+        return labels_test[i]
 
 
     class MoneyLineSolution(Solution):
@@ -154,8 +154,7 @@ if __name__ == '__main__':
     num_epochs = 50
     num_samples_per_solution = 3
     parameters = {}
-    model = k.models.load_model('tennis_match_keras_nn_v5.h5')
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model = RegressionResults.load('tennis_match_outcome_logit.statmodel')
     predictions, labels, meta_data = load_data(test_year=train_year)
     predictions_test, labels_test, meta_data_test = load_data(test_year=test_year)
 

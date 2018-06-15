@@ -203,20 +203,27 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     if not keep_nulls:
         sql_str = sql_str + '        and m.first_serve_attempted > 0'
     sql = pd.read_sql(sql_str, conn)
-    #print('Data: ', sql[:10])
     sql = sql[attributes].astype(np.float64, errors='ignore')
     test_data = sql[sql.year == test_season]
     sql = sql[sql.year != test_season]
     return sql, test_data
 
 
-if __name__ == '__main__':
+def get_all_data(test_season=2017, start_year=2003, tournament=None):
+    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
+    data, test_data = all_data
+    if tournament is not None:
+        data = data[(data.tournament==tournament)&(data.year==test_season)]
+        test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
+    # create inputs
+    test_meta_data = test_data[meta_attributes]
+    print("Data: ", data[input_attributes])
+    data = (data[input_attributes], np.array(data['y']))
+    test_data = (test_data[input_attributes], np.array(test_data['y']))
+    return data, test_data, test_meta_data
 
-    input_attributes = [
-        #'clay',
-        #'grass',
-        #'prev_h2h2_both_win',
-        #'prev_h2h2_both_lost',
+
+input_attributes = [
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
         'mean_duration',
@@ -225,28 +232,17 @@ if __name__ == '__main__':
         'mean_opp_return_points_made',
         'mean_second_serve_points_made',
         'mean_opp_second_serve_points_made',
-        #'mean_first_serve_points_made',
-        #'mean_opp_first_serve_points_made',
         'h2h_prior_win_percent',
-        #'h2h_prior_encounters',
-        #'h2h_prior_victories',
-        #'prev_year_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
         'prev_year_avg_round',
         'opp_prev_year_avg_round',
-        #'opp_tourney_hist_avg_round',
-        #'tourney_hist_avg_round',
-        #'tourney_hist_prior_win_percent',
-        #'grand_slam',
-        #'tourney_hist_prior_encounters',
-        #'opp_tourney_hist_prior_encounters',
-        #'first_serve_made',
-        #'first_serve_attempted',
-        #'return_points_won',
-        #'return_points_attempted',
-        'mean_break_points_made',
-        'mean_opp_break_points_made',
+        'opp_tourney_hist_avg_round',
+        'tourney_hist_avg_round',
+        'tourney_hist_prior_encounters',
+        'opp_tourney_hist_prior_encounters',
+        #'mean_break_points_made',
+        #'mean_opp_break_points_made',
         #'previous_tournament_round',
         #'opp_previous_tournament_round',
         'tiebreak_win_percent',
@@ -259,24 +255,30 @@ if __name__ == '__main__':
         'opp_age',
         #'lefty',
         #'opp_lefty',
-        #'weight','opp_weight',
-        #'height','opp_height',
+        #'weight',
+        #'opp_weight',
+        'height',
+        'opp_height',
         'duration_prev_match',
         'opp_duration_prev_match',
         'elo_score',
         'opp_elo_score'
     ]
 
-    y = 'spread'
-    all_attributes = list(input_attributes)
-    all_attributes.append(y)
-    all_attributes.append('year')
+y = 'y'
+all_attributes = list(input_attributes)
+all_attributes.append(y)
+meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+for meta in meta_attributes:
+    all_attributes.append(meta)
 
-    sql, test_data = load_data(all_attributes, test_season=2016, start_year=2003)
+if __name__ == '__main__':
+    model_file = 'tennis_match_outcome_logit.statmodel'
+    sql, test_data = load_data(all_attributes, test_season=2016, start_year=2005)
     print('Attrs: ', sql[all_attributes][0:20])
 
     # model to predict the total score (h_pts + a_pts)
-    results = smf.ols(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
+    results = smf.logit(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
     print(results.summary())
 
     binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
@@ -284,6 +286,7 @@ if __name__ == '__main__':
     print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
           ' ('+to_percentage(binary_percent)+')')
     print('Average error: ', to_percentage(avg_error))
+    results.save(model_file)
 
     exit(0)
 
