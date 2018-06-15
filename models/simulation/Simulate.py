@@ -4,7 +4,7 @@ from random import shuffle
 import pandas as pd
 
 
-def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, betting_epsilon_func, test_meta_data, parameters,
+def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, bet_func, test_meta_data, parameters,
                         price_str='price', num_trials=50, sampling=0):
     worst_parameters = None
     best_parameters = None
@@ -74,10 +74,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                 return_game = 0.0
                 actual_result = actual_label_func(i)
 
-                price_diff = abs(abs(max_price1) - abs(max_price2))
-                if 'max_price_diff' in parameters and price_diff > parameters['max_price_diff']:
-                    continue
-                if parameters['max_price_minus'] < max_price1 < parameters['max_price_plus'] and best_odds1 < prediction - betting_epsilon_func(max_price1):
+                if bet_func(max_price1, prediction):
                     confidence = (prediction - best_odds1) * betting_minimum
                     if is_under1:
                         capital_requirement = -max_price1 * confidence
@@ -112,7 +109,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         return_game += ret
                         available_capital += ret
                         num_bets += 1
-                if parameters['max_price_minus'] < max_price2 < parameters['max_price_plus'] and best_odds2 < (1.0 - prediction) - betting_epsilon_func(max_price2):
+                if bet_func(max_price2, best_odds2, 1.0-prediction):
                     confidence = (1.0 - prediction - best_odds2) * betting_minimum
                     if is_under2:
                         capital_requirement = -max_price2 * confidence
