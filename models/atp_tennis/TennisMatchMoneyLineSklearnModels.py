@@ -6,6 +6,7 @@ from sklearn.svm import LinearSVC
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
+from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcome_input_attributes
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
@@ -51,7 +52,8 @@ input_attributes = [
         'opp_duration_prev_match',
         'elo_score',
         'opp_elo_score',
-        'odds1',
+        'max_price1',
+        'max_price2',
         'predictions'
     ]
 
@@ -64,26 +66,22 @@ for meta in meta_attributes:
 
 
 def load_outcome_predictions_and_actuals(model, test_year=2018, start_year=2005):
-    all_data = tennis_model.get_all_data(test_season=test_year, start_year=start_year)
-    data, meta_data = all_data[0], all_data[1]
-    test_data, test_meta_data = all_data[2], all_data[3]
+    data, test_data = tennis_model.get_all_data(test_season=test_year, start_year=start_year)
     labels = data[1]
     data = data[0]
     test_labels = test_data[1]
     test_data = test_data[0]
-    X = np.array(data[input_attributes])
-    y = np.array(data[y_str]).flatten()
+    X = np.array(data[outcome_input_attributes])
+    X_test = np.array(test_data[outcome_input_attributes])
+    y = np.array(labels).flatten()
     model.fit(X, y)
-    avg_error = test_model(model, test_data, test_labels)
-    print('Average error: ', to_percentage(avg_error))
-    print('Test Meta Data Size: ', test_meta_data.shape[0])
-    data['predictions'] = model.predict(data)
-    data[y] = labels
-    meta_data['labels'] = labels
-    test_data['predictions'] = model.predict(test_data)
-    test_meta_data['labels'] = test_labels
-    test_data[y] = test_labels
-    return data, meta_data, test_data, test_meta_data
+    avg_error = test_model(model, X_test, test_labels)
+    print('Average error: ', avg_error)
+    data['predictions'] = model.predict(X)
+    data[y_str] = labels
+    test_data['predictions'] = model.predict(X_test)
+    test_data[y_str] = test_labels
+    return data, test_data
 
 
 def load_betting_data(betting_sites, test_year=2018):
@@ -104,27 +102,22 @@ def load_betting_data(betting_sites, test_year=2018):
 
 
 def load_data(model, test_year):
-    data, meta_data, test_data, test_meta_data = load_outcome_predictions_and_actuals(model, test_year=test_year)
+    data, test_data = load_outcome_predictions_and_actuals(model, test_year=test_year)
     betting_sites = ['Bovada', '5Dimes', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
-    original_len = test_meta_data.shape[0]
-    test_meta_data = pd.DataFrame.merge(
-        test_meta_data,
+    test_data = pd.DataFrame.merge(
+        test_data,
         betting_data,
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'])
-    after_len = test_meta_data.shape[0]
-    if original_len != after_len:
-        print('Join data has different length... ', original_len, after_len)
-        exit(1)
-    meta_data = pd.DataFrame.merge(
-        meta_data,
+    data = pd.DataFrame.merge(
+        data,
         betting_data,
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'])
-    return data, meta_data, test_data, test_meta_data
+    return data, test_data
 
 
 if __name__ == '__main__':
@@ -141,7 +134,7 @@ if __name__ == '__main__':
                       (gnb, 'Naive Bayes'),
                       (svc, 'Support Vector Classification'),
                       (rfc, 'Random Forest')]:
-        data, meta_data, test_data, meta_data_test = load_data(model, test_year=test_year)
+        data, test_data = load_data(model, test_year=test_year)
         print('Input Attrs: ', data[input_attributes][0:5])
         X_test = np.array(test_data[input_attributes])
         y_test = np.array(test_data[y_str]).flatten()

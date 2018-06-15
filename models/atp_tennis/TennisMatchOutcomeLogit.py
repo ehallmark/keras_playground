@@ -216,11 +216,9 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
         data = data[(data.tournament==tournament)&(data.year==test_season)]
         test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
     # create inputs
-    meta_data = data[meta_attributes]
-    test_meta_data = test_data[meta_attributes]
-    data = (data[input_attributes], np.array(data['y']))
-    test_data = (test_data[input_attributes], np.array(test_data['y']))
-    return data, meta_data, test_data, test_meta_data
+    data = (data[all_attributes], np.array(data['y']))
+    test_data = (test_data[all_attributes], np.array(test_data['y']))
+    return data, test_data
 
 
 input_attributes = [
