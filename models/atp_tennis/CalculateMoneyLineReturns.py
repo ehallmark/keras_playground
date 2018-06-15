@@ -97,15 +97,9 @@ if __name__ == '__main__':
                 return self.parameters['betting_epsilon2']
 
         def score(self, data):
-            # run simulation
-            test_score = simulate_money_line(predictor_func_test, actual_label_func_test, parameter_tweak_func,
-                                       self.betting_epsilon_func, data[1], self.parameters,
-                                       price_str, 2)
-            self.return_class.add_return(test_score)
-            print('Avg test score: ', self.return_class.get_avg())
             return simulate_money_line(predictor_func, actual_label_func, parameter_tweak_func,
-                                       self.betting_epsilon_func, data[0], self.parameters,
-                                       price_str, num_samples_per_solution)
+                                       self.betting_epsilon_func, data, self.parameters,
+                                       price_str, num_samples_per_solution, sampling=0.1)
 
         def mutate(self):
             mutated_parameters = self.parameters.copy()
@@ -130,6 +124,35 @@ if __name__ == '__main__':
         return MoneyLineSolution(parameters, returns)
 
 
+    def after_epoch_func():
+        # run simulation
+        solutions = genetic_algorithm.solutions
+
+        def betting_epsilon_func(price):
+            if price > 0:
+                return parameters_avg['betting_epsilon1']
+            else:
+                return parameters_avg['betting_epsilon2']
+
+        if len(solutions) > 0:
+            parameters_avg = {}
+            for solution in solutions:
+                parameters = solution.parameters
+                for k, v in parameters.items():
+                    if k in parameters_avg:
+                        parameters_avg[k] += v
+                    else:
+                        parameters_avg[k] = v
+            for k in parameters_avg:
+                parameters_avg[k] /= len(solutions)
+
+            test_score = simulate_money_line(predictor_func_test, actual_label_func_test, parameter_update_func,
+                                             betting_epsilon_func, meta_data_test, parameters_avg,
+                                             price_str, 5)
+            returns.add_return(test_score)
+            print('Avg test score: ', returns.get_avg())
+
+
     def load_data(test_year):
         predictions, test_labels, test_meta_data = load_predictions_and_actuals(model, test_year=test_year)
         betting_sites = ['Bovada', '5Dimes', 'BetOnline']
@@ -152,17 +175,18 @@ if __name__ == '__main__':
     test_year = 2018
     price_str = 'max_price'
     num_epochs = 50
-    num_samples_per_solution = 3
+    num_samples_per_solution = 10
     parameters = {}
     model = RegressionResults.load('tennis_match_outcome_logit.statmodel')
     predictions, labels, meta_data = load_data(test_year=train_year)
     predictions_test, labels_test, meta_data_test = load_data(test_year=test_year)
 
     returns = Return()
-    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
+    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator,
+                                         after_epoch_func=after_epoch_func)
 
     # fit data
-    genetic_algorithm.fit((meta_data, meta_data_test), num_epochs=num_epochs, num_solutions=10)
+    genetic_algorithm.fit(meta_data, num_epochs=num_epochs, num_solutions=20)
     exit(0)
 
 

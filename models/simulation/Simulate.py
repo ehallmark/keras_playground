@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, betting_epsilon_func, test_meta_data, parameters,
-                        price_str='price', num_trials=50):
+                        price_str='price', num_trials=50, sampling=0):
     worst_parameters = None
     best_parameters = None
 
@@ -39,6 +39,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
         shuffle(indices)
+        if sampling > 0:
+            indices = indices[0: round(sampling*len(indices))]
         for i in indices:
             row = test_meta_data.iloc[i]
             prediction = predictor_func(i)
@@ -150,7 +152,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     #    print("Parameters: ", parameters)
     #    print('Initial Capital: ', initial_capital)
     #    print('Final Capital: ', available_capital)
-        print('Num bets: ', num_bets)
+    #    print('Num bets: ', num_bets)
     #    print('Total Return: ', return_total)
     #    print('Average Return Per Amount Invested: ', return_total / amount_invested)
     #    print('Overall Return For The Year: ', return_total / initial_capital)
@@ -168,7 +170,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     avg_best /= num_trials
     #print('Best return: ', prev_best)
     #print('Worst return', prev_worst)
-    print('Avg return', avg_best)
+    #print('Avg return', avg_best)
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
