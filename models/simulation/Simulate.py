@@ -74,8 +74,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                 return_game = 0.0
                 actual_result = actual_label_func(i)
 
-                if bet_func(max_price1, prediction):
-                    confidence = (prediction - best_odds1) * betting_minimum
+                if bet_func(max_price1, best_odds1, prediction):
+                    confidence = 10  # (prediction - best_odds1) * betting_minimum
                     if is_under1:
                         capital_requirement = -max_price1 * confidence
                     else:
@@ -110,7 +110,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         available_capital += ret
                         num_bets += 1
                 if bet_func(max_price2, best_odds2, 1.0-prediction):
-                    confidence = (1.0 - prediction - best_odds2) * betting_minimum
+                    confidence = 10  # (1.0 - prediction - best_odds2) * betting_minimum
                     if is_under2:
                         capital_requirement = -max_price2 * confidence
                     else:

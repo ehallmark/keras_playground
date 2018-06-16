@@ -8,17 +8,19 @@ import matplotlib.pyplot as plt
 '''
 
 
-def test_model(model, x, y):
+def test_model(model, x, y, include_binary=True):
     predictions = model.predict(x)
-    binary_predictions = (predictions >= 0.5).astype(int)
-    binary_errors = np.array(y) != np.array(binary_predictions)
-    binary_errors = binary_errors.astype(int)
     errors = np.array(y - np.array(predictions))
-    binary_correct = predictions.shape[0] - int(binary_errors.sum())
-    binary_percent = float(binary_correct) / predictions.shape[0]
-    avg_error = np.mean(np.abs(errors), -1)
-    return binary_correct, y.shape[0], binary_percent, avg_error
-
+    binary_predictions = (predictions >= 0.5).astype(int)
+    avg_error = np.mean(np.abs(errors))
+    if include_binary:
+        binary_errors = np.array(y) != np.array(binary_predictions)
+        binary_errors = binary_errors.astype(int)
+        binary_correct = predictions.shape[0] - int(binary_errors.sum())
+        binary_percent = float(binary_correct) / predictions.shape[0]
+        return binary_correct, y.shape[0], binary_percent, avg_error
+    else:
+        return y.shape[0], avg_error
 
 def to_percentage(x):
     return str("%0.2f" % (x * 100))+'%'

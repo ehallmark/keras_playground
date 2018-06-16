@@ -10,6 +10,7 @@ from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcom
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
+from models.simulation.Simulate import simulate_money_line
 
 betting_input_attributes = [
     'prev_h2h2_wins_player',
@@ -47,7 +48,7 @@ betting_only_attrs = [
     'predictions'
 ]
 
-y_str = 'place_bet'
+y_str = 'returns'
 for attr in betting_only_attrs:
     if attr not in betting_input_attributes:
         betting_input_attributes.append(attr)
@@ -59,8 +60,29 @@ for meta in meta_attributes:
     all_attributes.append(meta)
 
 
-def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, start_year=2005):
-    data, test_data = tennis_model.get_all_data(attributes,test_season=test_year, start_year=start_year)
+def extract_returns(data,labels):
+    returns = []
+    parameters = {}
+    parameters['max_loss_percent'] = 0.1
+    parameters['betting_epsilon1'] = 0.0
+    parameters['betting_epsilon2'] = 0.0
+    parameters['max_price_plus'] = 800
+    parameters['max_price_minus'] = -800
+
+    def bet_func(price, odds, prediction):
+        return prediction > odds
+
+    for i in range(len(labels)):
+        return1 = simulate_money_line(lambda i: data['predictions'][i], lambda i: labels[i], lambda _: None,
+                                      bet_func, data[i:i+1], parameters,
+                                      'max_price', 1, sampling=0)
+        returns.append(return1)
+    return returns
+
+
+def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=2, start_year=2005):
+    data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
+    test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
     labels = data[1]
     data = data[0]
     test_labels = test_data[1]
@@ -72,9 +94,9 @@ def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, star
     avg_error = test_model(model, X_test, test_labels)
     print('Average error: ', avg_error)
     data['predictions'] = model.predict(X)
-    data[y_str] = labels
     test_data['predictions'] = model.predict(X_test)
-    test_data[y_str] = test_labels
+    data['actual'] = labels
+    test_data['actual'] = test_labels
     return data, test_data
 
 
@@ -100,7 +122,7 @@ def load_data(model, start_year, test_year):
     for attr in betting_input_attributes:
         if attr not in attributes and attr not in betting_only_attrs:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, start_year=start_year)
+    data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, num_test_years=3, start_year=start_year)
     betting_sites = ['Bovada', '5Dimes', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
     test_data = pd.DataFrame.merge(
@@ -115,12 +137,14 @@ def load_data(model, start_year, test_year):
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'])
+    data[y_str] = extract_returns(data, data['actual'])
+    test_data[y_str] = extract_returns(test_data, test_data['actual'])
     return data, test_data
 
 
 if __name__ == '__main__':
-    test_year = 2017
-    start_year = 2011
+    test_year = 2018
+    start_year = 2006
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, test_year=test_year)
@@ -129,12 +153,10 @@ if __name__ == '__main__':
         rf = RandomForestRegressor(n_estimators=500)
         plt.figure(figsize=(10, 10))
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
-        ax2 = plt.subplot2grid((3, 1), (2, 0))
-        ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-        plt.figure(figsize=(10, 10))
-        for model, name in [(lr, 'Linear Regression'),
-                            (rf, 'Random Forest Regressor')
-                            ]:
+        for model, name in [
+                        (lr, 'Linear Regression'),
+                        (rf, 'Random Forest Regressor'),
+                    ]:
             X_train = np.array(data[betting_input_attributes])
             y_train = np.array(data[y_str]).flatten()
             X_test = np.array(test_data[betting_input_attributes])
@@ -143,29 +165,19 @@ if __name__ == '__main__':
             print("Shapes: ", X_train.shape, X_test.shape)
 
             model.fit(X_train, y_train)
-            binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+            n, avg_error = test_model(model, X_test, y_test, include_binary=False)
 
-            print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
-                  ' ('+to_percentage(binary_percent)+')')
-            print('Average error: ', to_percentage(avg_error))
+            print('Average error: ', avg_error)
 
             prediction = model.predict(X_test)
-            print('Predictions: ', prediction)
-            prob_pos = prediction > 0
-            fraction_of_positives, mean_predicted_value = \
-                calibration_curve(y_test, prob_pos, n_bins=10)
-
-            ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+            errors = prediction - y_test
+            ax1.plot(list(range(len(errors))), errors, "s-",
                      label="%s" % (name,))
 
-        ax1.set_ylabel("Fraction of positives")
-        ax1.set_ylim([-0.05, 1.05])
+        ax1.set_ylabel("Error")
+        ax1.set_ylim([min(errors)-0.5, max(errors)+0.5])
         ax1.legend(loc="lower right")
-        ax1.set_title('Calibration plots  (reliability curve)')
-
-        ax2.set_xlabel("Mean predicted value")
-        ax2.set_ylabel("Count")
-        ax2.legend(loc="upper center", ncol=2)
+        ax1.set_title('Errors')
 
         plt.tight_layout()
         plt.show()
