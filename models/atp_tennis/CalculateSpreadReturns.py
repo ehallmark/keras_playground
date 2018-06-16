@@ -8,6 +8,7 @@ from models.simulation.Simulate import simulate_spread
 from models.genetics.GeneticAlgorithm import GeneticAlgorithm, Solution
 from models.atp_tennis.CalculateMoneyLineReturns import Return
 
+
 def load_predictions_and_actuals(model, test_year=2018):
     all_data = tennis_model.get_all_data(test_year)
     test_meta_data = all_data[2]
@@ -19,21 +20,6 @@ def load_predictions_and_actuals(model, test_year=2018):
     predictions[0] = predictions[0].flatten()
     predictions[1] = predictions[1].flatten()
     return predictions, test_labels, test_meta_data
-
-
-def load_betting_data(betting_sites, test_year=2018):
-    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-    betting_data = pd.read_sql('''
-        select year,tournament,team1,team2,
-        book_name,
-        price1,
-        price2,
-        spread1,
-        spread2
-        from atp_tennis_betting_link_spread 
-        where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
-    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
-    return betting_data
 
 
 def betting_decision(victory_prediction, spread_prediction, odds, spread, underdog, parameters={}):

@@ -14,7 +14,7 @@ from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcom
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
-from models.simulation.Simulate import simulate_money_line
+from models.simulation.Simulate import simulate_spread
 
 betting_input_attributes = [
     #'prev_h2h2_wins_player',
@@ -48,6 +48,8 @@ betting_input_attributes = [
 betting_only_attrs = [
     'odds1',
     'odds2',
+    'spread1',
+    'spread2',
     'predictions'
 ]
 
@@ -67,45 +69,52 @@ def predict_proba(model, X, min=0, max=1):
     if hasattr(model, "predict_proba"):
         prob_pos = model.predict_proba(X)[:, 1]
         return prob_pos
-    else:
-        return None
+    return None
 
 
 def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=3, start_year=2005):
-    data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
+    data, _ = tennis_model.get_all_data(attributes,include_spread=True,test_season=test_year-num_test_years+1, start_year=start_year)
+    test_data, _ = tennis_model.get_all_data(attributes,include_spread=True,test_season=test_year+1, start_year=test_year+1-num_test_years)
     labels = data[1]
+    spreads = labels[1]
+    labels = labels[0]
     data = data[0]
     test_labels = test_data[1]
+    test_spreads = test_labels[1]
+    test_labels = test_labels[0]
     test_data = test_data[0]
     X = np.array(data[outcome_input_attributes])
     X_test = np.array(test_data[outcome_input_attributes])
     data['predictions'] = predict_proba(model, X)
     test_data['predictions'] = predict_proba(model, X_test)
     data['actual'] = labels
+    data['spread_actual'] = spreads
     test_data['actual'] = test_labels
+    test_data['spread_actual'] = test_spreads
     return data, test_data
 
 
 def load_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
-         select year,tournament,team1,team2,
-         min(price1) as min_price1, 
-         max(price1) as max_price1,
-         min(price2) as min_price2,
-         max(price2) as max_price2,
-         sum(odds1)/count(*) as odds1,
-         sum(odds2)/count(*) as odds2
-         from atp_tennis_betting_link 
-         where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
-         group by year,tournament,team1,team2
-     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\'' + '\',\''.join(betting_sites) + '\''), conn)
+        select year,tournament,team1,team2,
+        book_name,
+        price1,
+        price2,
+        spread1,
+        spread2,
+        odds1,
+        odds2
+        from atp_tennis_betting_link_spread 
+        where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
+    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
 
 def load_data(model, start_year, test_year, num_test_years):
     attributes = list(tennis_model.all_attributes)
+    if 'spread' not in attributes:
+        attributes.append('spread')
     for attr in betting_input_attributes:
         if attr not in attributes and attr not in betting_only_attrs:
             attributes.append(attr)
@@ -157,9 +166,15 @@ if __name__ == '__main__':
             y_train = np.array(data[y_str]).flatten()
             X_test = np.array(test_data[betting_input_attributes])
             y_test = np.array(test_data[y_str]).flatten()
+
             print("Shapes: ", X_train.shape, X_test.shape)
+
             model.fit(X_train, y_train)
+            #n, avg_error = test_model(model, X_test, y_test, include_binary=False)
+            #print('Average error: ', avg_error)
+
             binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+
             print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
                   ' (' + to_percentage(binary_percent) + ')')
             print('Average error: ', to_percentage(avg_error))
@@ -195,9 +210,9 @@ if __name__ == '__main__':
                 #print('Expectation:', expectation, ' Implied: ', expectation_implied)
                 return expectation > 1.
             print('Test prediction shape: ', prob_pos.shape)
-            test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
+            test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'max_price', 1, sampling=0)
+                                              'price', 1)
             print('Final test return:', test_return, ' Num bets:', num_bets)
 
         ax1.set_ylabel("Fraction of positives")

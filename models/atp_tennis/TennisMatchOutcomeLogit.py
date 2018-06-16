@@ -211,15 +211,19 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     return sql, test_data
 
 
-def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=None):
+def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=None, include_spread=False):
     all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
     data, test_data = all_data
     if tournament is not None:
         data = data[(data.tournament==tournament)&(data.year==test_season)]
         test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
     # create inputs
-    data = (data, np.array(data['y']))
-    test_data = (test_data, np.array(test_data['y']))
+    if include_spread:
+        data = (data, [np.array(data['y']), np.array(data['spread'])])
+        test_data = (test_data, [np.array(test_data['y']), np.array(test_data['spread'])])
+    else:
+        data = (data, np.array(data['y']))
+        test_data = (test_data, np.array(test_data['y']))
     return data, test_data
 
 
