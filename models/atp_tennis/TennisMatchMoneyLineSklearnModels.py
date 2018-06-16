@@ -18,10 +18,6 @@ betting_input_attributes = [
     'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    #'prev_year_avg_round',
-    #'opp_prev_year_avg_round',
-    #'opp_tourney_hist_avg_round',
-    #'tourney_hist_avg_round',
     'tourney_hist_prior_encounters',
     'opp_tourney_hist_prior_encounters',
     'tiebreak_win_percent',
@@ -43,9 +39,9 @@ betting_input_attributes = [
 ]
 
 betting_only_attrs = [
-    'max_price1',
-    'max_price2',
-    'predictions'
+    #'max_price1',
+    #'max_price2',
+    #'predictions'
 ]
 
 y_str = 'returns'
@@ -80,7 +76,7 @@ def extract_returns(data,labels):
     return returns
 
 
-def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=2, start_year=2005):
+def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=1, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
     labels = data[1]
@@ -122,7 +118,7 @@ def load_data(model, start_year, test_year):
     for attr in betting_input_attributes:
         if attr not in attributes and attr not in betting_only_attrs:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, num_test_years=3, start_year=start_year)
+    data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, num_test_years=1, start_year=start_year)
     betting_sites = ['Bovada', '5Dimes', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
     test_data = pd.DataFrame.merge(
