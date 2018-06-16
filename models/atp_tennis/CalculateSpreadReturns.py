@@ -31,7 +31,7 @@ def load_betting_data(betting_sites, test_year=2018):
         spread1,
         spread2
         from atp_tennis_betting_link_spread 
-        where year={{YEAR}} and book_name in ({{BOOK_NAMES}})
+        where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 

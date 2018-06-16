@@ -209,7 +209,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     return sql, test_data
 
 
-def get_all_data(test_season=2017, start_year=2003, tournament=None):
+def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=None):
     all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
     data, test_data = all_data
     if tournament is not None:
@@ -224,8 +224,8 @@ def get_all_data(test_season=2017, start_year=2003, tournament=None):
 input_attributes = [
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
-        'mean_duration',
-        'mean_opp_duration',
+        #'mean_duration',
+        #'mean_opp_duration',
         'mean_return_points_made',
         'mean_opp_return_points_made',
         'mean_second_serve_points_made',
@@ -233,10 +233,10 @@ input_attributes = [
         'h2h_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
-        'prev_year_avg_round',
-        'opp_prev_year_avg_round',
-        'opp_tourney_hist_avg_round',
-        'tourney_hist_avg_round',
+        #'prev_year_avg_round',
+        #'opp_prev_year_avg_round',
+        #'opp_tourney_hist_avg_round',
+        #'tourney_hist_avg_round',
         'tourney_hist_prior_encounters',
         'opp_tourney_hist_prior_encounters',
         #'mean_break_points_made',
@@ -257,8 +257,8 @@ input_attributes = [
         #'opp_weight',
         'height',
         'opp_height',
-        'duration_prev_match',
-        'opp_duration_prev_match',
+        #'duration_prev_match',
+        #'opp_duration_prev_match',
         'elo_score',
         'opp_elo_score'
     ]
