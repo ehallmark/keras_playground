@@ -63,12 +63,14 @@ for meta in meta_attributes:
     all_attributes.append(meta)
 
 
-def predict_proba(model, X, min=0, max=1):
+def predict_proba(model, X):
     if hasattr(model, "predict_proba"):
         prob_pos = model.predict_proba(X)[:, 1]
-        return prob_pos
-    else:
-        return None
+    else:  # use decision function
+        prob_pos = model.decision_function(X_test)
+        prob_pos = \
+            (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+    return prob_pos
 
 
 def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=3, start_year=2005):
@@ -137,7 +139,6 @@ if __name__ == '__main__':
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
-        print('Using outcome model: ', outcome_model_name)
         lr = LogisticRegression()
         svm = LinearSVC()
         rf = RandomForestClassifier(n_estimators=500)
@@ -148,22 +149,22 @@ if __name__ == '__main__':
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
                         (lr, 'Logit Regression'),
-                        #(svm, 'Support Vector'),
+                        (svm, 'Support Vector'),
                         (nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
                     ]:
-            print('   with Betting Model: ', name)
+            print('Using outcome model', outcome_model_name, 'with Betting Model: ', name)
             X_train = np.array(data[betting_input_attributes])
             y_train = np.array(data[y_str]).flatten()
             X_test = np.array(test_data[betting_input_attributes])
             y_test = np.array(test_data[y_str]).flatten()
-            print("Shapes: ", X_train.shape, X_test.shape)
+            #print("Shapes: ", X_train.shape, X_test.shape)
             model.fit(X_train, y_train)
             binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
-            print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-                  ' (' + to_percentage(binary_percent) + ')')
+            #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
+            #      ' (' + to_percentage(binary_percent) + ')')
             print('Average error: ', to_percentage(avg_error))
-            prob_pos = predict_proba(model, X_test, 0, 2)
+            prob_pos = predict_proba(model, X_test)
             fraction_of_positives, mean_predicted_value = \
                 calibration_curve(y_test, prob_pos, n_bins=10)
 
@@ -194,7 +195,6 @@ if __name__ == '__main__':
                 expectation_implied /= 100.
                 #print('Expectation:', expectation, ' Implied: ', expectation_implied)
                 return expectation > 1.
-            print('Test prediction shape: ', prob_pos.shape)
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
                                               'max_price', 1, sampling=0)

@@ -375,7 +375,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
         #print("Parameters: ", parameters)
         # print('Initial Capital: ', initial_capital)
         #print('Final Capital: ', available_capital)
-        print('Num bets: ', num_bets)
+        #print('Num bets: ', num_bets)
         #print('Total Return: ', return_total)
         # print('Amount invested: ', amount_invested)
         # print('Amount won: ', amount_won)
