@@ -18,6 +18,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     for key in parameters:
         regression_data[key] = []
     regression_data['return_total'] = []
+    num_bets_total = 0
     for trial in range(num_trials):
         #print('Trial: ',trial)
         parameter_update_func(parameters)
@@ -157,6 +158,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     #    print('Num wrong: ', num_losses)
         regression_data['return_total'].append(return_total)
         avg_best += return_total
+        num_bets_total += num_bets
         if return_total > prev_best:
             prev_best = return_total
             best_parameters = parameters.copy()
@@ -165,16 +167,17 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
             worst_parameters = parameters.copy()
 
     avg_best /= num_trials
+    num_bets_avg = num_bets_total / num_trials
     #print('Best return: ', prev_best)
     #print('Worst return', prev_worst)
-    print('Avg return', avg_best)
+    #print('Avg return', avg_best)
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
     # model to predict the total score (h_pts + a_pts)
     #results = smf.OLS(np.array(regression_data['return_total']), np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
     #print(results.summary())
-    return avg_best
+    return avg_best, num_bets_avg
 
 
 def simulate_spread(predictor_func, spread_predictor_func, actual_label_func, actual_spread_func, parameter_update_func,

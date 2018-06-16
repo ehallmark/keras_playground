@@ -20,7 +20,7 @@ def save_model(model, model_name):
 
 
 if __name__ == '__main__':
-    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2006, start_year=1996)
     print('Max data year: ', max(sql['year']))
     lr = LogisticRegression()
     gnb = GaussianNB()

@@ -218,8 +218,8 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
         data = data[(data.tournament==tournament)&(data.year==test_season)]
         test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
     # create inputs
-    data = (data[all_attributes], np.array(data['y']))
-    test_data = (test_data[all_attributes], np.array(test_data['y']))
+    data = (data, np.array(data['y']))
+    test_data = (test_data, np.array(test_data['y']))
     return data, test_data
 
 
