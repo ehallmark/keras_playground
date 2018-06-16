@@ -146,7 +146,7 @@ def load_data(model, start_year, test_year, num_test_years):
 if __name__ == '__main__':
     test_year = 2018
     start_year = 2006
-    num_test_years = 2
+    num_test_years = 3
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
@@ -174,7 +174,6 @@ if __name__ == '__main__':
             binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
             #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
             #      ' (' + to_percentage(binary_percent) + ')')
-            print('Average error: ', to_percentage(avg_error))
             prob_pos = predict_proba(model, X_test)
             fraction_of_positives, mean_predicted_value = \
                 calibration_curve(y_test, prob_pos, n_bins=10)
@@ -203,11 +202,12 @@ if __name__ == '__main__':
                 expectation_implied /= 100.
                 # print('Expectation:', expectation, ' Implied: ', expectation_implied)
                 return expectation > 1.
-            print('Test prediction shape: ', prob_pos.shape)
+            #print('Test prediction shape: ', prob_pos.shape)
             test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
                                               'price', 1)
-            print('Final test return:', test_return, ' Num bets:', num_bets)
+            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error))
+            print('---------------------------------------------------------')
 
         ax1.set_ylabel("Fraction of positives")
         ax1.set_ylim([-0.05, 1.05])
