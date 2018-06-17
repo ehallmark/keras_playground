@@ -27,8 +27,8 @@ betting_input_attributes = [
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
+    #'surface_experience',
+    #'opp_surface_experience',
     'experience',
     'opp_experience',
     #'age',
@@ -39,8 +39,8 @@ betting_input_attributes = [
     #'opp_weight',
     #'height',
     #'opp_height',
-    'elo_score',
-    'opp_elo_score',
+    #'elo_score',
+    #'opp_elo_score',
     'grand_slam',
     'clay',
     'grass',
@@ -121,7 +121,9 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     data, test_data = load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=test_year, num_test_years=num_test_years,
                                                            start_year=start_year)
     # merge betting data in memory
-    betting_sites = ['Bovada', 'BetOnline']
+    betting_sites = ['Bovada',
+                     '5Dimes',  # 5Dimes available for money line usually (but not for spreads)
+                     'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
     test_data = pd.DataFrame.merge(
         test_data,
@@ -144,6 +146,7 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
 
 
 if __name__ == '__main__':
+    price_str = 'min_price'
     test_year = 2018
     start_year = 2011
     num_tests = 1
@@ -227,7 +230,7 @@ if __name__ == '__main__':
                 return bet_func_helper
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
-                                              'max_price', num_tests, sampling=0, shuffle=False)
+                                              price_str, num_tests, sampling=0, shuffle=False)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -248,7 +251,7 @@ if __name__ == '__main__':
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data['actual'][j], lambda _: None,
                                                 bet_func(model_to_epsilon['Average']), test_data, parameters,
-                                                'max_price', num_tests, sampling=0, shuffle=False, verbose=True)
+                                                price_str, num_tests, sampling=0, shuffle=False, verbose=True)
     print('Avg model')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           ' Test years:', num_test_years)
