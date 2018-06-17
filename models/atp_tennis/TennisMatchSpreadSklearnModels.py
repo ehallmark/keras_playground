@@ -141,15 +141,18 @@ def load_data(model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'])
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
-    data = data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
-    test_data = test_data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
+    #data = data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
+    #test_data = test_data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
     return data, test_data
 
 
 if __name__ == '__main__':
     test_year = 2018
     start_year = 2006
+    num_tests = 30
     num_test_years = 2
+    graph = False
+    all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
@@ -178,6 +181,7 @@ if __name__ == '__main__':
             #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
             #      ' (' + to_percentage(binary_percent) + ')')
             prob_pos = predict_proba(model, X_test)
+            all_predictions.append(prob_pos)
             fraction_of_positives, mean_predicted_value = \
                 calibration_curve(y_test, prob_pos, n_bins=10)
 
@@ -206,7 +210,7 @@ if __name__ == '__main__':
 
             test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'price', 10, sampling=0.5)
+                                              'price', num_tests, sampling=0.5)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -219,6 +223,17 @@ if __name__ == '__main__':
         ax2.set_ylabel("Count")
         ax2.legend(loc="upper center", ncol=2)
 
-        plt.tight_layout()
-        plt.show()
+        if graph:
+            plt.tight_layout()
+            plt.show()
+
+    avg_predictions = np.vstack(all_predictions).mean(0)
+    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['actual'][j],
+                                            lambda j: test_data['spread_actual'][j], lambda _: None,
+                                            bet_func, test_data, parameters,
+                                            'price', num_tests, sampling=0.5)
+    print('Avg model')
+    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+          ' Test years:', num_test_years)
+    print('---------------------------------------------------------')
 

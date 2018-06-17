@@ -130,14 +130,16 @@ def load_data(model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'])
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
-    data = data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
-    test_data = test_data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
+    #data = data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
+    #test_data = test_data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
     return data, test_data
 
 
 if __name__ == '__main__':
     test_year = 2018
     start_year = 2006
+    num_tests = 30
+    graph = False
     num_test_years = 2
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
@@ -198,7 +200,7 @@ if __name__ == '__main__':
                 return expectation > 1.
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'max_price', 10, sampling=0.5)
+                                              'max_price', num_tests, sampling=0.5)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -211,13 +213,14 @@ if __name__ == '__main__':
         ax2.set_ylabel("Count")
         ax2.legend(loc="upper center", ncol=2)
 
-        plt.tight_layout()
-        plt.show()
+        if graph:
+            plt.tight_layout()
+            plt.show()
 
     avg_predictions = np.vstack(all_predictions).mean(0)
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data['actual'][j], lambda _: None,
                                                 bet_func, test_data, parameters,
-                                                'max_price', 10, sampling=0.5)
+                                                'max_price', num_tests, sampling=0.5)
     print('Avg model')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           ' Test years:', num_test_years)
