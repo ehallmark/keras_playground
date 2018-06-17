@@ -182,7 +182,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
 
 def simulate_spread(predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
                     betting_decision_func, test_data, parameters,
-                    price_str='price', num_trials=50):
+                    price_str='price', num_trials=50, sampling=0):
     worst_parameters = None
     best_parameters = None
     avg_best = 0.0
@@ -216,6 +216,8 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
         available_capital = initial_capital
         indices = list(range(test_data.shape[0]))
         shuffle(indices)
+        if sampling > 0:
+            indices = indices[0: round(sampling*len(indices))]
         for i in indices:
             prediction = predictor_func(i)
             # prediction = np.random.rand(1)  # test on random predictions

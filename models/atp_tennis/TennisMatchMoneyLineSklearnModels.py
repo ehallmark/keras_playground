@@ -98,7 +98,8 @@ def load_betting_data(betting_sites, test_year=2018):
          min(price2) as min_price2,
          max(price2) as max_price2,
          sum(odds1)/count(*) as odds1,
-         sum(odds2)/count(*) as odds2
+         sum(odds2)/count(*) as odds2,
+         mode() within group(order by betting_date) as betting_date
          from atp_tennis_betting_link 
          where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
          group by year,tournament,team1,team2
@@ -129,13 +130,16 @@ def load_data(model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'])
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
+    data = data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
+    test_data = test_data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
     return data, test_data
 
 
 if __name__ == '__main__':
     test_year = 2018
     start_year = 2006
-    num_test_years = 3
+    num_test_years = 2
+    all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
@@ -166,21 +170,19 @@ if __name__ == '__main__':
             prob_pos = predict_proba(model, X_test)
             fraction_of_positives, mean_predicted_value = \
                 calibration_curve(y_test, prob_pos, n_bins=10)
-
+            all_predictions.append(prob_pos)
             ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                      label="%s" % (name,))
 
             ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
                      histtype="step", lw=2)
 
-
             # actual returns on test data
-            parameters = {}
+            parameters = dict()
             parameters['max_loss_percent'] = 0.05
 
 
             def bet_func(price, odds, prediction):
-                #print('pred: ', prediction)
                 if 0 > prediction or prediction > 1:
                     print('Invalid prediction: ', prediction)
                     exit(1)
@@ -196,8 +198,8 @@ if __name__ == '__main__':
                 return expectation > 1.
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'max_price', 1, sampling=0)
-            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error))
+                                              'max_price', 10, sampling=0.5)
+            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
         ax1.set_ylabel("Fraction of positives")
@@ -211,4 +213,13 @@ if __name__ == '__main__':
 
         plt.tight_layout()
         plt.show()
+
+    avg_predictions = np.vstack(all_predictions).mean(0)
+    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data['actual'][j], lambda _: None,
+                                                bet_func, test_data, parameters,
+                                                'max_price', 10, sampling=0.5)
+    print('Avg model')
+    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+          ' Test years:', num_test_years)
+    print('---------------------------------------------------------')
 

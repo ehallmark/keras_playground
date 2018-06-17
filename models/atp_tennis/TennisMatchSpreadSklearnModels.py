@@ -108,7 +108,8 @@ def load_betting_data(betting_sites, test_year=2018):
         spread1,
         spread2,
         odds1,
-        odds2
+        odds2,
+        betting_date
         from atp_tennis_betting_link_spread 
         where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
@@ -140,13 +141,15 @@ def load_data(model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'])
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
+    data = data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
+    test_data = test_data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
     return data, test_data
 
 
 if __name__ == '__main__':
     test_year = 2018
     start_year = 2006
-    num_test_years = 3
+    num_test_years = 2
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
@@ -184,9 +187,8 @@ if __name__ == '__main__':
             ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
                      histtype="step", lw=2)
 
-            parameters = {}
+            parameters = dict()
             parameters['max_loss_percent'] = 0.05
-
 
             def bet_func(price, odds, prediction):
                 if 0 > prediction or prediction > 1:
@@ -200,13 +202,12 @@ if __name__ == '__main__':
                     expectation = prediction * 100. + (1.-prediction) * price
                 expectation /= 100.
                 expectation_implied /= 100.
-                # print('Expectation:', expectation, ' Implied: ', expectation_implied)
                 return expectation > 1.
-            #print('Test prediction shape: ', prob_pos.shape)
+
             test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'price', 1)
-            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error))
+                                              'price', 10, sampling=0.5)
+            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
         ax1.set_ylabel("Fraction of positives")
