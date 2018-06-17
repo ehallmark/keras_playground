@@ -49,8 +49,9 @@ betting_input_attributes = [
 
 betting_only_attrs = [
     'odds1',
-    #'odds2',
+    'odds2',
     'spread1',
+    'spread2',
     'spread_predictions',
     #'spread2',
     'predictions'
@@ -181,16 +182,23 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
 
     data[y_str] = extract_beat_spread_binary(spreads=data['spread1'], spread_actuals=data['spread_actual'])
     test_data[y_str] = extract_beat_spread_binary(spreads=test_data['spread1'], spread_actuals=test_data['spread_actual'])
-    #data = data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
-    #test_data = test_data.sort_values(by=['betting_date', 'book_name', 'player_id', 'opponent_id', 'year', 'tournament'])
+    data = data.sort_values(by=['betting_date'], kind='mergesort')
+    test_data = test_data.sort_values(by=['betting_date'], kind='mergesort')
     return data, test_data
 
 
 if __name__ == '__main__':
+    model_to_epsilon = {
+        'Logit Regression': 0.05,
+        #'Naive Bayes': 1.0,
+        'Random Forest': 0.50,
+        'Average': 0.40,
+        #'Support Vector': 0.3
+    }
     test_year = 2018
     start_year = 2011
-    num_tests = 30
-    num_test_years = 2
+    num_tests = 1
+    num_test_years = 1
     graph = False
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
@@ -199,16 +207,16 @@ if __name__ == '__main__':
         data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
         lr = LogisticRegression()
         svm = LinearSVC()
-        rf = RandomForestClassifier(n_estimators=50)
+        rf = RandomForestClassifier(n_estimators=200)
         nb = GaussianNB()
         plt.figure(figsize=(10, 10))
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
-                        (lr, 'Logit Regression'),
+                        #(lr, 'Logit Regression'),
                         #(svm, 'Support Vector'),
-                        (nb, 'Naive Bayes'),
+                        #(nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
                     ]:
             print('Using outcome model:', outcome_model_name, 'with Betting Model: ', name)
@@ -235,29 +243,30 @@ if __name__ == '__main__':
             parameters = dict()
             parameters['max_loss_percent'] = 0.05
 
-            def bet_func(price, odds, spread, prediction):
-                if 0 > prediction or prediction > 1:
-                    print('Invalid prediction: ', prediction)
-                    exit(1)
-                if price > 0:
-                    expectation_implied = odds * price + (1. - odds) * -100.
-                    expectation = prediction * price + (1. - prediction) * -100.
-                    expectation /= 100.
-                    expectation_implied /= 100.
-                else:
-                    expectation_implied = odds * 100. + (1. - odds) * price
-                    expectation = prediction * 100. + (1. - prediction) * price
-                    expectation /= -price
-                    expectation_implied /= -price
-                #print('Expectation:', expectation, ' Implied: ', expectation_implied)
-                if expectation > 0.50:
-                    return 1. + expectation
-                else:
-                    return 0
+            def bet_func(epsilon):
+                def bet_func_helper(price, odds, spread, prediction):
+                    if 0 > prediction or prediction > 1:
+                        print('Invalid prediction: ', prediction)
+                        exit(1)
+                    if price > 0:
+                        expectation_implied = odds * price + (1. - odds) * -100.
+                        expectation = prediction * price + (1. - prediction) * -100.
+                        expectation /= 100.
+                        expectation_implied /= 100.
+                    else:
+                        expectation_implied = odds * 100. + (1. - odds) * price
+                        expectation = prediction * 100. + (1. - prediction) * price
+                        expectation /= -price
+                        expectation_implied /= -price
+                    if expectation > epsilon:
+                        return 1. + expectation
+                    else:
+                        return 0
+                return bet_func_helper
 
             test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
-                                              bet_func, test_data, parameters,
-                                              'price', num_tests, sampling=1.0/num_test_years)
+                                              bet_func(model_to_epsilon[name]), test_data, parameters,
+                                              'price', num_tests, sampling=0, shuffle=False)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -278,8 +287,8 @@ if __name__ == '__main__':
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
     test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['actual'][j],
                                             lambda j: test_data['spread_actual'][j], lambda _: None,
-                                            bet_func, test_data, parameters,
-                                            'price', num_tests, sampling=0.5)
+                                            bet_func(model_to_epsilon['Average']), test_data, parameters,
+                                            'price', num_tests, sampling=0, shuffle=False, verbose=True)
     print('Avg model')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           ' Test years:', num_test_years)

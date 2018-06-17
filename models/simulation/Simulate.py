@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, bet_func, test_meta_data, parameters,
-                        price_str='price', num_trials=50, sampling=0, verbose=False):
+                        price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=False):
     worst_parameters = None
     best_parameters = None
 
@@ -39,7 +39,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         initial_capital = 1000.0
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
-        shuffle(indices)
+        if shuffle:
+            np.random.shuffle(indices)
         if sampling > 0:
             indices = indices[0: round(sampling*len(indices))]
         for i in indices:
@@ -88,6 +89,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                     confidence *= capital_ratio
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
+                        if verbose:
+                            print('Invested:', capital_requirement, ' Odds:', best_odds1)
                         if actual_result < 0.5:  # LOST BET :(
                             if is_under1:
                                 ret = max_price1 * confidence
@@ -125,6 +128,9 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                     confidence *= capital_ratio
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
+                        if verbose:
+                            print('Invested:', capital_requirement,' Odds:', best_odds2)
+
                         if actual_result < 0.5:  # WON BET
                             if is_under2:
                                 ret = 100.0 * confidence
@@ -148,9 +154,9 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         return_game += ret
                         num_bets += 1
                         available_capital += ret
-                if verbose:
-                    print('Return game:', return_game, ' Total: ', return_total, ' Wins:',num_wins, ' Losses:', num_losses)
                 return_total = return_total + return_game
+                if return_game != 0 and verbose:
+                    print('Return game:', return_game, ' Total: ', return_total, ' Wins:',num_wins, ' Losses:', num_losses)
         if verbose:
             print('Initial Capital: ', initial_capital)
             print('Final Capital: ', available_capital)
@@ -186,7 +192,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
 
 def simulate_spread(predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
                     betting_decision_func, test_data, parameters,
-                    price_str='price', num_trials=50, sampling=0, verbose=False):
+                    price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=True):
     worst_parameters = None
     best_parameters = None
     avg_best = 0.0
@@ -219,7 +225,8 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
         num_ties = 0
         available_capital = initial_capital
         indices = list(range(test_data.shape[0]))
-        shuffle(indices)
+        if shuffle:
+            np.random.shuffle(indices)
         if sampling > 0:
             indices = indices[0: round(sampling*len(indices))]
         for i in indices:
@@ -294,6 +301,8 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                 confidence *= capital_ratio
                 if capital_requirement <= available_capital:
                     amount_invested += capital_requirement
+                    if verbose:
+                        print('Invested: ', capital_requirement)
                     if beat_spread1 is None:  # tie
                         ret = 0
                         num_ties += 1
@@ -337,6 +346,8 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                 confidence *= capital_ratio
                 if capital_requirement <= available_capital:
                     amount_invested += capital_requirement
+                    if verbose:
+                        print('Invested: ', capital_requirement)
                     if beat_spread2 is None:
                         ret = 0  # tie
                         num_ties += 1
@@ -365,7 +376,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                     available_capital += ret
 
             return_total = return_total + return_game
-            if verbose:
+            if return_game != 0 and verbose:
                 print('return game:', return_game, ' Total return:', return_total, ' Wins:', num_wins, ' Losses:', num_losses)
         if verbose:
             #print("Parameters: ", parameters)
