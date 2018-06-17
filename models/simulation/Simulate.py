@@ -75,8 +75,9 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                 return_game = 0.0
                 actual_result = actual_label_func(i)
 
-                if bet_func(max_price1, best_odds1, prediction):
-                    confidence = 10  # (prediction - best_odds1) * betting_minimum
+                bet1 = bet_func(max_price1, best_odds1, prediction)
+                if bet1 > 0:
+                    confidence = betting_minimum * bet1
                     if is_under1:
                         capital_requirement = -max_price1 * confidence
                     else:
@@ -110,8 +111,9 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         return_game += ret
                         available_capital += ret
                         num_bets += 1
-                if bet_func(max_price2, best_odds2, 1.0-prediction):
-                    confidence = 10  # (1.0 - prediction - best_odds2) * betting_minimum
+                bet2 = bet_func(max_price2, best_odds2, 1.0-prediction)
+                if bet2 > 0:
+                    confidence = betting_minimum * bet2
                     if is_under2:
                         capital_requirement = -max_price2 * confidence
                     else:
@@ -220,7 +222,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
             indices = indices[0: round(sampling*len(indices))]
         for i in indices:
             prediction = predictor_func(i)
-            # prediction = np.random.rand(1)  # test on random predictions
+           # prediction = np.random.rand(1)  # test on random predictions
             bet_row = test_data.iloc[i]
             # make betting decision
             max_price1 = np.array(bet_row[price_str + '1']).flatten()[0]
@@ -232,8 +234,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
             '''
             spread1 = bet_row['spread1']
             spread2 = bet_row['spread2']
-            is_under1 = spread1 < 0
-            is_under2 = spread2 < 0
+
             is_price_under1 = max_price1 < 0
             is_price_under2 = max_price2 < 0
             price_diff = abs(abs(max_price1) - abs(max_price2))
@@ -252,43 +253,32 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
             if best_odds2 < 0.0 or best_odds2 > 1.0:
                 raise ArithmeticError('Best odds2: ' + str(best_odds2))
             return_game = 0.0
-            actual_result = actual_label_func(i)
             actual_spread = actual_spread_func(i)
-            if actual_result > 0.5:  # player 1 wins match
-                if is_under1:  # was favorite
-                    if abs(abs(spread1) - actual_spread) < 0.000001:
-                        beat_spread1 = None
-                    else:
-                        beat_spread1 = abs(spread1) < actual_spread
+            if spread1 > 0:
+                if spread1 == -actual_spread:
+                    beat_spread1 = None
                 else:
-                    beat_spread1 = True  # by default
-                if is_under2:
-                    beat_spread2 = False
-                else:
-                    if abs(abs(spread2) - actual_spread) < 0.000001:
-                        beat_spread2 = None
-                    else:
-                        beat_spread2 = abs(spread2) > actual_spread
-
+                    beat_spread1 = spread1 > -actual_spread
             else:
-                if is_under1:
-                    beat_spread1 = False
+                if abs(spread1) == actual_spread:
+                    beat_spread1 = None
                 else:
-                    if abs(abs(spread1) - -actual_spread) < 0.000001:
-                        beat_spread1 = None
-                    else:
-                        beat_spread1 = abs(spread1) > -actual_spread
-                if is_under2:  # opponent was favorite
-                    if abs(abs(spread2) - -actual_spread) < 0.000001:
-                        beat_spread2 = None
-                    else:
-                        beat_spread2 = abs(spread2) < -actual_spread
-                else:
-                    beat_spread2 = True
+                    beat_spread1 = abs(spread1) < actual_spread
 
-            bet1 = betting_decision_func(max_price1, best_odds1, prediction)
-            if bet1:
-                confidence = betting_minimum  # (prediction - best_odds1) * betting_minimum
+            if spread2 > 0:
+                if spread2 == actual_spread:
+                    beat_spread2 = None
+                else:
+                    beat_spread2 = spread2 > actual_spread
+            else:
+                if abs(spread2) == -actual_spread:
+                    beat_spread2 = None
+                else:
+                    beat_spread2 = abs(spread2) < -actual_spread
+
+            bet1 = betting_decision_func(max_price1, best_odds1, spread1, prediction)
+            if bet1 > 0:
+                confidence = betting_minimum * bet1
                 if is_price_under1:
                     capital_requirement = -max_price1 * confidence
                 else:
@@ -329,9 +319,9 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                     return_game += ret
                     available_capital += ret
                     num_bets += 1
-            bet2 = betting_decision_func(max_price2, best_odds2, 1.0 - prediction)
-            if bet2:
-                confidence = betting_minimum  # (1.0 - prediction - best_odds2) * betting_minimum
+            bet2 = betting_decision_func(max_price2, best_odds2, spread2, 1.0-prediction)
+            if bet2 > 0:
+                confidence = betting_minimum * bet2
                 if is_price_under2:
                     capital_requirement = -max_price2 * confidence
                 else:
@@ -409,7 +399,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
     #print('Best Parameters: ', best_parameters)
     #print('Worst parameters: ', worst_parameters)
 
-    # model to predict the total score (h_pts + a_pts)
+    # model to predict the total return
     #results = smf.OLS(np.array(regression_data['return_total']), np.array(
     #    [regression_data['betting_epsilon1'], regression_data['betting_epsilon2'],
     #     regression_data['spread_epsilon']]).transpose()).fit()

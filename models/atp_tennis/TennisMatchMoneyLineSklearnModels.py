@@ -7,7 +7,7 @@ from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVR
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_model, save_model
+from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, save_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcome_input_attributes
@@ -114,7 +114,8 @@ def load_data(model, start_year, test_year, num_test_years):
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, num_test_years=num_test_years,
                                                            start_year=start_year)
-    betting_sites = ['Bovada', '5Dimes', 'BetOnline']
+    # merge betting data in memory
+    betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
     test_data = pd.DataFrame.merge(
         test_data,
@@ -128,6 +129,7 @@ def load_data(model, start_year, test_year, num_test_years):
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'])
+    # set y_str to actual
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
     #data = data.sort_values(by=['betting_date', 'player_id', 'opponent_id', 'year', 'tournament'])
@@ -137,13 +139,13 @@ def load_data(model, start_year, test_year, num_test_years):
 
 if __name__ == '__main__':
     test_year = 2018
-    start_year = 2006
+    start_year = 2011
     num_tests = 30
     graph = False
     num_test_years = 2
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
-        outcome_model = load_model(outcome_model_name)
+        outcome_model = load_outcome_model(outcome_model_name)
         data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
         lr = LogisticRegression()
         svm = LinearSVC()
@@ -197,10 +199,13 @@ if __name__ == '__main__':
                 expectation /= 100.
                 expectation_implied /= 100.
                 #print('Expectation:', expectation, ' Implied: ', expectation_implied)
-                return expectation > 1.
+                if expectation > 1.:
+                    return expectation
+                else:
+                    return 0
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func, test_data, parameters,
-                                              'max_price', num_tests, sampling=0.5)
+                                              'max_price', num_tests, sampling=1.0/num_test_years)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -218,6 +223,7 @@ if __name__ == '__main__':
             plt.show()
 
     avg_predictions = np.vstack(all_predictions).mean(0)
+    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data['actual'][j], lambda _: None,
                                                 bet_func, test_data, parameters,
                                                 'max_price', num_tests, sampling=0.5)
