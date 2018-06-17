@@ -21,25 +21,25 @@ from models.simulation.Simulate import simulate_spread
 betting_input_attributes = [
     #'prev_h2h2_wins_player',
     #'prev_h2h2_wins_opponent',
-    'h2h_prior_win_percent',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
+    #'h2h_prior_win_percent',
+    #'prev_year_prior_encounters',
+    #'opp_prev_year_prior_encounters',
     #'tourney_hist_prior_encounters',
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
-    'experience',
-    'opp_experience',
-    'age',
-    'opp_age',
+    #'surface_experience',
+    #'opp_surface_experience',
+    #'experience',
+    #'opp_experience',
+    #'age',
+    #'opp_age',
     #'lefty',
     #'opp_lefty',
     #'weight',
     #'opp_weight',
-    'height',
-    'opp_height',
+    #'height',
+    #'opp_height',
     'elo_score',
     'opp_elo_score',
     'grand_slam',
@@ -92,7 +92,7 @@ def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_y
     X = np.array(data[outcome_input_attributes])
     X_test = np.array(test_data[outcome_input_attributes])
     X_spread = np.array(data[spread_input_attributes])
-    X_test_spread = np.array(data[spread_input_attributes])
+    X_test_spread = np.array(test_data[spread_input_attributes])
     data['predictions'] = predict_proba(model, X)
     test_data['predictions'] = predict_proba(model, X_test)
     data['spread_predictions'] = spread_model.predict(X_spread)
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     start_year = 2011
     num_tests = 30
     num_test_years = 2
-    graph = True
+    graph = False
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_outcome_model(outcome_model_name)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
         data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
         lr = LogisticRegression()
         svm = LinearSVC()
-        rf = RandomForestClassifier(n_estimators=500)
+        rf = RandomForestClassifier(n_estimators=50)
         nb = GaussianNB()
         plt.figure(figsize=(10, 10))
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -207,7 +207,7 @@ if __name__ == '__main__':
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
                         (lr, 'Logit Regression'),
-                        (svm, 'Support Vector'),
+                        #(svm, 'Support Vector'),
                         (nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
                     ]:
@@ -240,15 +240,18 @@ if __name__ == '__main__':
                     print('Invalid prediction: ', prediction)
                     exit(1)
                 if price > 0:
-                    expectation_implied = odds * price + (1.-odds) * -100.
-                    expectation = prediction * price + (1.-prediction) * -100.
+                    expectation_implied = odds * price + (1. - odds) * -100.
+                    expectation = prediction * price + (1. - prediction) * -100.
+                    expectation /= 100.
+                    expectation_implied /= 100.
                 else:
-                    expectation_implied = odds * 100. + (1.-odds) * price
-                    expectation = prediction * 100. + (1.-prediction) * price
-                expectation /= 100.
-                expectation_implied /= 100.
-                if expectation > 1.:
-                    return expectation
+                    expectation_implied = odds * 100. + (1. - odds) * price
+                    expectation = prediction * 100. + (1. - prediction) * price
+                    expectation /= -price
+                    expectation_implied /= -price
+                #print('Expectation:', expectation, ' Implied: ', expectation_implied)
+                if expectation > 0.50:
+                    return 1. + expectation
                 else:
                     return 0
 
