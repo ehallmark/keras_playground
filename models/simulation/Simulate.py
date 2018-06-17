@@ -5,7 +5,7 @@ import pandas as pd
 
 
 def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, bet_func, test_meta_data, parameters,
-                        price_str='price', num_trials=50, sampling=0):
+                        price_str='price', num_trials=50, sampling=0, verbose=False):
     worst_parameters = None
     best_parameters = None
 
@@ -148,16 +148,18 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         return_game += ret
                         num_bets += 1
                         available_capital += ret
+                if verbose:
+                    print('Return game:', return_game, ' Total: ', return_total, ' Wins:',num_wins, ' Losses:', num_losses)
                 return_total = return_total + return_game
-    #    print("Parameters: ", parameters)
-    #    print('Initial Capital: ', initial_capital)
-    #    print('Final Capital: ', available_capital)
-    #    print('Num bets: ', num_bets)
-    #    print('Total Return: ', return_total)
-    #    print('Average Return Per Amount Invested: ', return_total / amount_invested)
-    #    print('Overall Return For The Year: ', return_total / initial_capital)
-    #    print('Num correct: ', num_wins)
-    #    print('Num wrong: ', num_losses)
+        if verbose:
+            print('Initial Capital: ', initial_capital)
+            print('Final Capital: ', available_capital)
+            print('Num bets: ', num_bets)
+            print('Total Return: ', return_total)
+            print('Average Return Per Amount Invested: ', return_total / amount_invested)
+            print('Overall Return For The Year: ', return_total / initial_capital)
+            print('Num correct: ', num_wins)
+            print('Num wrong: ', num_losses)
         regression_data['return_total'].append(return_total)
         avg_best += return_total
         num_bets_total += num_bets
@@ -184,7 +186,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
 
 def simulate_spread(predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
                     betting_decision_func, test_data, parameters,
-                    price_str='price', num_trials=50, sampling=0):
+                    price_str='price', num_trials=50, sampling=0, verbose=False):
     worst_parameters = None
     best_parameters = None
     avg_best = 0.0
@@ -260,10 +262,10 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                 else:
                     beat_spread1 = spread1 > -actual_spread
             else:
-                if abs(spread1) == actual_spread:
+                if -spread1 == actual_spread:
                     beat_spread1 = None
                 else:
-                    beat_spread1 = abs(spread1) < actual_spread
+                    beat_spread1 = -spread1 < actual_spread
 
             if spread2 > 0:
                 if spread2 == actual_spread:
@@ -271,10 +273,10 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                 else:
                     beat_spread2 = spread2 > actual_spread
             else:
-                if abs(spread2) == -actual_spread:
+                if -spread2 == -actual_spread:
                     beat_spread2 = None
                 else:
-                    beat_spread2 = abs(spread2) < -actual_spread
+                    beat_spread2 = -spread2 < -actual_spread
 
             bet1 = betting_decision_func(max_price1, best_odds1, spread1, prediction)
             if bet1 > 0:
@@ -338,7 +340,6 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                     if beat_spread2 is None:
                         ret = 0  # tie
                         num_ties += 1
-                    #   print('TIE!!!!!!!')
                     elif beat_spread2:  # WON BET
                         if is_price_under2:
                             ret = 100.0 * confidence
@@ -362,26 +363,29 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
                     return_game += ret
                     num_bets += 1
                     available_capital += ret
-            return_total = return_total + return_game
 
-        #print("Parameters: ", parameters)
-        # print('Initial Capital: ', initial_capital)
-        #print('Final Capital: ', available_capital)
-        #print('Num bets: ', num_bets)
-        #print('Total Return: ', return_total)
-        # print('Amount invested: ', amount_invested)
-        # print('Amount won: ', amount_won)
-        # print('Amount lost: ', amount_lost)
-        # print('Average Return Per Amount Invested: ', return_total / amount_invested)
-        #print('Overall Return For The Year: ', return_total / initial_capital)
-        #print('Num correct: ', num_wins)
-        #print('Num wrong: ', num_losses)
-        #print('Num ties: ', num_ties)
-        # print('Num correct1: ', num_wins1)
-        # print('Num wrong1: ', num_losses1)
-        # print('Num correct2: ', num_wins2)
-        # print('Num wrong2: ', num_losses2)
-        # print('Num ties: ', num_ties)
+            return_total = return_total + return_game
+            if verbose:
+                print('return game:', return_game, ' Total return:', return_total, ' Wins:', num_wins, ' Losses:', num_losses)
+        if verbose:
+            #print("Parameters: ", parameters)
+            print('Initial Capital: ', initial_capital)
+            print('Final Capital: ', available_capital)
+            print('Num bets: ', num_bets)
+            print('Total Return: ', return_total)
+            print('Amount invested: ', amount_invested)
+            print('Amount won: ', amount_won)
+            print('Amount lost: ', amount_lost)
+            print('Average Return Per Amount Invested: ', return_total / amount_invested)
+            print('Overall Return For The Year: ', return_total / initial_capital)
+            print('Num correct: ', num_wins)
+            print('Num wrong: ', num_losses)
+            print('Num ties: ', num_ties)
+            print('Num correct1: ', num_wins1)
+            print('Num wrong1: ', num_losses1)
+            print('Num correct2: ', num_wins2)
+            print('Num wrong2: ', num_losses2)
+            print('Num ties: ', num_ties)
         avg_best += return_total
         total_num_bets += num_bets
         regression_data['return_total'].append(return_total)

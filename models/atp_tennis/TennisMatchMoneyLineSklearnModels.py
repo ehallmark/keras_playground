@@ -7,37 +7,38 @@ from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import LinearSVR
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, save_model
+from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcome_input_attributes
+from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes_spread as spread_input_attributes
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_money_line
 
 betting_input_attributes = [
-    #'prev_h2h2_wins_player',
-    #'prev_h2h2_wins_opponent',
-    'h2h_prior_win_percent',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
+    #'h2h_prior_win_percent',
+    #'prev_year_prior_encounters',
+    #'opp_prev_year_prior_encounters',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
     'experience',
     'opp_experience',
-    'age',
-    'opp_age',
+    #'age',
+    #'opp_age',
     #'lefty',
     #'opp_lefty',
     #'weight',
     #'opp_weight',
-    'height',
-    'opp_height',
+    #'height',
+    #'opp_height',
     'elo_score',
     'opp_elo_score',
     'grand_slam',
@@ -47,8 +48,9 @@ betting_input_attributes = [
 
 betting_only_attrs = [
     'odds1',
-    'odds2',
-    'predictions'
+    #'odds2',
+    'predictions',
+    'spread_predictions',
 ]
 
 y_str = 'returns'
@@ -73,7 +75,7 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_test_years=3, start_year=2005):
+def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
     labels = data[1]
@@ -82,8 +84,12 @@ def load_outcome_predictions_and_actuals(model, attributes, test_year=2018, num_
     test_data = test_data[0]
     X = np.array(data[outcome_input_attributes])
     X_test = np.array(test_data[outcome_input_attributes])
+    X_spread = np.array(data[spread_input_attributes])
+    X_test_spread = np.array(test_data[spread_input_attributes])
     data['predictions'] = predict_proba(model, X)
     test_data['predictions'] = predict_proba(model, X_test)
+    data['spread_predictions'] = spread_model.predict(X_spread)
+    test_data['spread_predictions'] = spread_model.predict(X_test_spread)
     data['actual'] = labels
     test_data['actual'] = test_labels
     return data, test_data
@@ -107,12 +113,12 @@ def load_betting_data(betting_sites, test_year=2018):
     return betting_data
 
 
-def load_data(model, start_year, test_year, num_test_years):
+def load_data(model, spread_model, start_year, test_year, num_test_years):
     attributes = list(tennis_model.all_attributes)
     for attr in betting_input_attributes:
         if attr not in attributes and attr not in betting_only_attrs:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(model, attributes, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=test_year, num_test_years=num_test_years,
                                                            start_year=start_year)
     # merge betting data in memory
     betting_sites = ['Bovada', 'BetOnline']
@@ -146,10 +152,11 @@ if __name__ == '__main__':
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
         outcome_model = load_outcome_model(outcome_model_name)
-        data, test_data = load_data(outcome_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
+        spread_model = load_spread_model('Linear')
+        data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
         lr = LogisticRegression()
         svm = LinearSVC()
-        rf = RandomForestClassifier(n_estimators=500)
+        rf = RandomForestClassifier(n_estimators=50)
         nb = GaussianNB()
         plt.figure(figsize=(10, 10))
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -157,7 +164,7 @@ if __name__ == '__main__':
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
                         (lr, 'Logit Regression'),
-                        (svm, 'Support Vector'),
+                        #(svm, 'Support Vector'),
                         (nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
                     ]:
@@ -193,14 +200,16 @@ if __name__ == '__main__':
                 if price > 0:
                     expectation_implied = odds * price + (1.-odds) * -100.
                     expectation = prediction * price + (1.-prediction) * -100.
+                    expectation /= 100.
+                    expectation_implied /= 100.
                 else:
                     expectation_implied = odds * 100. + (1.-odds) * price
                     expectation = prediction * 100. + (1.-prediction) * price
-                expectation /= 100.
-                expectation_implied /= 100.
+                    expectation /= -price
+                    expectation_implied /= -price
                 #print('Expectation:', expectation, ' Implied: ', expectation_implied)
-                if expectation > 1.:
-                    return expectation
+                if expectation > 0.60:
+                    return 1. + expectation
                 else:
                     return 0
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
