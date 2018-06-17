@@ -135,7 +135,6 @@ if __name__ == '__main__':
     def load_data(test_year):
         betting_sites = [
             'Bovada',
-            '5Dimes',
             'BetOnline'
         ]
         betting_data = load_betting_data(betting_sites, test_year=test_year)

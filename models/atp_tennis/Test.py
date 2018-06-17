@@ -8,7 +8,7 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import all_attributes,o
 
 for outcome_model_name in ['Logistic', 'Naive Bayes']:
     outcome_model = tennis_model.load_model(outcome_model_name)
-    test_data, test_data_2018 = tennis_model.load_data(outcome_model, start_year=2010, test_year=2016, num_test_years=1)
+    test_data, test_data_2018 = tennis_model.load_data(outcome_model, start_year=2010, test_year=2018, num_test_years=1)
 
     outcome_input_attributes = list(outcome_input_attributes)
     # outcome_input_attributes.append('returns')

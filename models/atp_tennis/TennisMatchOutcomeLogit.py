@@ -10,10 +10,14 @@ import matplotlib.pyplot as plt
 
 def test_model(model, x, y, include_binary=True):
     predictions = model.predict(x)
+    return score_predictions(predictions, y, include_binary=include_binary)
+
+
+def score_predictions(predictions, y, include_binary=True):
     errors = np.array(y - np.array(predictions))
-    binary_predictions = (predictions >= 0.5).astype(int)
     avg_error = np.mean(np.abs(errors))
     if include_binary:
+        binary_predictions = (predictions >= 0.5).astype(int)
         binary_errors = np.array(y) != np.array(binary_predictions)
         binary_errors = binary_errors.astype(int)
         binary_correct = predictions.shape[0] - int(binary_errors.sum())
@@ -21,6 +25,7 @@ def test_model(model, x, y, include_binary=True):
         return binary_correct, y.shape[0], binary_percent, avg_error
     else:
         return y.shape[0], avg_error
+
 
 def to_percentage(x):
     return str("%0.2f" % (x * 100))+'%'
@@ -270,28 +275,71 @@ input_attributes = [
         'opp_elo_score'
     ]
 
+
+input_attributes_spread = [
+        'prev_h2h2_wins_player',
+        'prev_h2h2_wins_opponent',
+        'mean_return_points_made',
+        'mean_opp_return_points_made',
+        'prev_year_prior_encounters',
+        'opp_prev_year_prior_encounters',
+        'tourney_hist_prior_encounters',
+        'opp_tourney_hist_prior_encounters',
+        'mean_break_points_made',
+        'mean_opp_break_points_made',
+        'tiebreak_win_percent',
+        'opp_tiebreak_win_percent',
+        'surface_experience',
+        'opp_surface_experience',
+        #'experience',
+        #'opp_experience',
+        'age',
+        'opp_age',
+        'height',
+        'opp_height',
+        'elo_score',
+        'opp_elo_score'
+    ]
+
 y = 'y'
+y_spread = 'spread'
 all_attributes = list(input_attributes)
 all_attributes.append(y)
+all_attributes.append(y_spread)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+for attr in input_attributes_spread:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
 for meta in meta_attributes:
-    all_attributes.append(meta)
+    if meta not in all_attributes:
+        all_attributes.append(meta)
 
 if __name__ == '__main__':
-    model_file = 'tennis_match_outcome_logit.statmodel'
-    sql, test_data = load_data(all_attributes, test_season=2016, start_year=2005)
-    print('Attrs: ', sql[all_attributes][0:20])
+    train_spread_model = True
+    train_outcome_model = True
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+    if train_outcome_model:
+        model_file = 'tennis_match_outcome_logit.statmodel'
+        # print('Attrs: ', sql[all_attributes][0:20])
+        # model to predict the total score (h_pts + a_pts)
+        results = smf.logit(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
+        print(results.summary())
+        binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
 
-    # model to predict the total score (h_pts + a_pts)
-    results = smf.logit(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
-    print(results.summary())
+        print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
+              ' ('+to_percentage(binary_percent)+')')
+        print('Average error: ', to_percentage(avg_error))
+        results.save(model_file)
 
-    binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
-
-    print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
-          ' ('+to_percentage(binary_percent)+')')
-    print('Average error: ', to_percentage(avg_error))
-    results.save(model_file)
+    if train_spread_model:
+        model_file = 'tennis_match_spread_logit.statmodel'
+        # print('Attrs: ', sql[all_attributes][0:20])
+        # model to predict the total score (h_pts + a_pts)
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql).fit()
+        print(results.summary())
+        n, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        results.save(model_file)
 
     exit(0)
 
