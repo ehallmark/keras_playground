@@ -140,13 +140,41 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     # set y_str to actual
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
-    data = data.sort_values(by=['betting_date'], kind='mergesort')
-    test_data = test_data.sort_values(by=['betting_date'], kind='mergesort')
+    #data = data.sort_values(by=['betting_date'], kind='mergesort')
+    #test_data = test_data.sort_values(by=['betting_date'], kind='mergesort')
     return data, test_data
 
 
+def bet_func(epsilon):
+    def bet_func_helper(price, odds, prediction):
+        if odds < 0.05:
+            return 0
+        if odds > 0.50:
+            return 0
+        if 0 > prediction or prediction > 1:
+            print('Invalid prediction: ', prediction)
+            exit(1)
+        if price > 0:
+            expectation_implied = odds * price + (1. - odds) * -100.
+            expectation = prediction * price + (1. - prediction) * -100.
+            expectation /= 100.
+            expectation_implied /= 100.
+        else:
+            expectation_implied = odds * 100. + (1. - odds) * price
+            expectation = prediction * 100. + (1. - prediction) * price
+            expectation /= -price
+            expectation_implied /= -price
+        # print('Expectation:', expectation, ' Implied: ', expectation_implied)
+        if expectation > epsilon:
+            return 1. + expectation
+        else:
+            return 0
+
+    return bet_func_helper
+
+
 if __name__ == '__main__':
-    price_str = 'min_price'
+    price_str = 'max_price'
     test_year = 2018
     start_year = 2011
     num_tests = 1
@@ -203,31 +231,6 @@ if __name__ == '__main__':
             parameters['max_loss_percent'] = 0.05
 
 
-            def bet_func(epsilon):
-                def bet_func_helper(price, odds, prediction):
-                    if odds < 0.15:
-                        return 0
-                    if odds > 0.85:
-                        return 0
-                    if 0 > prediction or prediction > 1:
-                        print('Invalid prediction: ', prediction)
-                        exit(1)
-                    if price > 0:
-                        expectation_implied = odds * price + (1.-odds) * -100.
-                        expectation = prediction * price + (1.-prediction) * -100.
-                        expectation /= 100.
-                        expectation_implied /= 100.
-                    else:
-                        expectation_implied = odds * 100. + (1.-odds) * price
-                        expectation = prediction * 100. + (1.-prediction) * price
-                        expectation /= -price
-                        expectation_implied /= -price
-                    #print('Expectation:', expectation, ' Implied: ', expectation_implied)
-                    if expectation > epsilon:
-                        return 1. + expectation
-                    else:
-                        return 0
-                return bet_func_helper
             test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
                                               price_str, num_tests, sampling=0, shuffle=False)
