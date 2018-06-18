@@ -141,10 +141,10 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
     #print('Test data: ', test_data)
-    data = data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
-    test_data = test_data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
-    data.reset_index(drop=True)
-    test_data.reset_index(drop=True)
+    #data = data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    #test_data = test_data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    #data.reset_index(drop=True)
+    #test_data.reset_index(drop=True)
     #print('Sorted test data.......', test_data)
     return data, test_data
 
@@ -154,9 +154,9 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.10:
+        if odds < 0.05:
             return 0
-        if odds > 0.60:
+        if odds > 0.70:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -186,10 +186,10 @@ if __name__ == '__main__':
             graph = False
             all_predictions = []
             model_to_epsilon = {
-                'Logit Regression': 0.05,
+                'Logit Regression': 0.10,
                 'Naive Bayes': 1.,
                 'Random Forest': 0.25,
-                'Average': 0.05,
+                'Average': 0.15,
                 'Support Vector': 0.5
             }
             for outcome_model_name in ['Logistic', 'Naive Bayes']:
@@ -209,7 +209,7 @@ if __name__ == '__main__':
                                 (lr, 'Logit Regression'),
                                 #(svm, 'Support Vector'),
                                 #(nb, 'Naive Bayes'),
-                                #(rf, 'Random Forest'),
+                                (rf, 'Random Forest'),
                             ]:
                     print('with Betting Model: ', name)
                     X_train = np.array(data[betting_input_attributes])
