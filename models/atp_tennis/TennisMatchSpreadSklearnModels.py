@@ -224,7 +224,7 @@ if __name__ == '__main__':
     test_year = 2018
     start_year = 2011
     num_tests = 5
-    num_test_years = 2
+    num_test_years = 1
     graph = False
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:

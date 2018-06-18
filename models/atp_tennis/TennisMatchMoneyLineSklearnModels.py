@@ -27,8 +27,8 @@ betting_input_attributes = [
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
+    #'surface_experience',
+    #'opp_surface_experience',
     'experience',
     'opp_experience',
     #'age',
@@ -39,8 +39,8 @@ betting_input_attributes = [
     #'opp_weight',
     #'height',
     #'opp_height',
-    'elo_score',
-    'opp_elo_score',
+    #'elo_score',
+    #'opp_elo_score',
     'grand_slam',
     'clay',
     'grass',
@@ -156,7 +156,7 @@ def bet_func(epsilon):
             exit(1)
         if odds < 0.10:
             return 0
-        if odds > 0.70:
+        if odds > 0.60:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -178,89 +178,89 @@ def bet_func(epsilon):
 
 
 if __name__ == '__main__':
-    price_str = 'max_price'
-    test_year = 2017
-    start_year = 2011
-    num_tests = 5
-    graph = False
-    num_test_years = 2
-    all_predictions = []
-    model_to_epsilon = {
-        'Logit Regression': 0.05,
-        'Naive Bayes': 1.,
-        'Random Forest': 0.25,
-        'Average': 0.15,
-        'Support Vector': 0.5
-    }
-    for outcome_model_name in ['Logistic', 'Naive Bayes']:
-        outcome_model = load_outcome_model(outcome_model_name)
-        spread_model = load_spread_model('Linear')
-        data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
-        lr = LogisticRegression()
-        svm = LinearSVC()
-        rf = RandomForestClassifier(n_estimators=200)
-        nb = GaussianNB()
-        plt.figure(figsize=(10, 10))
-        ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
-        ax2 = plt.subplot2grid((3, 1), (2, 0))
-        ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-        for model, name in [
-                        (lr, 'Logit Regression'),
-                        #(svm, 'Support Vector'),
-                        #(nb, 'Naive Bayes'),
-                        (rf, 'Random Forest'),
-                    ]:
-            print('Using outcome model', outcome_model_name, 'with Betting Model: ', name)
-            X_train = np.array(data[betting_input_attributes])
-            y_train = np.array(data[y_str]).flatten()
-            X_test = np.array(test_data[betting_input_attributes])
-            y_test = np.array(test_data[y_str]).flatten()
-            #print("Shapes: ", X_train.shape, X_test.shape)
-            model.fit(X_train, y_train)
-            binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
-            #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-            #      ' (' + to_percentage(binary_percent) + ')')
-            prob_pos = predict_proba(model, X_test)
-            fraction_of_positives, mean_predicted_value = \
-                calibration_curve(y_test, prob_pos, n_bins=10)
-            all_predictions.append(prob_pos)
-            ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                     label="%s" % (name,))
+    for num_test_years in [1, 2]:
+        for test_year in [2016, 2017, 2018]:
+            price_str = 'max_price'
+            start_year = 2011
+            num_tests = 3
+            graph = False
+            all_predictions = []
+            model_to_epsilon = {
+                'Logit Regression': 0.05,
+                'Naive Bayes': 1.,
+                'Random Forest': 0.25,
+                'Average': 0.05,
+                'Support Vector': 0.5
+            }
+            for outcome_model_name in ['Logistic', 'Naive Bayes']:
+                outcome_model = load_outcome_model(outcome_model_name)
+                spread_model = load_spread_model('Linear')
+                data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
+                lr = LogisticRegression()
+                svm = LinearSVC()
+                rf = RandomForestClassifier(n_estimators=200)
+                nb = GaussianNB()
+                plt.figure(figsize=(10, 10))
+                ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
+                ax2 = plt.subplot2grid((3, 1), (2, 0))
+                ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+                print('Using outcome model', outcome_model_name)
+                for model, name in [
+                                (lr, 'Logit Regression'),
+                                #(svm, 'Support Vector'),
+                                #(nb, 'Naive Bayes'),
+                                #(rf, 'Random Forest'),
+                            ]:
+                    print('with Betting Model: ', name)
+                    X_train = np.array(data[betting_input_attributes])
+                    y_train = np.array(data[y_str]).flatten()
+                    X_test = np.array(test_data[betting_input_attributes])
+                    y_test = np.array(test_data[y_str]).flatten()
+                    #print("Shapes: ", X_train.shape, X_test.shape)
+                    model.fit(X_train, y_train)
+                    binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+                    #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
+                    #      ' (' + to_percentage(binary_percent) + ')')
+                    prob_pos = predict_proba(model, X_test)
+                    fraction_of_positives, mean_predicted_value = \
+                        calibration_curve(y_test, prob_pos, n_bins=10)
+                    all_predictions.append(prob_pos)
+                    ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+                             label="%s" % (name,))
 
-            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                     histtype="step", lw=2)
+                    ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+                             histtype="step", lw=2)
 
-            # actual returns on test data
-            parameters = dict()
-            parameters['max_loss_percent'] = 0.05
+                    # actual returns on test data
+                    parameters = dict()
+                    parameters['max_loss_percent'] = 0.05
 
 
-            test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
-                                              bet_func(model_to_epsilon[name]), test_data, parameters,
-                                              price_str, num_tests, sampling=0, shuffle=True)
-            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
+                    test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
+                                                      bet_func(model_to_epsilon[name]), test_data, parameters,
+                                                      price_str, num_tests, sampling=0, shuffle=True)
+                    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Test year:', test_year)
+
+                ax1.set_ylabel("Fraction of positives")
+                ax1.set_ylim([-0.05, 1.05])
+                ax1.legend(loc="lower right")
+                ax1.set_title('Calibration plots  (reliability curve)')
+
+                ax2.set_xlabel("Mean predicted value")
+                ax2.set_ylabel("Count")
+                ax2.legend(loc="upper center", ncol=2)
+
+                if graph:
+                    plt.tight_layout()
+                    plt.show()
+
+            avg_predictions = np.vstack(all_predictions).mean(0)
+            _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
+            test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
+                                                        bet_func(model_to_epsilon['Average']), test_data, parameters,
+                                                        price_str, num_tests, sampling=0, shuffle=True, verbose=False)
+            print('Avg model')
+            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+                  ' Test years:', num_test_years, ' Test year:', test_year)
             print('---------------------------------------------------------')
-
-        ax1.set_ylabel("Fraction of positives")
-        ax1.set_ylim([-0.05, 1.05])
-        ax1.legend(loc="lower right")
-        ax1.set_title('Calibration plots  (reliability curve)')
-
-        ax2.set_xlabel("Mean predicted value")
-        ax2.set_ylabel("Count")
-        ax2.legend(loc="upper center", ncol=2)
-
-        if graph:
-            plt.tight_layout()
-            plt.show()
-
-    avg_predictions = np.vstack(all_predictions).mean(0)
-    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
-    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
-                                                bet_func(model_to_epsilon['Average']), test_data, parameters,
-                                                price_str, num_tests, sampling=0, shuffle=True, verbose=False)
-    print('Avg model')
-    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-          ' Test years:', num_test_years)
-    print('---------------------------------------------------------')
 
