@@ -21,6 +21,8 @@ from models.simulation.Simulate import simulate_spread
 betting_input_attributes = [
     #'prev_h2h2_wins_player',
     #'prev_h2h2_wins_opponent',
+    #'prev_duration',
+    #'opp_prev_duration',
     #'h2h_prior_win_percent',
     #'prev_year_prior_encounters',
     #'opp_prev_year_prior_encounters',
@@ -28,18 +30,18 @@ betting_input_attributes = [
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    #'surface_experience',
-    #'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    #'age',
-    #'opp_age',
+    'surface_experience',
+    'opp_surface_experience',
+    'experience',
+    'opp_experience',
+    'age',
+    'opp_age',
     #'lefty',
     #'opp_lefty',
     #'weight',
     #'opp_weight',
-    #'height',
-    #'opp_height',
+    'height',
+    'opp_height',
     'elo_score',
     'opp_elo_score',
     'grand_slam',
@@ -54,7 +56,7 @@ betting_only_attrs = [
     'spread2',
     'spread_predictions',
     #'spread2',
-    'predictions'
+    #'predictions'
 ]
 
 y_str = 'beat_spread'
@@ -182,8 +184,10 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
 
     data[y_str] = extract_beat_spread_binary(spreads=data['spread1'], spread_actuals=data['spread_actual'])
     test_data[y_str] = extract_beat_spread_binary(spreads=test_data['spread1'], spread_actuals=test_data['spread_actual'])
-    data = data.sort_values(by=['betting_date'], kind='mergesort')
-    test_data = test_data.sort_values(by=['betting_date'], kind='mergesort')
+    data = data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    test_data = test_data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    data.reset_index(drop=True)
+    test_data.reset_index(drop=True)
     return data, test_data
 
 
@@ -211,16 +215,16 @@ def bet_func(epsilon):
 
 if __name__ == '__main__':
     model_to_epsilon = {
-        'Logit Regression': 0.05,
-        #'Naive Bayes': 1.0,
-        'Random Forest': 0.50,
-        'Average': 0.40,
+        'Logit Regression': 0.15,
+        'Naive Bayes': 1.0,
+        'Random Forest': 0.20,
+        'Average': 0.05,
         #'Support Vector': 0.3
     }
     test_year = 2018
     start_year = 2011
-    num_tests = 1
-    num_test_years = 1
+    num_tests = 5
+    num_test_years = 2
     graph = False
     all_predictions = []
     for outcome_model_name in ['Logistic', 'Naive Bayes']:
@@ -236,7 +240,7 @@ if __name__ == '__main__':
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
-                        #(lr, 'Logit Regression'),
+                        (lr, 'Logit Regression'),
                         #(svm, 'Support Vector'),
                         #(nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
@@ -264,7 +268,7 @@ if __name__ == '__main__':
 
             parameters = dict()
             parameters['max_loss_percent'] = 0.05
-            test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
+            test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['actual'], lambda j: test_data.iloc[j]['spread_actual'], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
                                               'price', num_tests, sampling=0, shuffle=False)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
@@ -285,10 +289,10 @@ if __name__ == '__main__':
 
     avg_predictions = np.vstack(all_predictions).mean(0)
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
-    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['actual'][j],
-                                            lambda j: test_data['spread_actual'][j], lambda _: None,
+    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data.iloc[j]['actual'],
+                                            lambda j: test_data.iloc[j]['spread_actual'], lambda _: None,
                                             bet_func(model_to_epsilon['Average']), test_data, parameters,
-                                            'price', num_tests, sampling=0, shuffle=False, verbose=True)
+                                            'price', num_tests, sampling=0, shuffle=False, verbose=False)
     print('Avg model')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           ' Test years:', num_test_years)
