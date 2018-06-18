@@ -35,7 +35,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         num_wins2 = 0
         num_losses1 = 0
         num_losses2 = 0
-        betting_minimum = 10.0
+        betting_minimum = 5.0
         initial_capital = 1000.0
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
@@ -220,7 +220,7 @@ def simulate_spread(predictor_func, actual_label_func, actual_spread_func, param
         num_wins2 = 0
         num_losses1 = 0
         num_losses2 = 0
-        betting_minimum = 10.0
+        betting_minimum = 5.0
         initial_capital = 1000.0
         num_ties = 0
         available_capital = initial_capital

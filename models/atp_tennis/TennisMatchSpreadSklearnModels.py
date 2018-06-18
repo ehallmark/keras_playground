@@ -187,6 +187,28 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     return data, test_data
 
 
+def bet_func(epsilon):
+    def bet_func_helper(price, odds, spread, prediction):
+        if 0 > prediction or prediction > 1:
+            print('Invalid prediction: ', prediction)
+            exit(1)
+        if price > 0:
+            expectation_implied = odds * price + (1. - odds) * -100.
+            expectation = prediction * price + (1. - prediction) * -100.
+            expectation /= 100.
+            expectation_implied /= 100.
+        else:
+            expectation_implied = odds * 100. + (1. - odds) * price
+            expectation = prediction * 100. + (1. - prediction) * price
+            expectation /= -price
+            expectation_implied /= -price
+        if expectation > epsilon:
+            return 1. + expectation
+        else:
+            return 0
+    return bet_func_helper
+
+
 if __name__ == '__main__':
     model_to_epsilon = {
         'Logit Regression': 0.05,
@@ -242,28 +264,6 @@ if __name__ == '__main__':
 
             parameters = dict()
             parameters['max_loss_percent'] = 0.05
-
-            def bet_func(epsilon):
-                def bet_func_helper(price, odds, spread, prediction):
-                    if 0 > prediction or prediction > 1:
-                        print('Invalid prediction: ', prediction)
-                        exit(1)
-                    if price > 0:
-                        expectation_implied = odds * price + (1. - odds) * -100.
-                        expectation = prediction * price + (1. - prediction) * -100.
-                        expectation /= 100.
-                        expectation_implied /= 100.
-                    else:
-                        expectation_implied = odds * 100. + (1. - odds) * price
-                        expectation = prediction * 100. + (1. - prediction) * price
-                        expectation /= -price
-                        expectation_implied /= -price
-                    if expectation > epsilon:
-                        return 1. + expectation
-                    else:
-                        return 0
-                return bet_func_helper
-
             test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda j: test_data['spread_actual'][j], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
                                               'price', num_tests, sampling=0, shuffle=False)
