@@ -4,15 +4,20 @@ import pandas as pd
 from sqlalchemy import create_engine
 from random import shuffle
 import models.atp_tennis.TennisMatchMoneyLineSklearnModels as tennis_model
-from models.atp_tennis.TennisMatchMoneyLineSklearnModels import all_attributes,outcome_input_attributes,test_model,to_percentage
+from models.atp_tennis.TennisMatchMoneyLineSklearnModels import betting_input_attributes,all_attributes,outcome_input_attributes,test_model,to_percentage
 
 for outcome_model_name in ['Logistic', 'Naive Bayes']:
-    outcome_model = tennis_model.load_model(outcome_model_name)
-    test_data, test_data_2018 = tennis_model.load_data(outcome_model, start_year=2010, test_year=2018, num_test_years=1)
+    outcome_model = tennis_model.load_outcome_model(outcome_model_name)
+    spread_model = tennis_model.load_spread_model('Linear')
+    test_data, test_data_2018 = tennis_model.load_data(outcome_model, spread_model, start_year=2010, test_year=2018, num_test_years=1)
 
-    outcome_input_attributes = list(outcome_input_attributes)
-    # outcome_input_attributes.append('returns')
-    test_data, test_data_2018 = test_data[outcome_input_attributes], test_data_2018[outcome_input_attributes]
+    attributes = list(outcome_input_attributes)
+    attributes.append('returns')
+    for attr in betting_input_attributes:
+        if attr not in attributes:
+            attributes.append(attr)
+
+    test_data, test_data_2018 = test_data[attributes], test_data_2018[attributes]
     means = test_data.mean(axis=0)
     means_2018 = test_data_2018.mean(axis=0)
     var = test_data.var(axis=0)
@@ -23,8 +28,8 @@ for outcome_model_name in ['Logistic', 'Naive Bayes']:
 
     print('Avg avg diff: ', np.abs(average_diff).mean())
     print('Var avg diff: ', np.abs(var_diff).mean(0))
-    for i in range(len(outcome_input_attributes)):
-        print('Attr name: ', outcome_input_attributes[i])
+    for i in range(len(attributes)):
+        print('Attr name: ', attributes[i])
         print('Mean:', means[i], ' Mean2:', means_2018[i])
         print('Avg diff: ', average_diff[i])
         print('Var diff: ', var_diff[i])
