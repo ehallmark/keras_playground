@@ -162,7 +162,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
             print('Final Capital: ', available_capital)
             print('Num bets: ', num_bets)
             print('Total Return: ', return_total)
-            print('Average Return Per Amount Invested: ', return_total / amount_invested)
+            print('Average Return Per Amount Invested: ', return_total / max(1,amount_invested))
             print('Overall Return For The Year: ', return_total / initial_capital)
             print('Num correct: ', num_wins)
             print('Num wrong: ', num_losses)

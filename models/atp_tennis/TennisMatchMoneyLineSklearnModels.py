@@ -21,14 +21,14 @@ betting_input_attributes = [
     #'prev_h2h2_wins_player',
     #'prev_h2h2_wins_opponent',
     #'h2h_prior_win_percent',
-    #'prev_year_prior_encounters',
-    #'opp_prev_year_prior_encounters',
+    #'prev_year_prior_victories',
+    #'opp_prev_year_prior_victories',
     #'tourney_hist_prior_encounters',
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    #'surface_experience',
-    #'opp_surface_experience',
+    'surface_experience',
+    'opp_surface_experience',
     'experience',
     'opp_experience',
     #'age',
@@ -39,8 +39,8 @@ betting_input_attributes = [
     #'opp_weight',
     #'height',
     #'opp_height',
-    #'elo_score',
-    #'opp_elo_score',
+    'elo_score',
+    'opp_elo_score',
     'grand_slam',
     'clay',
     'grass',
@@ -50,7 +50,7 @@ betting_only_attrs = [
     'odds1',
     'odds2',
     'predictions',
-    'spread_predictions',
+    #'spread_predictions',
 ]
 
 y_str = 'returns'
@@ -140,20 +140,24 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     # set y_str to actual
     data[y_str] = data['actual']
     test_data[y_str] = test_data['actual']
-    #data = data.sort_values(by=['betting_date'], kind='mergesort')
-    #test_data = test_data.sort_values(by=['betting_date'], kind='mergesort')
+    #print('Test data: ', test_data)
+    data = data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    test_data = test_data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
+    data.reset_index(drop=True)
+    test_data.reset_index(drop=True)
+    #print('Sorted test data.......', test_data)
     return data, test_data
 
 
 def bet_func(epsilon):
     def bet_func_helper(price, odds, prediction):
-        if odds < 0.05:
-            return 0
-        if odds > 0.50:
-            return 0
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
+        if odds < 0.10:
+            return 0
+        if odds > 0.70:
+            return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.
@@ -175,11 +179,11 @@ def bet_func(epsilon):
 
 if __name__ == '__main__':
     price_str = 'max_price'
-    test_year = 2018
+    test_year = 2017
     start_year = 2011
-    num_tests = 1
+    num_tests = 5
     graph = False
-    num_test_years = 1
+    num_test_years = 2
     all_predictions = []
     model_to_epsilon = {
         'Logit Regression': 0.05,
@@ -201,7 +205,7 @@ if __name__ == '__main__':
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [
-                        #(lr, 'Logit Regression'),
+                        (lr, 'Logit Regression'),
                         #(svm, 'Support Vector'),
                         #(nb, 'Naive Bayes'),
                         (rf, 'Random Forest'),
@@ -231,9 +235,9 @@ if __name__ == '__main__':
             parameters['max_loss_percent'] = 0.05
 
 
-            test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data['actual'][j], lambda _: None,
+            test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
-                                              price_str, num_tests, sampling=0, shuffle=False)
+                                              price_str, num_tests, sampling=0, shuffle=True)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
             print('---------------------------------------------------------')
 
@@ -252,9 +256,9 @@ if __name__ == '__main__':
 
     avg_predictions = np.vstack(all_predictions).mean(0)
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
-    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data['actual'][j], lambda _: None,
+    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data.iloc[j]['actual'], lambda _: None,
                                                 bet_func(model_to_epsilon['Average']), test_data, parameters,
-                                                price_str, num_tests, sampling=0, shuffle=False, verbose=True)
+                                                price_str, num_tests, sampling=0, shuffle=True, verbose=False)
     print('Avg model')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           ' Test years:', num_test_years)
