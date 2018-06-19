@@ -1,21 +1,17 @@
 from models.atp_tennis.TennisMatchOutcomeLogit import test_model, to_percentage
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import LinearSVR
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
-from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcome_input_attributes
-from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes_spread as spread_input_attributes
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_spread
+from models.atp_tennis.TennisMatchMoneyLineSklearnModels import load_outcome_predictions_and_actuals
 
 
 betting_input_attributes = [
@@ -52,13 +48,12 @@ betting_input_attributes = [
 betting_only_attrs = [
     'odds1',
     'odds2',
-    #'spread1',
-    #'spread2',
-    'spread_predictions',
+    'spread1',
+    'spread2',
+    #'spread_predictions',
     #'predictions'
 ]
 
-y_str = 'beat_spread'
 for attr in betting_only_attrs:
     if attr not in betting_input_attributes:
         betting_input_attributes.append(attr)
@@ -78,20 +73,6 @@ def predict_proba(model, X):
         prob_pos = \
             (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
     return prob_pos
-
-
-def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=2018, num_test_years=3, start_year=2005):
-    data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes, test_season=test_year+1, start_year=test_year+1-num_test_years)
-    X = np.array(data[outcome_input_attributes])
-    X_test = np.array(test_data[outcome_input_attributes])
-    X_spread = np.array(data[spread_input_attributes])
-    X_test_spread = np.array(test_data[spread_input_attributes])
-    data['predictions'] = pd.Series(predict_proba(model, X), index=data.index)
-    test_data['predictions'] = pd.Series(predict_proba(model, X_test), index=test_data.index)
-    data['spread_predictions'] = pd.Series(spread_model.predict(X_spread), index=data.index)
-    test_data['spread_predictions'] = pd.Series(spread_model.predict(X_test_spread), index=test_data.index)
-    return data, test_data
 
 
 def load_betting_data(betting_sites, test_year=2018):
@@ -174,9 +155,8 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
-
-    data[y_str] = pd.Series(extract_beat_spread_binary(spreads=data.iloc[:]['spread1'], spread_actuals=data.iloc[:]['spread']), index=data.index)
-    test_data[y_str] = pd.Series(extract_beat_spread_binary(spreads=test_data.iloc[:]['spread1'], spread_actuals=test_data.iloc[:]['spread']), index=test_data.index)
+    data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
+    test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
     data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
