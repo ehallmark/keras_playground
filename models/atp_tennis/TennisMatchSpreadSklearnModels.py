@@ -30,20 +30,20 @@ betting_input_attributes = [
     #'opp_tourney_hist_prior_encounters',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
-    'experience',
-    'opp_experience',
-    'age',
-    'opp_age',
+    #'surface_experience',
+    #'opp_surface_experience',
+    #'experience',
+    #'opp_experience',
+    #'age',
+    #'opp_age',
     #'lefty',
     #'opp_lefty',
     #'weight',
     #'opp_weight',
-    'height',
-    'opp_height',
-    'elo_score',
-    'opp_elo_score',
+    #'height',
+    #'opp_height',
+    #'elo_score',
+    #'opp_elo_score',
     'grand_slam',
     'clay',
     'grass',
@@ -52,10 +52,9 @@ betting_input_attributes = [
 betting_only_attrs = [
     'odds1',
     'odds2',
-    'spread1',
-    'spread2',
-    'spread_predictions',
+    #'spread1',
     #'spread2',
+    'spread_predictions',
     #'predictions'
 ]
 
@@ -82,28 +81,16 @@ def predict_proba(model, X):
 
 
 def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=2018, num_test_years=3, start_year=2005):
-    data, _ = tennis_model.get_all_data(attributes,include_spread=True,test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes,include_spread=True,test_season=test_year+1, start_year=test_year+1-num_test_years)
-    labels = data[1]
-    spreads = labels[1]
-    labels = labels[0]
-    data = data[0]
-    test_labels = test_data[1]
-    test_spreads = test_labels[1]
-    test_labels = test_labels[0]
-    test_data = test_data[0]
+    data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
+    test_data, _ = tennis_model.get_all_data(attributes, test_season=test_year+1, start_year=test_year+1-num_test_years)
     X = np.array(data[outcome_input_attributes])
     X_test = np.array(test_data[outcome_input_attributes])
     X_spread = np.array(data[spread_input_attributes])
     X_test_spread = np.array(test_data[spread_input_attributes])
-    data['predictions'] = predict_proba(model, X)
-    test_data['predictions'] = predict_proba(model, X_test)
-    data['spread_predictions'] = spread_model.predict(X_spread)
-    test_data['spread_predictions'] = spread_model.predict(X_test_spread)
-    data['actual'] = labels
-    data['spread_actual'] = spreads
-    test_data['actual'] = test_labels
-    test_data['spread_actual'] = test_spreads
+    data['predictions'] = pd.Series(predict_proba(model, X), index=data.index)
+    test_data['predictions'] = pd.Series(predict_proba(model, X_test), index=test_data.index)
+    data['spread_predictions'] = pd.Series(spread_model.predict(X_spread), index=data.index)
+    test_data['spread_predictions'] = pd.Series(spread_model.predict(X_test_spread), index=test_data.index)
     return data, test_data
 
 
@@ -169,25 +156,31 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
+    print('pre headers: ', test_data.columns)
     test_data = pd.DataFrame.merge(
         test_data,
         betting_data,
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['year', 'team1', 'team2', 'tournament'])
+        right_on=['year', 'team1', 'team2', 'tournament'],
+        validate='1:m'
+    )
+    print('post headers: ', test_data.columns)
     data = pd.DataFrame.merge(
         data,
         betting_data,
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['year', 'team1', 'team2', 'tournament'])
+        right_on=['year', 'team1', 'team2', 'tournament'],
+        validate='1:m'
+    )
 
-    data[y_str] = extract_beat_spread_binary(spreads=data['spread1'], spread_actuals=data['spread_actual'])
-    test_data[y_str] = extract_beat_spread_binary(spreads=test_data['spread1'], spread_actuals=test_data['spread_actual'])
-    data = data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
-    test_data = test_data.sort_values(by=['betting_date'], inplace=False, ascending=True, kind='mergesort')
-    data.reset_index(drop=True)
-    test_data.reset_index(drop=True)
+    data[y_str] = pd.Series(extract_beat_spread_binary(spreads=data.iloc[:]['spread1'], spread_actuals=data.iloc[:]['spread']), index=data.index)
+    test_data[y_str] = pd.Series(extract_beat_spread_binary(spreads=test_data.iloc[:]['spread1'], spread_actuals=test_data.iloc[:]['spread']), index=test_data.index)
+    data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
+    test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
+    #data.reset_index(drop=True, inplace=True)
+    #test_data.reset_index(drop=True, inplace=True)
     return data, test_data
 
 
@@ -196,6 +189,8 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
+        if odds < 0.3 or odds > 0.7:
+            return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.
@@ -215,13 +210,13 @@ def bet_func(epsilon):
 
 if __name__ == '__main__':
     model_to_epsilon = {
-        'Logit Regression': 0.15,
+        'Logit Regression': 0.20,
         'Naive Bayes': 1.0,
-        'Random Forest': 0.20,
-        'Average': 0.05,
+        'Random Forest': 0.50,
+        'Average': 0.4,
         #'Support Vector': 0.3
     }
-    test_year = 2018
+    test_year = 2017
     start_year = 2011
     num_tests = 5
     num_test_years = 1
@@ -246,10 +241,10 @@ if __name__ == '__main__':
                         (rf, 'Random Forest'),
                     ]:
             print('Using outcome model:', outcome_model_name, 'with Betting Model: ', name)
-            X_train = np.array(data[betting_input_attributes])
-            y_train = np.array(data[y_str]).flatten()
-            X_test = np.array(test_data[betting_input_attributes])
-            y_test = np.array(test_data[y_str]).flatten()
+            X_train = np.array(data[betting_input_attributes].iloc[:, :])
+            y_train = np.array(data[y_str].iloc[:]).flatten()
+            X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
+            y_test = np.array(test_data[y_str].iloc[:]).flatten()
             #print("Shapes: ", X_train.shape, X_test.shape)
             model.fit(X_train, y_train)
             binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
@@ -268,7 +263,7 @@ if __name__ == '__main__':
 
             parameters = dict()
             parameters['max_loss_percent'] = 0.05
-            test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['actual'], lambda j: test_data.iloc[j]['spread_actual'], lambda _: None,
+            test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['spread'], lambda _: None,
                                               bet_func(model_to_epsilon[name]), test_data, parameters,
                                               'price', num_tests, sampling=0, shuffle=False)
             print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years)
@@ -288,9 +283,9 @@ if __name__ == '__main__':
             plt.show()
 
     avg_predictions = np.vstack(all_predictions).mean(0)
-    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['actual'])
-    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data.iloc[j]['actual'],
-                                            lambda j: test_data.iloc[j]['spread_actual'], lambda _: None,
+    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str].iloc[:])
+    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j],
+                                            lambda j: test_data['spread'].iloc[j], lambda _: None,
                                             bet_func(model_to_epsilon['Average']), test_data, parameters,
                                             'price', num_tests, sampling=0, shuffle=False, verbose=False)
     print('Avg model')
