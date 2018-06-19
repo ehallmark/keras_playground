@@ -76,8 +76,8 @@ def predict_proba(model, X):
 
 
 def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=2018, num_test_years=3, start_year=2005):
-    data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
+    data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
+    test_data, _ = tennis_model.get_all_data(attributes, test_season=test_year+1, start_year=test_year+1-num_test_years)
     X = np.array(data[outcome_input_attributes].iloc[:, :])
     X_test = np.array(test_data[outcome_input_attributes].iloc[:, :])
     X_spread = np.array(data[spread_input_attributes].iloc[:, :])
