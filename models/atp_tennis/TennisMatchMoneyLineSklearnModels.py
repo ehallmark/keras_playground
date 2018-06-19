@@ -5,6 +5,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVR
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
@@ -186,7 +188,9 @@ if __name__ == '__main__':
                 'Naive Bayes': 0.6,
                 'Random Forest': 0.7,
                 'Average': 0.10,
-                'Support Vector': 0.5
+                'Gaussian Process': 0.1,
+                'Support Vector': 0.5,
+                'K Neighbors': 0.1,
             }
             for outcome_model_name in ['Logistic', 'Naive Bayes']:
                 outcome_model = load_outcome_model(outcome_model_name)
@@ -196,22 +200,26 @@ if __name__ == '__main__':
                 svm = LinearSVC()
                 rf = RandomForestClassifier(n_estimators=200)
                 nb = GaussianNB()
+                qda = QuadraticDiscriminantAnalysis()
+                kn = KNeighborsClassifier(n_neighbors=10)
                 plt.figure(figsize=(10, 10))
                 ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
                 ax2 = plt.subplot2grid((3, 1), (2, 0))
                 ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+                X_train = np.array(data[betting_input_attributes].iloc[:, :])
+                y_train = np.array(data[y_str].iloc[:]).flatten()
+                X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
+                y_test = np.array(test_data[y_str].iloc[:]).flatten()
                 print('Using outcome model', outcome_model_name)
                 for model, name, weight in [
-                                (lr, 'Logit Regression', 0.6),
+                                (lr, 'Logit Regression', 0.2),
                                 #(svm, 'Support Vector'),
                                 (nb, 'Naive Bayes', 0.2),
                                 (rf, 'Random Forest', 0.2),
+                                (qda, 'QDA', 0.2),
+                                (kn, 'K Neighbors', 0.2)
                             ]:
                     print('with Betting Model: ', name)
-                    X_train = np.array(data[betting_input_attributes].iloc[:, :])
-                    y_train = np.array(data[y_str].iloc[:]).flatten()
-                    X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
-                    y_test = np.array(test_data[y_str].iloc[:]).flatten()
                     #print("Shapes: ", X_train.shape, X_test.shape)
                     model.fit(X_train, y_train)
                     binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
