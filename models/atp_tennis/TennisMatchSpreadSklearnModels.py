@@ -59,7 +59,6 @@ for attr in betting_only_attrs:
         betting_input_attributes.append(attr)
 
 all_attributes = list(betting_input_attributes)
-all_attributes.append(y_str)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
     all_attributes.append(meta)
@@ -222,9 +221,9 @@ if __name__ == '__main__':
                     ]:
             print('Using outcome model:', outcome_model_name, 'with Betting Model: ', name)
             X_train = np.array(data[betting_input_attributes].iloc[:, :])
-            y_train = np.array(data[y_str].iloc[:]).flatten()
+            y_train = np.array(data['beat_spread'].iloc[:]).flatten()
             X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
-            y_test = np.array(test_data[y_str].iloc[:]).flatten()
+            y_test = np.array(test_data['beat_spread'].iloc[:]).flatten()
             #print("Shapes: ", X_train.shape, X_test.shape)
             model.fit(X_train, y_train)
             binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
