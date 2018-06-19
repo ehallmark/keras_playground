@@ -190,7 +190,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     return avg_best, num_bets_avg
 
 
-def simulate_spread(predictor_func, actual_label_func, actual_spread_func, parameter_update_func,
+def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
                     betting_decision_func, test_data, parameters,
                     price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=True):
     worst_parameters = None

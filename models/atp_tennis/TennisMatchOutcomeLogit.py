@@ -222,14 +222,6 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
     if tournament is not None:
         data = data[(data.tournament==tournament)&(data.year==test_season)]
         test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
-
-    # create inputs
-    if include_spread:
-        data = (data, [np.array(data['y']), np.array(data['spread'])])
-        test_data = (test_data, [np.array(test_data['y']), np.array(test_data['spread'])])
-    else:
-        data = (data, np.array(data['y']))
-        test_data = (test_data, np.array(test_data['y']))
     return data, test_data
 
 
