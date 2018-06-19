@@ -78,14 +78,14 @@ def predict_proba(model, X):
 def load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes,test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes,test_season=test_year+1, start_year=test_year+1-num_test_years)
-    X = np.array(data[outcome_input_attributes])
-    X_test = np.array(test_data[outcome_input_attributes])
-    X_spread = np.array(data[spread_input_attributes])
-    X_test_spread = np.array(test_data[spread_input_attributes])
-    data['predictions'] = pd.Series(predict_proba(model, X), index=data.index)
-    test_data['predictions'] = pd.Series(predict_proba(model, X_test), index=test_data.index)
-    data['spread_predictions'] = pd.Series(spread_model.predict(X_spread), index=data.index)
-    test_data['spread_predictions'] = pd.Series(spread_model.predict(X_test_spread), index=test_data.index)
+    X = np.array(data[outcome_input_attributes].iloc[:, :])
+    X_test = np.array(test_data[outcome_input_attributes].iloc[:, :])
+    X_spread = np.array(data[spread_input_attributes].iloc[:, :])
+    X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
+    data = data.assign(predictions=pd.Series(predict_proba(model, X)).values)
+    test_data = test_data.assign(predictions=pd.Series(predict_proba(model, X_test)).values)
+    data = data.assign(spread_predictions=pd.Series(spread_model.predict(X_spread)).values)
+    test_data = test_data.assign(spread_predictions=pd.Series(spread_model.predict(X_test_spread)).values)
     return data, test_data
 
 
@@ -135,14 +135,10 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
         right_on=['year', 'team1', 'team2', 'tournament'],
         validate='1:1'
     )
-    # set y_str to actual
-    data[y_str] = pd.Series(data['y'], index=data.index)
-    test_data[y_str] = pd.Series(test_data['y'], index=test_data.index)
-    #print('Test data: ', test_data)
     data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
-    data.reset_index(drop=True, inplace=True)
-    test_data.reset_index(drop=True, inplace=True)
+    #data.reset_index(drop=True, inplace=True)
+    #test_data.reset_index(drop=True, inplace=True)
     #print('Sorted test data.......', test_data)
     return data, test_data
 
