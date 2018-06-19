@@ -230,10 +230,10 @@ input_attributes = [
         'prev_h2h2_wins_opponent',
         #'mean_duration',
         #'mean_opp_duration',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
-        'mean_second_serve_points_made',
-        'mean_opp_second_serve_points_made',
+        #'mean_return_points_made',
+        #'mean_opp_return_points_made',
+        #'mean_second_serve_points_made',
+        #'mean_opp_second_serve_points_made',
         'h2h_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
@@ -309,7 +309,7 @@ for meta in meta_attributes:
 if __name__ == '__main__':
     train_spread_model = True
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2012, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])

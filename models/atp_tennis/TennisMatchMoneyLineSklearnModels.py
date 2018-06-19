@@ -29,8 +29,8 @@ betting_input_attributes = [
     #'opp_tiebreak_win_percent',
     #'surface_experience',
     #'opp_surface_experience',
-    'experience',
-    'opp_experience',
+    #'experience',
+    #'opp_experience',
     #'age',
     #'opp_age',
     #'lefty',
@@ -41,17 +41,19 @@ betting_input_attributes = [
     #'opp_height',
     #'elo_score',
     #'opp_elo_score',
-    'grand_slam',
-    'clay',
-    'grass',
+    #'grand_slam',
+    #'clay',
+    #'grass',
 ]
 
 betting_only_attrs = [
-    'odds1',
-    'odds2',
-    'predictions',
+    #'odds1',
+    #'odds2',
+    #'predictions',
     #'spread_predictions',
 ]
+
+betting_input_attributes = list(outcome_input_attributes)
 
 y_str = 'y'
 for attr in betting_only_attrs:
@@ -122,7 +124,7 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     test_data = pd.DataFrame.merge(
         test_data,
         betting_data,
-        'inner',
+        'left',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'],
         validate='1:1'
@@ -130,7 +132,7 @@ def load_data(model, spread_model, start_year, test_year, num_test_years):
     data = pd.DataFrame.merge(
         data,
         betting_data,
-        'inner',
+        'left',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'],
         validate='1:1'
@@ -148,9 +150,9 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.1:
+        if odds < 0.10:
             return 0
-        if odds > 0.90:
+        if odds > 0.70:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -175,15 +177,15 @@ if __name__ == '__main__':
     for num_test_years in [1, 2]:
         for test_year in [2016, 2017, 2018]:
             price_str = 'max_price'
-            start_year = 2011
+            start_year = 2000
             num_tests = 3
             graph = False
             all_predictions = []
             model_to_epsilon = {
-                'Logit Regression': 0.05,
-                'Naive Bayes': 1.,
-                'Random Forest': 0.8,
-                'Average': 0.05,
+                'Logit Regression': 0.10,
+                'Naive Bayes': 0.6,
+                'Random Forest': 0.7,
+                'Average': 0.10,
                 'Support Vector': 0.5
             }
             for outcome_model_name in ['Logistic', 'Naive Bayes']:
@@ -199,11 +201,11 @@ if __name__ == '__main__':
                 ax2 = plt.subplot2grid((3, 1), (2, 0))
                 ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
                 print('Using outcome model', outcome_model_name)
-                for model, name in [
-                                (lr, 'Logit Regression'),
+                for model, name, weight in [
+                                (lr, 'Logit Regression', 0.6),
                                 #(svm, 'Support Vector'),
-                                #(nb, 'Naive Bayes'),
-                                #(rf, 'Random Forest'),
+                                (nb, 'Naive Bayes', 0.2),
+                                (rf, 'Random Forest', 0.2),
                             ]:
                     print('with Betting Model: ', name)
                     X_train = np.array(data[betting_input_attributes].iloc[:, :])
@@ -218,7 +220,7 @@ if __name__ == '__main__':
                     prob_pos = predict_proba(model, X_test)
                     fraction_of_positives, mean_predicted_value = \
                         calibration_curve(y_test, prob_pos, n_bins=10)
-                    all_predictions.append(prob_pos)
+                    all_predictions.append(prob_pos*weight)
                     ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                              label="%s" % (name,))
 
@@ -228,7 +230,6 @@ if __name__ == '__main__':
                     # actual returns on test data
                     parameters = dict()
                     parameters['max_loss_percent'] = 0.05
-
 
                     test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['y'], lambda _: None,
                                                       bet_func(model_to_epsilon[name]), test_data, parameters,
@@ -248,7 +249,7 @@ if __name__ == '__main__':
                     plt.tight_layout()
                     plt.show()
 
-            avg_predictions = np.vstack(all_predictions).mean(0)
+            avg_predictions = np.vstack(all_predictions).sum(0)/2
             _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
             test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j], lambda _: None,
                                                         bet_func(model_to_epsilon['Average']), test_data, parameters,
