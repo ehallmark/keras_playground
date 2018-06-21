@@ -18,6 +18,15 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import load_outcome_pre
 
 betting_input_attributes = list(spread_input_attributes)
 
+betting_only_attributes = [
+    'spread1',
+    'spread2',
+    'odds1',
+    'odds2'
+]
+for attr in betting_only_attributes:
+    betting_input_attributes.append(attr)
+
 all_attributes = list(betting_input_attributes)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for meta in meta_attributes:
