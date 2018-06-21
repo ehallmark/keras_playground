@@ -3,6 +3,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
@@ -11,52 +13,10 @@ import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_spread
-from models.atp_tennis.TennisMatchMoneyLineSklearnModels import load_outcome_predictions_and_actuals
+from models.atp_tennis.TennisMatchMoneyLineSklearnModels import load_outcome_predictions_and_actuals, spread_input_attributes
 
 
-betting_input_attributes = [
-    #'prev_h2h2_wins_player',
-    #'prev_h2h2_wins_opponent',
-    #'prev_duration',
-    #'opp_prev_duration',
-    #'h2h_prior_win_percent',
-    #'prev_year_prior_encounters',
-    #'opp_prev_year_prior_encounters',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
-    #'surface_experience',
-    #'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    #'age',
-    #'opp_age',
-    #'lefty',
-    #'opp_lefty',
-    #'weight',
-    #'opp_weight',
-    #'height',
-    #'opp_height',
-    #'elo_score',
-    #'opp_elo_score',
-    'grand_slam',
-    'clay',
-    'grass',
-]
-
-betting_only_attrs = [
-    'odds1',
-    'odds2',
-    'spread1',
-    'spread2',
-    #'spread_predictions',
-    'predictions'
-]
-
-for attr in betting_only_attrs:
-    if attr not in betting_input_attributes:
-        betting_input_attributes.append(attr)
+betting_input_attributes = list(spread_input_attributes)
 
 all_attributes = list(betting_input_attributes)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
@@ -68,7 +28,7 @@ def predict_proba(model, X):
     if hasattr(model, "predict_proba"):
         prob_pos = model.predict_proba(X)[:, 1]
     else:  # use decision function
-        prob_pos = model.decision_function(X_test)
+        prob_pos = model.decision_function(X)
         prob_pos = \
             (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
     return prob_pos
@@ -121,18 +81,15 @@ def extract_beat_spread_binary(spreads, spread_actuals):
             else:
                 r = 0.0
         res.append(r)
-    print('Num ties: ', ties, 'out of', len(res))
+    #print('Num ties: ', ties, 'out of', len(res))
     return res
 
 
-def load_data(model, spread_model, start_year, test_year, num_test_years):
+def load_data(start_year, test_year, num_test_years):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
-    for attr in betting_input_attributes:
-        if attr not in attributes and attr not in betting_only_attrs:
-            attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(model, spread_model, attributes, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
@@ -168,7 +125,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.3 or odds > 0.7:
+        if odds < 0.2 or odds > 0.6:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -190,21 +147,18 @@ def bet_func(epsilon):
 if __name__ == '__main__':
     model_to_epsilon = {
         'Logit Regression': 0.20,
-        'Naive Bayes': 0.4,
-        'Random Forest': 0.70,
-        'Average': 0.2,
+        'Naive Bayes': 0.5,
+        'Random Forest': 0.4,
+        'Average': 0.5,
         #'Support Vector': 0.3
     }
-    for test_year in [2016, 2017, 2018]:
-        start_year = 2011
-        num_tests = 5
-        num_test_years = 1
-        graph = False
-        all_predictions = []
-        for outcome_model_name in ['Logistic', 'Naive Bayes']:
-            outcome_model = load_outcome_model(outcome_model_name)
-            spread_model = load_spread_model('Linear')
-            data, test_data = load_data(outcome_model, spread_model, start_year=start_year, num_test_years=num_test_years, test_year=test_year)
+    for num_test_years in [1, 2]:
+        for test_year in [2016, 2017, 2018]:
+            start_year = 2011
+            num_tests = 1
+            graph = False
+            all_predictions = []
+            data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year)
             lr = LogisticRegression()
             svm = LinearSVC()
             rf = RandomForestClassifier(n_estimators=200)
@@ -213,17 +167,17 @@ if __name__ == '__main__':
             ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
             ax2 = plt.subplot2grid((3, 1), (2, 0))
             ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+            X_train = np.array(data[betting_input_attributes].iloc[:, :])
+            y_train = np.array(data['beat_spread'].iloc[:]).flatten()
+            X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
+            y_test = np.array(test_data['beat_spread'].iloc[:]).flatten()
             for model, name, weight in [
-                            (lr, 'Logit Regression', 0.25),
-                            #(svm, 'Support Vector'),
-                            (nb, 'Naive Bayes', 0.25),
-                            (rf, 'Random Forest', 0.5),
+                            (lr, 'Logit Regression', 0.2),
+                            #(svm, 'Support Vector')
+                            (nb, 'Naive Bayes', 0.8),
+                            #(rf, 'Random Forest', 0.1),
                         ]:
-                print('Using outcome model:', outcome_model_name, 'with Betting Model: ', name)
-                X_train = np.array(data[betting_input_attributes].iloc[:, :])
-                y_train = np.array(data['beat_spread'].iloc[:]).flatten()
-                X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
-                y_test = np.array(test_data['beat_spread'].iloc[:]).flatten()
+                print('With betting model: ', name)
                 #print("Shapes: ", X_train.shape, X_test.shape)
                 model.fit(X_train, y_train)
                 binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
@@ -242,8 +196,8 @@ if __name__ == '__main__':
 
                 parameters = dict()
                 parameters['max_loss_percent'] = 0.05
-                test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j], lambda _: None,
-                                                  bet_func(model_to_epsilon[name]), test_data, parameters,
+                test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
+                                                  bet_func(model_to_epsilon[name]), test_data,
                                                   'price', num_tests, sampling=0, shuffle=False)
                 print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
                 print('---------------------------------------------------------')
@@ -261,13 +215,13 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.show()
 
-        avg_predictions = np.vstack(all_predictions).sum(0)/2
-        _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
-        test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['spread'].iloc[j], lambda _: None,
-                                                bet_func(model_to_epsilon['Average']), test_data, parameters,
-                                                'price', num_tests, sampling=0, shuffle=False, verbose=False)
-        print('Avg model')
-        print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-              ' Test years:', num_test_years, ' Year:', test_year)
-        print('---------------------------------------------------------')
+            avg_predictions = np.vstack(all_predictions).sum(0)
+            _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
+            test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['spread'].iloc[j],
+                                                    bet_func(model_to_epsilon['Average']), test_data,
+                                                    'price', num_tests, sampling=0, shuffle=False, verbose=False)
+            print('Avg model')
+            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+                  ' Test years:', num_test_years, ' Year:', test_year)
+            print('---------------------------------------------------------')
 

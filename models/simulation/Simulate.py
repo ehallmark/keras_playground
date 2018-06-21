@@ -4,26 +4,13 @@ from random import shuffle
 import pandas as pd
 
 
-def simulate_money_line(predictor_func, actual_label_func, parameter_update_func, bet_func, test_meta_data, parameters,
+def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_data,
                         price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=False):
-    worst_parameters = None
-    best_parameters = None
 
-    #print('Joined data: ', test_meta_data)
     avg_best = 0.0
-    prev_best = -1000000.0
-    prev_worst = 1000000.0
-    regression_data = {}
-    parameter_update_func(parameters)
-    for key in parameters:
-        regression_data[key] = []
-    regression_data['return_total'] = []
     num_bets_total = 0
     for trial in range(num_trials):
         #print('Trial: ',trial)
-        parameter_update_func(parameters)
-        for key in parameters:  # add params to regression map
-            regression_data[key].append(parameters[key])
         return_total = 0.0
         num_bets = 0
         num_wins = 0
@@ -36,7 +23,9 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
         num_losses1 = 0
         num_losses2 = 0
         betting_minimum = 5.0
-        initial_capital = 1000.0
+        betting_maximum = 100.0
+        max_loss_percent = 0.05
+        initial_capital = 10000.0
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
         if shuffle:
@@ -83,7 +72,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                         capital_requirement = -max_price1 * confidence
                     else:
                         capital_requirement = 100.0 * confidence
-                    capital_requirement_avail = max(betting_minimum, min(parameters['max_loss_percent']*available_capital, capital_requirement))
+                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
                     capital_ratio = capital_requirement_avail/capital_requirement
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
@@ -122,7 +111,7 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
                     else:
                         capital_requirement = 100.0 * confidence
 
-                    capital_requirement_avail = max(betting_minimum, min(parameters['max_loss_percent'] * available_capital, capital_requirement))
+                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
                     capital_ratio = capital_requirement_avail / capital_requirement
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
@@ -166,15 +155,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
             print('Overall Return For The Year: ', return_total / initial_capital)
             print('Num correct: ', num_wins)
             print('Num wrong: ', num_losses)
-        regression_data['return_total'].append(return_total)
         avg_best += return_total
         num_bets_total += num_bets
-        if return_total > prev_best:
-            prev_best = return_total
-            best_parameters = parameters.copy()
-        if return_total < prev_worst:
-            prev_worst = return_total
-            worst_parameters = parameters.copy()
 
     avg_best /= num_trials
     num_bets_avg = num_bets_total / num_trials
@@ -190,8 +172,8 @@ def simulate_money_line(predictor_func, actual_label_func, parameter_update_func
     return avg_best, num_bets_avg
 
 
-def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
-                    betting_decision_func, test_data, parameters,
+def simulate_spread(predictor_func, actual_spread_func,
+                    betting_decision_func, test_data,
                     price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=True):
     worst_parameters = None
     best_parameters = None
@@ -199,16 +181,8 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
     total_num_bets = 0
     prev_best = -1000000.0
     prev_worst = 1000000.0
-    regression_data = {}
-    parameter_update_func(parameters)
-    for key in parameters:
-        regression_data[key] = []
-    regression_data['return_total'] = []
     for trial in range(num_trials):
         #print('Trial: ', trial)
-        parameter_update_func(parameters)
-        for key in parameters:  # add params to regression map
-            regression_data[key].append(parameters[key])
         return_total = 0.0
         num_bets = 0
         num_wins = 0
@@ -221,7 +195,9 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
         num_losses1 = 0
         num_losses2 = 0
         betting_minimum = 5.0
-        initial_capital = 1000.0
+        betting_maximum = 100.0
+        max_loss_percent = 0.05
+        initial_capital = 10000.0
         num_ties = 0
         available_capital = initial_capital
         indices = list(range(test_data.shape[0]))
@@ -231,7 +207,7 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
             indices = indices[0: round(sampling*len(indices))]
         for i in indices:
             prediction = predictor_func(i)
-           # prediction = np.random.rand(1)  # test on random predictions
+            # prediction = np.random.rand(1)  # test on random predictions
             bet_row = test_data.iloc[i]
             # make betting decision
             max_price1 = np.array(bet_row[price_str + '1']).flatten()[0]
@@ -294,7 +270,7 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
                     capital_requirement = 100.0 * confidence
                 # print('Initial capital requirement1: ', capital_requirement)
                 capital_requirement_avail = max(betting_minimum,
-                                                min(parameters['max_loss_percent'] * available_capital,
+                                                min(min(max_loss_percent * available_capital, betting_maximum),
                                                     capital_requirement))
                 capital_ratio = capital_requirement_avail / capital_requirement
                 capital_requirement *= capital_ratio
@@ -330,6 +306,11 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
                     return_game += ret
                     available_capital += ret
                     num_bets += 1
+                    if verbose:
+                        if ret < 0:
+                            print(' MINUS: ', ret)
+                        else:
+                            print(' PLUS: ', ret)
             bet2 = betting_decision_func(max_price2, best_odds2, spread2, 1.0-prediction)
             if bet2 > 0:
                 confidence = betting_minimum * bet2
@@ -339,7 +320,7 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
                     capital_requirement = 100.0 * confidence
 
                 capital_requirement_avail = max(betting_minimum,
-                                                min(parameters['max_loss_percent'] * available_capital,
+                                                min(min(max_loss_percent * available_capital, betting_maximum),
                                                     capital_requirement))
                 capital_ratio = capital_requirement_avail / capital_requirement
                 capital_requirement *= capital_ratio
@@ -374,6 +355,11 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
                     return_game += ret
                     num_bets += 1
                     available_capital += ret
+                    if verbose:
+                        if ret < 0:
+                            print(' MINUS: ', ret)
+                        else:
+                            print(' PLUS: ', ret)
 
             return_total = return_total + return_game
             if return_game != 0 and verbose:
@@ -399,13 +385,6 @@ def simulate_spread(predictor_func, actual_spread_func, parameter_update_func,
             print('Num ties: ', num_ties)
         avg_best += return_total
         total_num_bets += num_bets
-        regression_data['return_total'].append(return_total)
-        if return_total > prev_best:
-            prev_best = return_total
-            best_parameters = parameters.copy()
-        if return_total < prev_worst:
-            prev_worst = return_total
-            worst_parameters = parameters.copy()
 
     avg_best /= num_trials
     #print('Best return: ', prev_best)
