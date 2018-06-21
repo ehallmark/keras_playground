@@ -29,7 +29,11 @@ def save_spread_model(model, model_name):
 
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     sql, test_data = load_data(all_attributes, test_season=2012, start_year=1996)
+=======
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+>>>>>>> 441da9c10f3a7cf5ddd0b237d942ea371bf30ad5
     print('Max data year: ', max(sql['year']))
     train_outcome_model = True
     train_spread_model = True

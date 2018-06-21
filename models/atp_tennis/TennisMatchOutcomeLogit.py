@@ -271,6 +271,7 @@ input_attributes = [
 input_attributes_spread = [
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
+<<<<<<< HEAD
         #'mean_return_points_made',
         #'mean_opp_return_points_made',
         'prev_year_prior_encounters',
@@ -279,16 +280,33 @@ input_attributes_spread = [
         #'opp_tourney_hist_prior_encounters',
         #'mean_break_points_made',
         #'mean_opp_break_points_made',
+=======
+        'mean_return_points_made',
+        'mean_opp_return_points_made',
+        'prev_year_prior_encounters',
+        'opp_prev_year_prior_encounters',
+        'tourney_hist_prior_encounters',
+        'opp_tourney_hist_prior_encounters',
+        'mean_break_points_made',
+        'mean_opp_break_points_made',
+>>>>>>> 441da9c10f3a7cf5ddd0b237d942ea371bf30ad5
         'tiebreak_win_percent',
         'opp_tiebreak_win_percent',
         'surface_experience',
         'opp_surface_experience',
         #'experience',
         #'opp_experience',
+<<<<<<< HEAD
         #'age',
         #'opp_age',
         #'height',
         #'opp_height',
+=======
+        'age',
+        'opp_age',
+        'height',
+        'opp_height',
+>>>>>>> 441da9c10f3a7cf5ddd0b237d942ea371bf30ad5
         'elo_score',
         'opp_elo_score'
     ]
@@ -309,7 +327,11 @@ for meta in meta_attributes:
 if __name__ == '__main__':
     train_spread_model = True
     train_outcome_model = True
+<<<<<<< HEAD
     sql, test_data = load_data(all_attributes, test_season=2012, start_year=1996)
+=======
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+>>>>>>> 441da9c10f3a7cf5ddd0b237d942ea371bf30ad5
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])

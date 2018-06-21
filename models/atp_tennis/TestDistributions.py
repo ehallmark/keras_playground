@@ -9,7 +9,11 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import betting_input_at
 for outcome_model_name in ['Logistic', 'Naive Bayes']:
     outcome_model = tennis_model.load_outcome_model(outcome_model_name)
     spread_model = tennis_model.load_spread_model('Linear')
+<<<<<<< HEAD:models/atp_tennis/TestDistributions.py
     test_data, test_data_2018 = tennis_model.load_data(start_year=2010, test_year=2018, num_test_years=1)
+=======
+    test_data, test_data_2018 = tennis_model.load_data(outcome_model, spread_model, start_year=2010, test_year=2018, num_test_years=1)
+>>>>>>> 441da9c10f3a7cf5ddd0b237d942ea371bf30ad5:models/atp_tennis/TestDistributions.py
 
     attributes = list(outcome_input_attributes)
     attributes.append('returns')
