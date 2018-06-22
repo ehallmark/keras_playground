@@ -209,14 +209,12 @@ def test(model_parameters, data, test_data):
     price_str = 'max_price'
     num_tests = 1
     graph = False
-    all_predictions = []
-
-    lr = LogisticRegression()
-    svm = LinearSVC()
-    rf = RandomForestClassifier(n_estimators=300, max_depth=10)
-    nb = GaussianNB()
-    qda = QuadraticDiscriminantAnalysis()
-    kn = KNeighborsClassifier(n_neighbors=10)
+    lr = lambda: LogisticRegression()
+    svm = lambda: LinearSVC()
+    rf = lambda: RandomForestClassifier(n_estimators=300, max_depth=10)
+    nb = lambda: GaussianNB()
+    qda = lambda: QuadraticDiscriminantAnalysis()
+    kn = lambda: KNeighborsClassifier(n_neighbors=10)
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
@@ -225,65 +223,76 @@ def test(model_parameters, data, test_data):
     y_train = np.array(data[y_str].iloc[:]).flatten()
     X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
     y_test = np.array(test_data[y_str].iloc[:]).flatten()
-    total_weight = 0.0
-    for model, name in [
-                    (lr, 'Logit Regression'),
+    for _model, name in [
+                    #(lr, 'Logit Regression'),
                     #(svm, 'Support Vector'),
                     (nb, 'Naive Bayes'),
-                    (rf, 'Random Forest'),
-                    (qda, 'QDA'),
+                    #(rf, 'Random Forest'),
+                    #(qda, 'QDA'),
                     #(kn, 'K Neighbors')
                 ]:
+        all_predictions = []
         weight = model_parameters['model_weights'][name]
-        total_weight += weight
+        total_weight = 0.0
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
-        model.fit(X_train, y_train)
-        binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
-        #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-        #      ' (' + to_percentage(binary_percent) + ')')
-        prob_pos = predict_proba(model, X_test)
-        fraction_of_positives, mean_predicted_value = \
-            calibration_curve(y_test, prob_pos, n_bins=10)
-        all_predictions.append(prob_pos*weight)
-        ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                 label="%s" % (name,))
+        for i in range(30):
+            total_weight += weight
+            model = _model()
+            np.random.seed(i)
+            np.random.shuffle(X_train)
+            np.random.seed(i)
+            np.random.shuffle(y_train)
+            X_train_sample = X_train[0:round(X_train.shape[0]/2)]
+            y_train_sample = y_train[0:round(y_train.shape[0]/2)]
+            model.fit(X_train_sample, y_train_sample)
+            #binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+            #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
+            #      ' (' + to_percentage(binary_percent) + ')')
+            prob_pos = predict_proba(model, X_test)
+            fraction_of_positives, mean_predicted_value = \
+                calibration_curve(y_test, prob_pos, n_bins=10)
+            all_predictions.append(prob_pos*weight)
+            ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+                     label="%s" % (name,))
 
-        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                 histtype="step", lw=2)
+            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+                     histtype="step", lw=2)
 
-        # actual returns on test data
-        #test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['y'],
-        #                                  bet_func(model_parameters['model_to_epsilon'][name], model_parameters), test_data,
-        #                                  price_str, num_tests, sampling=0, shuffle=True)
-        #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Test year:', test_year)
+            # actual returns on test data
+            #test_return, num_bets = simulate_money_line(lambda j: prob_pos[j], lambda j: test_data.iloc[j]['y'],
+            #                                  bet_func(model_parameters['model_to_epsilon'][name], model_parameters), test_data,
+            #                                  price_str, num_tests, sampling=0, shuffle=True)
+            #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Test year:', test_year)
 
-    ax1.set_ylabel("Fraction of positives")
-    ax1.set_ylim([-0.05, 1.05])
-    ax1.legend(loc="lower right")
-    ax1.set_title('Calibration plots  (reliability curve)')
+        avg_predictions = np.vstack(all_predictions).sum(0) / total_weight
+        _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
+        test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
+                                                    bet_func(model_parameters['model_to_epsilon']['Average'],
+                                                             model_parameters), test_data,
+                                                    price_str, num_tests, sampling=0, shuffle=True, verbose=False)
 
-    ax2.set_xlabel("Mean predicted value")
-    ax2.set_ylabel("Count")
-    ax2.legend(loc="upper center", ncol=2)
+        ax1.set_ylabel("Fraction of positives")
+        ax1.set_ylim([-0.05, 1.05])
+        ax1.legend(loc="lower right")
+        ax1.set_title('Calibration plots  (reliability curve)')
 
-    if graph:
-        plt.tight_layout()
-        plt.show()
+        ax2.set_xlabel("Mean predicted value")
+        ax2.set_ylabel("Count")
+        ax2.legend(loc="upper center", ncol=2)
 
-    avg_predictions = np.vstack(all_predictions).sum(0)/total_weight
-    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
-    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
-                                                bet_func(model_parameters['model_to_epsilon']['Average'], model_parameters), test_data,
-                                                price_str, num_tests, sampling=0, shuffle=True, verbose=False)
-    print('Avg model: ', model_parameters)
-    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-          )# ' Test years:', num_test_years, ' Test year:', test_year)
-    print('---------------------------------------------------------')
-    returns += test_return
-    if num_bets < 100:
-        return -100000.
-    return returns/num_tests
+        if graph:
+            plt.tight_layout()
+            plt.show()
+
+        print('Avg model: ', model_parameters)
+        print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+              )# ' Test years:', num_test_years, ' Test year:', test_year)
+        print('---------------------------------------------------------')
+        returns += test_return
+        if num_bets < 100:
+            return -100000.
+        return returns/num_tests
 
 
 if __name__ == '__main__':
