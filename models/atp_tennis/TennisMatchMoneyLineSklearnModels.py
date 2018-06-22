@@ -161,37 +161,41 @@ def new_random_parameters():
 
 class MoneyLineSolution(Solution):
     def __init__(self, parameters):
-        self.parameters = parameters.copy()
+        self.parameters = [parameter.copy() for parameter in parameters]
 
     def score(self, data):
         # run simulation
         return test(self.parameters, data[0], data[1])
 
     def mutate(self):
-        mutated_parameters = self.parameters.copy()
-        second_copy = new_random_parameters()
-        mutated_weights = mutated_parameters['model_weights']
-        mutated_epsilons = mutated_parameters['model_to_epsilon']
-        second_weights = second_copy['model_weights']
-        second_epsilons = second_copy['model_to_epsilon']
-        for k, v in second_weights.items():
-            if np.random.rand(1) < 2.0/float(len(second_weights)):
-                mutated_weights[k] = (mutated_weights[k]+v)/2.
-        for k, v in second_epsilons.items():
-            if np.random.rand(1) < 2.0/float(len(second_epsilons)):
-                mutated_epsilons[k] = (mutated_epsilons[k]+v)/2.
-        if np.random.rand(1) < 0.25:
-            mutated_parameters['max_odds'] = (mutated_parameters['max_odds'] + second_copy['max_odds'])/2.
-        if np.random.rand(1) < 0.25:
-            mutated_parameters['min_odds'] = (mutated_parameters['min_odds'] + second_copy['min_odds'])/2.
+        mutated_parameters = [parameter.copy() for parameter in self.parameters]
+        second_copies = [new_random_parameters() for _ in self.parameters]
+        for i in range(len(mutated_parameters)):
+            mutated_parameter = mutated_parameters[i]
+            second_copy = second_copies[i]
+            mutated_weights = mutated_parameter['model_weights']
+            mutated_epsilons = mutated_parameter['model_to_epsilon']
+            second_weights = second_copy['model_weights']
+            second_epsilons = second_copy['model_to_epsilon']
+            for k, v in second_weights.items():
+                if np.random.rand(1) < 2.0/float(len(second_weights)):
+                    mutated_weights[k] = (mutated_weights[k]+v)/2.
+            for k, v in second_epsilons.items():
+                if np.random.rand(1) < 2.0/float(len(second_epsilons)):
+                    mutated_epsilons[k] = (mutated_epsilons[k]+v)/2.
+            if np.random.rand(1) < 0.25:
+                mutated_parameter['max_odds'] = (mutated_parameter['max_odds'] + second_copy['max_odds'])/2.
+            if np.random.rand(1) < 0.25:
+                mutated_parameter['min_odds'] = (mutated_parameter['min_odds'] + second_copy['min_odds'])/2.
         return MoneyLineSolution(mutated_parameters)
 
     def cross_over(self, other):
-        cross_parameters = self.parameters.copy()
-        for k in cross_parameters:
-            if np.random.rand(1) < 0.5:
-                cross_parameters[k] = other.parameters[k]
-
+        cross_parameters = [parameter.copy() for parameter in self.parameters]
+        for i in range(len(cross_parameters)):
+            cross_parameter = cross_parameters[i]
+            for k in cross_parameter:
+                if np.random.rand(1) < 0.5:
+                    cross_parameter[k] = other.parameters[i][k]
         return MoneyLineSolution(cross_parameters)
 
 
@@ -202,12 +206,12 @@ def solution_generator():
 
 def test(model_parameters, data, test_data):
     num_tests = 0
+    total_bets = 0
     returns = 0.0
     #for num_test_years in [1]:
     #    for test_year in [2016, 2017, 2018]:
     num_tests += 1
     price_str = 'max_price'
-    num_tests = 1
     graph = False
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
@@ -224,7 +228,7 @@ def test(model_parameters, data, test_data):
     X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
     y_test = np.array(test_data[y_str].iloc[:]).flatten()
     for _model, name in [
-                    #(lr, 'Logit Regression'),
+                    (lr, 'Logit Regression'),
                     #(svm, 'Support Vector'),
                     (nb, 'Naive Bayes'),
                     #(rf, 'Random Forest'),
@@ -232,11 +236,11 @@ def test(model_parameters, data, test_data):
                     #(kn, 'K Neighbors')
                 ]:
         all_predictions = []
-        weight = model_parameters['model_weights'][name]
+        weight = model_parameters[num_tests]['model_weights'][name]
         total_weight = 0.0
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
-        for i in range(30):
+        for i in range(5):
             total_weight += weight
             model = _model()
             np.random.seed(i)
@@ -268,9 +272,9 @@ def test(model_parameters, data, test_data):
         avg_predictions = np.vstack(all_predictions).sum(0) / total_weight
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
         test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
-                                                    bet_func(model_parameters['model_to_epsilon']['Average'],
-                                                             model_parameters), test_data,
-                                                    price_str, num_tests, sampling=0, shuffle=True, verbose=False)
+                                                    bet_func(model_parameters[num_tests]['model_to_epsilon']['Average'],
+                                                             model_parameters[num_tests]), test_data,
+                                                    price_str, 1, sampling=0, shuffle=True, verbose=False)
 
         ax1.set_ylabel("Fraction of positives")
         ax1.set_ylim([-0.05, 1.05])
@@ -285,14 +289,17 @@ def test(model_parameters, data, test_data):
             plt.tight_layout()
             plt.show()
 
-        print('Avg model: ', model_parameters)
+        print('Avg model: ')
+        print('\n'.join(model_parameters))
         print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
               )# ' Test years:', num_test_years, ' Test year:', test_year)
         print('---------------------------------------------------------')
         returns += test_return
-        if num_bets < 100:
-            return -100000.
-        return returns/num_tests
+        total_bets += num_bets
+        num_tests += 1
+    if total_bets/num_tests < 100:
+        return -100000.
+    return returns/num_tests
 
 
 if __name__ == '__main__':
