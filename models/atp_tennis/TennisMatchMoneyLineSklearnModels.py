@@ -259,20 +259,20 @@ def test(model_parameters, data, test_data):
         weight = model_parameters[num_tests]['model_weights'][name]
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
-        for i in range(10):
+        for i in range(1):
             total_weight += weight
             model = _model()
-            X_train_sample = sample2d(X_train, i, 2)
-            y_train_sample = sample2d(y_train, i, 2)
+            X_train_sample = sample2d(X_train, i, 1)
+            y_train_sample = sample2d(y_train, i, 1)
             model.fit(X_train_sample, y_train_sample)
             #binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
             #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
             #      ' (' + to_percentage(binary_percent) + ')')
             prob_pos = predict_proba(model, X_test)
-            fraction_of_positives, mean_predicted_value = \
-                calibration_curve(y_test, prob_pos, n_bins=10)
             all_predictions.append(prob_pos*weight)
             if graph:
+                fraction_of_positives, mean_predicted_value = \
+                    calibration_curve(y_test, prob_pos, n_bins=10)
                 ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                          label="%s" % (name,))
 
@@ -314,15 +314,16 @@ def test(model_parameters, data, test_data):
         print(parameter)
     print('---------------------------------------------------------')
     if total_bets/num_tests < 100:
-        return -100000.
-    return returns/num_tests
+        return -100000.0
+    else:
+        return returns/num_tests
 
 
 if __name__ == '__main__':
     start_year = 1996
     num_test_years = 1
     test_year = 2018
-    num_epochs = 30
+    num_epochs = 50
     data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year)
     genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    genetic_algorithm.fit((data, test_data), num_solutions=50, num_epochs=num_epochs)
+    genetic_algorithm.fit((data, test_data), num_solutions=15, num_epochs=num_epochs)
