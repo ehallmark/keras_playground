@@ -91,9 +91,9 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_outcome_predictions_and_actuals(attributes, model=None, spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes, test_season=test_year+1, start_year=test_year+1-num_test_years)
+    test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
     X = np.array(data[outcome_input_attributes].iloc[:, :])
     X_test = np.array(test_data[outcome_input_attributes].iloc[:, :])
     X_spread = np.array(data[spread_input_attributes].iloc[:, :])
