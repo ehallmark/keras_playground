@@ -134,7 +134,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.3 or odds > 0.6:
+        if odds < 0.25 or odds > 0.65:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -158,7 +158,7 @@ if __name__ == '__main__':
         'Logit Regression': 0.20,
         'Naive Bayes': 0.5,
         #'Random Forest': 0.4,
-        'Average': 0.4,
+        'Average': 0.3,
         #'Support Vector': 0.3
     }
     for num_test_years in [1, 2]:
