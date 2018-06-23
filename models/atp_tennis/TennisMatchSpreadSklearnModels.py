@@ -134,7 +134,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.65:
+        if odds < 0.25 or odds > 0.5:  # 0.65:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
