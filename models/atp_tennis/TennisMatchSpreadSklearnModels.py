@@ -227,16 +227,17 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.show()
 
-            for bayes_model_percent in [0.6, 0.7, 0.8, 1.]:
-                for epsilon in [0.2, 0.3, 0.4, 0.5, 0.6]:
+            for bayes_model_percent in [0.75, 0.8, 0.85]:
+                for epsilon in [0.4, 0.45, 0.5, 0.55, 0.6]:
                     print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
                     logit_percent = 1.0 - bayes_model_percent
+                    total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
                     avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                                 np.vstack(all_predictions[1]) * bayes_model_percent]).mean(0)
+                                                 np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0)/total
                     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
                     test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['spread'].iloc[j],
                                                             bet_func(epsilon), test_data,
-                                                            'price', 2, sampling=0, shuffle=True, verbose=False)
+                                                            'price', 5, sampling=0, shuffle=True, verbose=False)
 
                     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
                           ' Test years:', num_test_years, ' Year:', test_year)
