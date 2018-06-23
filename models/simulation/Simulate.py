@@ -330,7 +330,7 @@ def simulate_spread(predictor_func, actual_spread_func,
                 confidence *= capital_ratio
                 if after_bet_function is not None:
                     after_bet_function(bet2, bet_row['opponent_id'], bet_row['player_id'], spread2,
-                                       max_price2, capital_requirement)
+                                       max_price2, capital_requirement, bet_row['betting_date'])
                 if capital_requirement <= available_capital:
                     amount_invested += capital_requirement
                     if verbose:
