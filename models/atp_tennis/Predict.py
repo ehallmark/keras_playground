@@ -23,7 +23,7 @@ predictions = model.predict(test_data).flatten()
 
 # run betting algo
 
-betting_sites = ['Bovada','BetOnline']
+betting_sites = ['Bovada','BetOnline', '5Dimes']
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 betting_data = pd.read_sql('''
     select year,tournament,team1,team2,

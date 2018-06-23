@@ -22,7 +22,9 @@ betting_only_attributes = [
     'spread1',
     'spread2',
     'odds1',
-    'odds2'
+    'odds2',
+    #'predictions',
+    'spread_predictions'
 ]
 for attr in betting_only_attributes:
     betting_input_attributes.append(attr)
@@ -94,11 +96,11 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_data(start_year, test_year, num_test_years):
+def load_data(start_year, test_year, num_test_years, model=None, spread_model=None):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, model=model, spread_model=spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
@@ -134,7 +136,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.5:  # 0.65:
+        if odds < 0.15 or odds > 0.65:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -161,12 +163,14 @@ if __name__ == '__main__':
         'Average': 0.4,
         #'Support Vector': 0.3
     }
+    historical_model = load_outcome_model('Logistic')
+    historical_spread_model = load_spread_model('Linear')
     for num_test_years in [1, 2]:
-        for test_year in [2016, 2017, 2018]:
+        for test_year in [2017, 2018]:
             start_year = 2011
             graph = False
             all_predictions = []
-            data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year)
+            data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
             lr = lambda: LogisticRegression()
             svm = lambda: LinearSVC()
             rf = lambda: RandomForestClassifier(n_estimators=200)
@@ -188,10 +192,11 @@ if __name__ == '__main__':
                 print('With betting model: ', name)
                 model_predictions = []
                 all_predictions.append(model_predictions)
+                seed = int(np.random.randint(0, high=1000000, size=1))*2
                 for i in range(50):
                     model = _model()
-                    X_train_sample = sample2d(X_train, i, 2)
-                    y_train_sample = sample2d(y_train, i, 2)
+                    X_train_sample = sample2d(X_train, seed+i, 2)
+                    y_train_sample = sample2d(y_train, seed+i, 2)
                     #print("Shapes: ", X_train.shape, X_test.shape)
                     model.fit(X_train_sample, y_train_sample)
                     binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
@@ -227,8 +232,12 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.show()
 
-            for bayes_model_percent in [0.75, 0.8, 0.85]:
-                for epsilon in [0.4, 0.45, 0.5, 0.55, 0.6]:
+            for bayes_model_percent, epsilons in [
+                [0.75, [0.5, 0.525, 0.5]],
+                [0.8, [0.55, 0.6, 0.65]],
+                [0.85, [0.55, 0.575, 0.6]]]:
+
+                for epsilon in epsilons:
                     print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
                     logit_percent = 1.0 - bayes_model_percent
                     total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])

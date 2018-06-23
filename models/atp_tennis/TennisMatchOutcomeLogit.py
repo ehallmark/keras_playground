@@ -307,9 +307,9 @@ for meta in meta_attributes:
         all_attributes.append(meta)
 
 if __name__ == '__main__':
-    train_spread_model = True
+    train_spread_model = False
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2012, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])

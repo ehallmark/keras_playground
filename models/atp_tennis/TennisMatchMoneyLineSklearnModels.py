@@ -21,11 +21,53 @@ import pandas as pd
 from models.simulation.Simulate import simulate_money_line
 
 
-betting_input_attributes = list(outcome_input_attributes)
+betting_input_attributes = [
+        'prev_h2h2_wins_player',
+        'prev_h2h2_wins_opponent',
+        #'mean_duration',
+        #'mean_opp_duration',
+        #'mean_return_points_made',
+        #'mean_opp_return_points_made',
+        #'mean_second_serve_points_made',
+        #'mean_opp_second_serve_points_made',
+        'h2h_prior_win_percent',
+        'prev_year_prior_encounters',
+        'opp_prev_year_prior_encounters',
+        #'prev_year_avg_round',
+        #'opp_prev_year_avg_round',
+        #'opp_tourney_hist_avg_round',
+        #'tourney_hist_avg_round',
+        #'tourney_hist_prior_encounters',
+        #'opp_tourney_hist_prior_encounters',
+        #'mean_break_points_made',
+        #'mean_opp_break_points_made',
+        #'previous_tournament_round',
+        #'opp_previous_tournament_round',
+        #'tiebreak_win_percent',
+        #'opp_tiebreak_win_percent',
+        'surface_experience',
+        'opp_surface_experience',
+        #'experience',
+        #'opp_experience',
+        #'age',
+        #'opp_age',
+        #'lefty',
+        #'opp_lefty',
+        #'weight',
+        #'opp_weight',
+        #'height',
+        #'opp_height',
+        #'duration_prev_match',
+        #'opp_duration_prev_match',
+        'elo_score',
+        'opp_elo_score'
+    ]
 
 betting_only_attributes = [
     'odds1',
-    'odds2'
+    'odds2',
+    'predictions',
+    #'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -83,10 +125,10 @@ def load_betting_data(betting_sites, test_year=2018):
     return betting_data
 
 
-def load_data(start_year, test_year, num_test_years):
+def load_data(start_year, test_year, num_test_years, model=None, spread_model=None):
     attributes = list(tennis_model.all_attributes)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years,
-                                                           start_year=start_year)
+                                                           start_year=start_year, model=model, spread_model=spread_model)
     # merge betting data in memory
     betting_sites = ['Bovada',
                      '5Dimes',  # 5Dimes available for money line usually (but not for spreads)
@@ -320,10 +362,12 @@ def test(model_parameters, data, test_data):
 
 
 if __name__ == '__main__':
-    start_year = 1996
+    start_year = 2010
     num_test_years = 1
     test_year = 2018
     num_epochs = 50
-    data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year)
+    historical_model = load_outcome_model('Logistic')
+    historical_spread_model = load_spread_model('Linear')
+    data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
     genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
     genetic_algorithm.fit((data, test_data), num_solutions=15, num_epochs=num_epochs)

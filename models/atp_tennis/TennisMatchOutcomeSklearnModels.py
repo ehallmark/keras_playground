@@ -29,14 +29,14 @@ def save_spread_model(model, model_name):
 
 
 if __name__ == '__main__':
-    sql, test_data = load_data(all_attributes, test_season=2012, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     print('Max data year: ', max(sql['year']))
     train_outcome_model = True
     train_spread_model = True
     if train_outcome_model:
         lr = LogisticRegression()
         gnb = GaussianNB()
-        svc = LinearSVC(C=1.0)
+        #svc = LinearSVC(C=1.0)
         # rfc = RandomForestClassifier(n_estimators=300)
         print('Attrs: ', sql[all_attributes][0:20])
         plt.figure(figsize=(10, 10))
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
         for model, name in [(lr, 'Logistic'),
                             (gnb, 'Naive Bayes'),
-                            (svc, 'Support Vector Classification'),
+                            #(svc, 'Support Vector Classification'),
                             # (rfc, 'Random Forest')
                             ]:
             y_str = 'y'
