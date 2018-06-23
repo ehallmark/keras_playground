@@ -158,7 +158,7 @@ if __name__ == '__main__':
         'Logit Regression': 0.20,
         'Naive Bayes': 0.5,
         #'Random Forest': 0.4,
-        'Average': 0.3,
+        'Average': 0.4,
         #'Support Vector': 0.3
     }
     for num_test_years in [1, 2]:
@@ -179,16 +179,16 @@ if __name__ == '__main__':
             y_train = np.array(data['beat_spread'].iloc[:]).flatten()
             X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
             y_test = np.array(test_data['beat_spread'].iloc[:]).flatten()
-            total_weight = 0.0
-            for _model, name, weight in [
-                            (lr, 'Logit Regression', 0.2),
-                            #(svm, 'Support Vector',0.2),
-                            (nb, 'Naive Bayes', 0.8),
-                            #(rf, 'Random Forest', 0.1),
+            for _model, name in [
+                            (lr, 'Logit Regression'),
+                            #(svm, 'Support Vector'),
+                            (nb, 'Naive Bayes'),
+                            #(rf, 'Random Forest'),
                         ]:
                 print('With betting model: ', name)
+                model_predictions = []
+                all_predictions.append(model_predictions)
                 for i in range(50):
-                    total_weight += weight
                     model = _model()
                     X_train_sample = sample2d(X_train, i, 2)
                     y_train_sample = sample2d(y_train, i, 2)
@@ -198,20 +198,20 @@ if __name__ == '__main__':
                     #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
                     #      ' (' + to_percentage(binary_percent) + ')')
                     prob_pos = predict_proba(model, X_test)
-                    all_predictions.append(prob_pos*weight)
-                    fraction_of_positives, mean_predicted_value = \
-                        calibration_curve(y_test, prob_pos, n_bins=10)
+                    model_predictions.append(prob_pos)
 
                     if graph:
+                        fraction_of_positives, mean_predicted_value = \
+                            calibration_curve(y_test, prob_pos, n_bins=10)
                         ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
                                  label="%s" % (name,))
                         ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
                                  histtype="step", lw=2)
 
-                    test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
-                                                      bet_func(model_to_epsilon[name]), test_data,
-                                                      'price', 2, sampling=0, shuffle=True)
-                    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
+                    #test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
+                    #                                  bet_func(model_to_epsilon[name]), test_data,
+                    #                                  'price', 2, sampling=0, shuffle=True)
+                    #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
                     #print('---------------------------------------------------------')
 
             if graph:
@@ -227,13 +227,18 @@ if __name__ == '__main__':
                 plt.tight_layout()
                 plt.show()
 
-            avg_predictions = np.vstack(all_predictions).sum(0)/total_weight
-            _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
-            test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['spread'].iloc[j],
-                                                    bet_func(model_to_epsilon['Average']), test_data,
-                                                    'price', 2, sampling=0, shuffle=True, verbose=False)
-            print('Avg model')
-            print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-                  ' Test years:', num_test_years, ' Year:', test_year)
-            print('---------------------------------------------------------')
+            for bayes_model_percent in [0.6, 0.7, 0.8, 1.]:
+                for epsilon in [0.2, 0.3, 0.4, 0.5, 0.6]:
+                    print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
+                    logit_percent = 1.0 - bayes_model_percent
+                    avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
+                                                 np.vstack(all_predictions[1]) * bayes_model_percent]).mean(0)
+                    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
+                    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j], lambda j: test_data['spread'].iloc[j],
+                                                            bet_func(epsilon), test_data,
+                                                            'price', 2, sampling=0, shuffle=True, verbose=False)
+
+                    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+                          ' Test years:', num_test_years, ' Year:', test_year)
+                    print('---------------------------------------------------------')
 
