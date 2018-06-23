@@ -23,6 +23,8 @@ betting_only_attributes = [
     'spread2',
     'odds1',
     'odds2',
+    'grand_slam',
+    'round',
     #'predictions',
     'spread_predictions'
 ]
@@ -136,8 +138,10 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.15 or odds > 0.65:
-            return 0
+        #if odds < 0.15 or odds > 0.65:
+        #    return 0
+        #if spread > 5.:
+        #    return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.

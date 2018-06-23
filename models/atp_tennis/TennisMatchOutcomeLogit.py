@@ -298,6 +298,8 @@ input_attributes_spread = [
 y = 'y'
 y_spread = 'spread'
 all_attributes = list(input_attributes)
+all_attributes.append('grand_slam')
+all_attributes.append('round')
 all_attributes.append(y)
 all_attributes.append(y_spread)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
