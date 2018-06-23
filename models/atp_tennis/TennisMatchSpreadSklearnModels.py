@@ -233,9 +233,9 @@ if __name__ == '__main__':
                 plt.show()
 
             for bayes_model_percent, epsilons in [
-                [0.75, [0.475, 0.5, 0.525]],
-                [0.8, [0.525, 0.55, 0.575, 0.6]],
-                [0.85, [0.525, 0.55, 0.575]]]:
+                [0.75, [0.5, 0.525, 0.55]],
+                [0.8, [0.55, 0.575, 0.6]],
+                [0.85, [0.55, 0.575, 0.6]]]:
 
                 for epsilon in epsilons:
                     print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
