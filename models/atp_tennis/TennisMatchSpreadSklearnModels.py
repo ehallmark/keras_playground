@@ -16,7 +16,31 @@ from models.simulation.Simulate import simulate_spread
 from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_outcome_predictions_and_actuals, spread_input_attributes
 
 
-betting_input_attributes = list(spread_input_attributes)
+betting_input_attributes = [
+        #'prev_h2h2_wins_player',
+        #'prev_h2h2_wins_opponent',
+        'mean_return_points_made',
+        'mean_opp_return_points_made',
+        'prev_year_prior_encounters',
+        'opp_prev_year_prior_encounters',
+        #'tourney_hist_prior_encounters',
+        #'opp_tourney_hist_prior_encounters',
+        'mean_break_points_made',
+        'mean_opp_break_points_made',
+        'tiebreak_win_percent',
+        'opp_tiebreak_win_percent',
+        'surface_experience',
+        'opp_surface_experience',
+        #'experience',
+        #'opp_experience',
+        'age',
+        'opp_age',
+        'height',
+        'opp_height',
+        'elo_score',
+        'opp_elo_score'
+    ]
+
 
 betting_only_attributes = [
     'spread1',

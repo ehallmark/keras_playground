@@ -23,9 +23,9 @@ for tournament in tournaments:
     print("predictions shape: ", predictions.shape)
 
     bets_to_make = []
-    def after_bet_func(conf, player1, player2, spread, price, amount):
-        print("MAKE BET: ", conf, player1, player2)
-        bets_to_make.append([player1, player2, conf, amount, spread, price])
+    def after_bet_func(conf, player1, player2, spread, price, amount, date):
+        #print("MAKE BET: ", conf, player1, player2)
+        bets_to_make.append([player1, player2, conf, amount, spread, price, date])
 
     # run betting algo
     epsilon = 0.575
@@ -36,8 +36,8 @@ for tournament in tournaments:
                                             initial_capital=10000000, shuffle=True, verbose=False)
 
     print('Num bets total: ', len(bets_to_make))
-    print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price')
+    print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date')
     for bet_to_make in bets_to_make:
-        print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4]), str(bet_to_make[5])]))
+        print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4]), str(bet_to_make[5]), str(bet_to_make[6])]))
 
 
