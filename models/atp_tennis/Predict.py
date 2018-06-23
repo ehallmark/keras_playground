@@ -19,16 +19,22 @@ print('Test data shape: ', test_data.shape)
 predictions = np.array(tennis_model.predict(data, test_data, train=False)).flatten()
 print("predictions shape: ", predictions.shape)
 
+bets_to_make = []
+def after_bet_func(conf, player1, player2, spread, price, amount):
+    print("MAKE BET: ", conf, player1, player2)
+    bets_to_make.append([player1, player2, conf, amount, spread, price])
+
 # run betting algo
 epsilon = 0.575
 test_return, num_bets = simulate_spread(lambda j: predictions[j],
-                                        lambda j: test_data['spread'].iloc[j],
+                                        lambda j: 0,
                                         tennis_model.bet_func(epsilon), test_data,
-                                        'price', 5, sampling=0, shuffle=True, verbose=True)
+                                        'price', 1, after_bet_function=after_bet_func, sampling=0,
+                                        initial_capital=10000000, shuffle=True, verbose=False)
 
 print('Num bets total: ', len(bets_to_make))
-print('Bet On, Bet Against, Confidence, Amount to Invest, Current Price')
+print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price')
 for bet_to_make in bets_to_make:
-    print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4])]))
+    print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4]), str(bet_to_make[5])]))
 
 

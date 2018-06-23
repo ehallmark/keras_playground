@@ -174,7 +174,8 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
 
 def simulate_spread(predictor_func, actual_spread_func,
                     betting_decision_func, test_data,
-                    price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=True):
+                    price_str='price', num_trials=50, sampling=0,
+                    verbose=False, shuffle=True, after_bet_function=None, initial_capital=1000):
     worst_parameters = None
     best_parameters = None
     avg_best = 0.0
@@ -197,7 +198,6 @@ def simulate_spread(predictor_func, actual_spread_func,
         betting_minimum = 5.0
         betting_maximum = 100.0
         max_loss_percent = 0.05
-        initial_capital = 1000.0
         num_ties = 0
         available_capital = initial_capital
         indices = list(range(test_data.shape[0]))
@@ -275,6 +275,9 @@ def simulate_spread(predictor_func, actual_spread_func,
                 capital_ratio = capital_requirement_avail / capital_requirement
                 capital_requirement *= capital_ratio
                 confidence *= capital_ratio
+                if after_bet_function is not None:
+                    after_bet_function(bet1, bet_row['player_id'], bet_row['opponent_id'], spread1,
+                                       max_price1, capital_requirement)
                 if capital_requirement <= available_capital:
                     amount_invested += capital_requirement
                     if verbose:
@@ -325,6 +328,9 @@ def simulate_spread(predictor_func, actual_spread_func,
                 capital_ratio = capital_requirement_avail / capital_requirement
                 capital_requirement *= capital_ratio
                 confidence *= capital_ratio
+                if after_bet_function is not None:
+                    after_bet_function(bet2, bet_row['opponent_id'], bet_row['player_id'], spread2,
+                                       max_price2, capital_requirement)
                 if capital_requirement <= available_capital:
                     amount_invested += capital_requirement
                     if verbose:
