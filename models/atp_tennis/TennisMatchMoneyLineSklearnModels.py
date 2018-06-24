@@ -26,10 +26,10 @@ betting_input_attributes = [
         'prev_h2h2_wins_opponent',
         #'mean_duration',
         #'mean_opp_duration',
-        #'mean_return_points_made',
-        #'mean_opp_return_points_made',
-        #'mean_second_serve_points_made',
-        #'mean_opp_second_serve_points_made',
+        'mean_return_points_made',
+        'mean_opp_return_points_made',
+        'mean_second_serve_points_made',
+        'mean_opp_second_serve_points_made',
         'h2h_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
@@ -37,26 +37,26 @@ betting_input_attributes = [
         #'opp_prev_year_avg_round',
         #'opp_tourney_hist_avg_round',
         #'tourney_hist_avg_round',
-        #'tourney_hist_prior_encounters',
-        #'opp_tourney_hist_prior_encounters',
-        #'mean_break_points_made',
-        #'mean_opp_break_points_made',
+        'tourney_hist_prior_encounters',
+        'opp_tourney_hist_prior_encounters',
+        'mean_break_points_made',
+        'mean_opp_break_points_made',
         #'previous_tournament_round',
         #'opp_previous_tournament_round',
-        #'tiebreak_win_percent',
-        #'opp_tiebreak_win_percent',
+        'tiebreak_win_percent',
+        'opp_tiebreak_win_percent',
         'surface_experience',
         'opp_surface_experience',
-        #'experience',
-        #'opp_experience',
-        #'age',
-        #'opp_age',
+        'experience',
+        'opp_experience',
+        'age',
+        'opp_age',
         #'lefty',
         #'opp_lefty',
         #'weight',
         #'opp_weight',
-        #'height',
-        #'opp_height',
+        'height',
+        'opp_height',
         #'duration_prev_match',
         #'opp_duration_prev_match',
         'elo_score',
@@ -186,71 +186,39 @@ def bet_func(epsilon, parameters):
 
 def new_random_parameters():
     model_parameters = {}
-    model_parameters['model_to_epsilon'] = {
-        'Logit Regression': 0.1 + float(np.random.rand(1))*0.8,
-        'Naive Bayes': 0.1 + float(np.random.rand(1))*0.8,
-        'Random Forest': 0.1 + float(np.random.rand(1))*0.8,
-        'Average': 0.1 + float(np.random.rand(1))*0.8,
-        'QDA': 0.1 + float(np.random.rand(1))*0.8,
-        'Support Vector': 0.1 + float(np.random.rand(1))*0.8,
-        'K Neighbors': 0.1 + float(np.random.rand(1))*0.8,
-    }
-    model_parameters['model_weights'] = {
-        'Logit Regression': 1.0+float(np.random.rand(1)),
-        'Naive Bayes': 1.0+float(np.random.rand(1)),
-        'Random Forest': 1.0+float(np.random.rand(1)),
-        'Average': 1.0+float(np.random.rand(1)),
-        'QDA': 1.0+float(np.random.rand(1)),
-        'Support Vector': 1.0+float(np.random.rand(1)),
-        'K Neighbors': 1.0+float(np.random.rand(1)),
-    }
-    model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.3
-    model_parameters['max_odds'] = float(np.random.rand(1))*0.55+0.3
+    model_parameters['epsilon'] = 0.1 + float(np.random.rand(1))*0.8
+    model_parameters['bayes_model_percent'] = float(np.random.rand(1))
+    model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.4
+    model_parameters['max_odds'] = float(np.random.rand(1))*0.55+0.4
     return model_parameters
 
 
 class MoneyLineSolution(Solution):
     def __init__(self, parameters):
-        self.parameters = [parameter.copy() for parameter in parameters]
+        self.parameters = parameters.copy()
 
     def score(self, data):
         # run simulation
-        return test(self.parameters, data[0], data[1])
+        return test(data, self.parameters)
 
     def mutate(self):
-        mutated_parameters = [parameter.copy() for parameter in self.parameters]
-        second_copies = [new_random_parameters() for _ in self.parameters]
-        for i in range(len(mutated_parameters)):
-            mutated_parameter = mutated_parameters[i]
-            second_copy = second_copies[i]
-            mutated_weights = mutated_parameter['model_weights']
-            mutated_epsilons = mutated_parameter['model_to_epsilon']
-            second_weights = second_copy['model_weights']
-            second_epsilons = second_copy['model_to_epsilon']
-            for k, v in second_weights.items():
-                if np.random.rand(1) < 2.0/float(len(second_weights)):
-                    mutated_weights[k] = (mutated_weights[k]+v)/2.
-            for k, v in second_epsilons.items():
-                if np.random.rand(1) < 2.0/float(len(second_epsilons)):
-                    mutated_epsilons[k] = (mutated_epsilons[k]+v)/2.
+        mutated_parameters = self.parameters.copy()
+        second_copies = new_random_parameters()
+        for k in second_copies:
             if np.random.rand(1) < 0.25:
-                mutated_parameter['max_odds'] = (mutated_parameter['max_odds'] + second_copy['max_odds'])/2.
-            if np.random.rand(1) < 0.25:
-                mutated_parameter['min_odds'] = (mutated_parameter['min_odds'] + second_copy['min_odds'])/2.
+                mutated_parameters[k] = (second_copies[k]+mutated_parameters[k])/2.
         return MoneyLineSolution(mutated_parameters)
 
     def cross_over(self, other):
-        cross_parameters = [parameter.copy() for parameter in self.parameters]
-        for i in range(len(cross_parameters)):
-            cross_parameter = cross_parameters[i]
-            for k in cross_parameter:
-                if np.random.rand(1) < 0.5:
-                    cross_parameter[k] = other.parameters[i][k]
+        cross_parameters = self.parameters.copy()
+        for k in cross_parameters:
+            if np.random.rand(1) < 0.5:
+                cross_parameters[k] = other.parameters[k]
         return MoneyLineSolution(cross_parameters)
 
 
 def solution_generator():
-    return MoneyLineSolution([new_random_parameters(), new_random_parameters()])
+    return MoneyLineSolution(new_random_parameters())
 
 
 def sample2d(array, seed, max_samples):
@@ -266,20 +234,38 @@ def sample2d(array, seed, max_samples):
         return array[start:end]
 
 
-def test(model_parameters, data, test_data):
-    num_tests = 0
-    total_bets = 0
-    returns = 0.0
+def test(all_predictions, model_parameters):
+    bayes_model_percent = model_parameters['bayes_model_percent']
+    logit_percent = 1.0 - bayes_model_percent
+    price_str = 'max_price'
+    total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
+    avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
+                                 np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0) / total
+
+    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
+    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
+                                                bet_func(model_parameters['epsilon'],model_parameters), test_data,
+                                                price_str, 1, sampling=0, shuffle=True, verbose=False)
+    print('Avg model: ')
+    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+          )  # ' Test years:', num_test_years, ' Test year:', test_year)
+    if test_return > 0:
+        score = test_return + float(np.square(1+num_bets))
+    else:
+        score = test_return - float(np.log(1+num_bets))
+    print('Score: ', score)
+    print(model_parameters)
+    print('---------------------------------------------------------')
+    return score
+
+
+def predict(data, test_data):
     #for num_test_years in [1]:
     #    for test_year in [2016, 2017, 2018]:
-    price_str = 'max_price'
     graph = False
     lr = lambda: LogisticRegression()
-    svm = lambda: LinearSVC()
     rf = lambda: RandomForestClassifier(n_estimators=300, max_depth=10)
     nb = lambda: GaussianNB()
-    qda = lambda: QuadraticDiscriminantAnalysis()
-    kn = lambda: KNeighborsClassifier(n_neighbors=10)
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
@@ -289,20 +275,16 @@ def test(model_parameters, data, test_data):
     X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
     y_test = np.array(test_data[y_str].iloc[:]).flatten()
     all_predictions = []
-    total_weight = 0.0
     for _model, name in [
                     (lr, 'Logit Regression'),
-                    #(svm, 'Support Vector'),
                     (nb, 'Naive Bayes'),
                     #(rf, 'Random Forest'),
-                    #(qda, 'QDA'),
-                    #(kn, 'K Neighbors')
                 ]:
-        weight = model_parameters[num_tests]['model_weights'][name]
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
+        model_predictions = []
+        all_predictions.append(model_predictions)
         for i in range(1):
-            total_weight += weight
             model = _model()
             X_train_sample = sample2d(X_train, i, 1)
             y_train_sample = sample2d(y_train, i, 1)
@@ -311,7 +293,7 @@ def test(model_parameters, data, test_data):
             #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
             #      ' (' + to_percentage(binary_percent) + ')')
             prob_pos = predict_proba(model, X_test)
-            all_predictions.append(prob_pos*weight)
+            model_predictions.append(prob_pos)
             if graph:
                 fraction_of_positives, mean_predicted_value = \
                     calibration_curve(y_test, prob_pos, n_bins=10)
@@ -327,15 +309,7 @@ def test(model_parameters, data, test_data):
             #                                  price_str, num_tests, sampling=0, shuffle=True)
             #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Test year:', test_year)
 
-    avg_predictions = np.vstack(all_predictions).sum(0) / total_weight
-    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
-    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
-                                                bet_func(model_parameters[num_tests]['model_to_epsilon']['Average'],
-                                                         model_parameters[num_tests]), test_data,
-                                                price_str, 1, sampling=0, shuffle=True, verbose=False)
-    returns += test_return
-    total_bets += num_bets
-    num_tests += 1
+
 
     if graph:
         ax1.set_ylabel("Fraction of positives")
@@ -348,17 +322,7 @@ def test(model_parameters, data, test_data):
         plt.tight_layout()
         plt.show()
 
-    print('Avg model: ')
-    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-          )# ' Test years:', num_test_years, ' Test year:', test_year)
-
-    for parameter in model_parameters:
-        print(parameter)
-    print('---------------------------------------------------------')
-    if total_bets/num_tests < 100:
-        return -100000.0
-    else:
-        return returns/num_tests
+    return all_predictions
 
 
 if __name__ == '__main__':
@@ -369,5 +333,6 @@ if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
     data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
+    all_predictions = predict(data, test_data)
     genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    genetic_algorithm.fit((data, test_data), num_solutions=15, num_epochs=num_epochs)
+    genetic_algorithm.fit(all_predictions, num_solutions=30, num_epochs=num_epochs)
