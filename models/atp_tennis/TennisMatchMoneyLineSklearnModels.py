@@ -366,7 +366,7 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = True
+    train = False
     if train:
         num_test_years = 1
         test_year = 2018
@@ -378,11 +378,11 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['epsilon'] = 0.05
-        model_parameters['bayes_model_percent'] = 0.20
-        model_parameters['logit_model_percent'] = 0.60
-        model_parameters['rf_model_percent'] = 0.50
-        model_parameters['min_odds'] = 0.10
+        model_parameters['epsilon'] = 0.5
+        model_parameters['bayes_model_percent'] = 0.60
+        model_parameters['logit_model_percent'] = 0.30
+        model_parameters['rf_model_percent'] = 0.15
+        model_parameters['min_odds'] = 0.15
         model_parameters['max_odds'] = 0.50
         num_tests = 10
         for num_test_years in [1, 2]:
