@@ -373,13 +373,13 @@ if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
     train = False
+    num_test_years = 2
+    test_year = 2018
+    data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
+                                model=historical_model, spread_model=historical_spread_model)
+    all_predictions = predict(data, test_data)
     if train:
-        num_test_years = 2
         num_epochs = 100
-        test_year = 2018
-        data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
-                                    model=historical_model, spread_model=historical_spread_model)
-        all_predictions = predict(data, test_data)
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
@@ -395,7 +395,6 @@ if __name__ == '__main__':
             for test_year in [2016, 2017, 2018]:
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                             model=historical_model, spread_model=historical_spread_model)
-                all_predictions = predict(data, test_data)
                 print('Year:', test_year, ' Test years:', num_test_years)
                 total_score = 0.0
                 total_return = 0.0
