@@ -186,10 +186,12 @@ def bet_func(epsilon, parameters):
 
 def new_random_parameters():
     model_parameters = {}
-    model_parameters['epsilon'] = 0.1 + float(np.random.rand(1))*0.8
+    model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.6
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
-    model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.4
-    model_parameters['max_odds'] = float(np.random.rand(1))*0.55+0.4
+    model_parameters['logit_model_percent'] = float(np.random.rand(1))
+    model_parameters['rf_model_percent'] = float(np.random.rand(1))
+    model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.3
+    model_parameters['max_odds'] = float(np.random.rand(1))*0.4+0.3
     return model_parameters
 
 
@@ -205,8 +207,8 @@ class MoneyLineSolution(Solution):
         mutated_parameters = self.parameters.copy()
         second_copies = new_random_parameters()
         for k in second_copies:
-            if np.random.rand(1) < 0.25:
-                mutated_parameters[k] = (second_copies[k]+mutated_parameters[k])/2.
+            if np.random.rand(1) < 0.5:
+                mutated_parameters[k] = second_copies[k]
         return MoneyLineSolution(mutated_parameters)
 
     def cross_over(self, other):
@@ -234,18 +236,22 @@ def sample2d(array, seed, max_samples):
         return array[start:end]
 
 
-def test(all_predictions, model_parameters):
+def test(all_predictions, model_parameters, num_tests=1):
     bayes_model_percent = model_parameters['bayes_model_percent']
-    logit_percent = 1.0 - bayes_model_percent
+    rf_percent = model_parameters['rf_model_percent']
+    logit_percent = model_parameters['logit_model_percent']
     price_str = 'max_price'
-    total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
+    total = logit_percent * len(all_predictions[0]) + \
+            bayes_model_percent * len(all_predictions[1]) + \
+            rf_percent * len(all_predictions[2])
     avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                 np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0) / total
+                                 np.vstack(all_predictions[1]) * bayes_model_percent,
+                                 np.vstack(all_predictions[2]) * rf_percent]).sum(0) / total
 
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
                                                 bet_func(model_parameters['epsilon'],model_parameters), test_data,
-                                                price_str, 1, sampling=0, shuffle=True, verbose=False)
+                                                price_str, num_tests, sampling=0, shuffle=True, verbose=False)
     print('Avg model: ')
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           )  # ' Test years:', num_test_years, ' Test year:', test_year)
@@ -278,16 +284,16 @@ def predict(data, test_data):
     for _model, name in [
                     (lr, 'Logit Regression'),
                     (nb, 'Naive Bayes'),
-                    #(rf, 'Random Forest'),
+                    (rf, 'Random Forest'),
                 ]:
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
         model_predictions = []
         all_predictions.append(model_predictions)
-        for i in range(1):
+        for i in range(30):
             model = _model()
-            X_train_sample = sample2d(X_train, i, 1)
-            y_train_sample = sample2d(y_train, i, 1)
+            X_train_sample = sample2d(X_train, i, 2)
+            y_train_sample = sample2d(y_train, i, 2)
             model.fit(X_train_sample, y_train_sample)
             #binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
             #print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
@@ -327,12 +333,30 @@ def predict(data, test_data):
 
 if __name__ == '__main__':
     start_year = 2010
-    num_test_years = 1
-    test_year = 2018
-    num_epochs = 50
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
-    all_predictions = predict(data, test_data)
-    genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-    genetic_algorithm.fit(all_predictions, num_solutions=30, num_epochs=num_epochs)
+    train = False
+    if train:
+        num_test_years = 1
+        num_epochs = 50
+        test_year = 2018
+        data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
+                                    model=historical_model, spread_model=historical_spread_model)
+        all_predictions = predict(data, test_data)
+        genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
+        genetic_algorithm.fit(all_predictions, num_solutions=30, num_epochs=num_epochs)
+    else:
+        model_parameters = {}
+        model_parameters['epsilon'] = 0.10
+        model_parameters['bayes_model_percent'] = 0.15
+        model_parameters['logit_model_percent'] = 0.90
+        model_parameters['rf_model_percent'] = 0.05
+        model_parameters['min_odds'] = 0.30
+        model_parameters['max_odds'] = 0.60
+        for num_test_years in [1, 2]:
+            for test_year in [2016, 2017, 2018]:
+                data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
+                                            model=historical_model, spread_model=historical_spread_model)
+                all_predictions = predict(data, test_data)
+                print('Year:', test_year, ' Test years:', num_test_years)
+                test(all_predictions, model_parameters, num_tests=10)
