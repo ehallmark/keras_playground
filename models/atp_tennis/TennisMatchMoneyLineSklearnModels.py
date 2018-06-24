@@ -250,7 +250,7 @@ def test(all_predictions, model_parameters):
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
           )  # ' Test years:', num_test_years, ' Test year:', test_year)
     if test_return > 0:
-        score = test_return * float(np.log(1+num_bets))
+        score = max(0, test_return * float(num_bets - 10))
     else:
         score = test_return - float(np.log(1+num_bets))
     print('Score: ', score)
