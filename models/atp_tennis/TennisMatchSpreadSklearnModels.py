@@ -302,13 +302,6 @@ def prediction_func(avg_predictions, epsilon):
 
 start_year = 2011
 if __name__ == '__main__':
-    model_to_epsilon = {
-        'Logit Regression': 0.20,
-        'Naive Bayes': 0.5,
-        #'Random Forest': 0.4,
-        'Average': 0.4,
-        #'Support Vector': 0.3
-    }
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
     for num_test_years in [1, 2]:

@@ -184,6 +184,14 @@ def bet_func(epsilon, parameters):
     return bet_func_helper
 
 
+def add_noise(parameters):
+    model_parameters = parameters.copy()
+    variance = 0.05
+    for k in model_parameters:
+        model_parameters[k] = max(0.01, model_parameters[k]+float(np.random.randn(1))*variance)
+    return model_parameters
+
+
 def new_random_parameters():
     model_parameters = {}
     model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.6
@@ -195,13 +203,35 @@ def new_random_parameters():
     return model_parameters
 
 
+beta = 0.7
+
+
 class MoneyLineSolution(Solution):
     def __init__(self, parameters):
+        self.score_avg = None
+        self.return_avg = None
+        self.bets_avg = None
         self.parameters = parameters.copy()
 
     def score(self, data):
         # run simulation
-        return test(data, self.parameters)
+        num_tests = 30
+        if self.score_avg is None:
+            total_score = 0.0
+            total_return = 0.0
+            total_bets = 0
+            for i in range(num_tests):
+                score, ret, bets = test(data, add_noise(self.parameters))
+                total_score += score
+                total_return += ret
+                total_bets += bets
+            self.return_avg = total_return / num_tests
+            self.score_avg = total_score / num_tests
+            self.bets_avg = total_bets / num_tests
+        print(self.parameters)
+        print('Avg score: ', self.score_avg, ' Avg return:', self.return_avg, ' Avg bets:', self.bets_avg)
+        print('-------------------------------------------------')
+        return self.score_avg
 
     def mutate(self):
         mutated_parameters = self.parameters.copy()
@@ -252,17 +282,17 @@ def test(all_predictions, model_parameters, num_tests=1):
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
                                                 bet_func(model_parameters['epsilon'],model_parameters), test_data,
                                                 price_str, num_tests, sampling=0, shuffle=True, verbose=False)
-    print('Avg model: ')
-    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
-          )  # ' Test years:', num_test_years, ' Test year:', test_year)
+    #print('Avg model: ')
+    #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
+    #      )  # ' Test years:', num_test_years, ' Test year:', test_year)
     if test_return > 0:
-        score = max(0, test_return * float(num_bets - 10))
+        score = float(np.sqrt(max(0, test_return * float(num_bets - 10))))
     else:
         score = test_return - float(np.log(1+num_bets))
-    print('Score: ', score)
-    print(model_parameters)
-    print('---------------------------------------------------------')
-    return score
+    #print('Score: ', score)
+    #print(model_parameters)
+    #print('---------------------------------------------------------')
+    return score, test_return, num_bets
 
 
 def predict(data, test_data):
@@ -338,21 +368,21 @@ if __name__ == '__main__':
     train = True
     if train:
         num_test_years = 2
-        num_epochs = 50
+        num_epochs = 100
         test_year = 2018
         data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                     model=historical_model, spread_model=historical_spread_model)
         all_predictions = predict(data, test_data)
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-        genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
+        genetic_algorithm.fit(all_predictions, num_solutions=100, num_epochs=num_epochs)
     else:
         model_parameters = {}
         model_parameters['epsilon'] = 0.10
-        model_parameters['bayes_model_percent'] = 0.15
-        model_parameters['logit_model_percent'] = 0.90
-        model_parameters['rf_model_percent'] = 0.05
-        model_parameters['min_odds'] = 0.30
-        model_parameters['max_odds'] = 0.60
+        model_parameters['bayes_model_percent'] = 0.50
+        model_parameters['logit_model_percent'] = 0.50
+        model_parameters['rf_model_percent'] = 0.25
+        model_parameters['min_odds'] = 0.20
+        model_parameters['max_odds'] = 0.55
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
