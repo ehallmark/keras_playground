@@ -122,7 +122,6 @@ def load_betting_data(betting_sites, test_year=2018):
          betting_date
          from atp_tennis_betting_link 
          where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
-         group by year,tournament,team1,team2
      '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\'' + '\',\''.join(betting_sites) + '\''), conn)
     return betting_data
 
