@@ -164,8 +164,8 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        #if odds < 0.15 or odds > 0.65:
-        #    return 0
+        if odds < 0.10 or odds > 0.70:
+            return 0
         #if spread > 5.:
         #    return 0
         if price > 0:
@@ -251,20 +251,21 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     predictions = []
 
+    #train_params = [
+    #    [0.75, [0.5,0.525,0.55]],
+    #    [0.8, [0.55,0.575,0.6]],
+    #    [0.85, [0.55,0.575,0.6]]
+    #]
+
     train_params = [
-        [0.75, [
-            0.5,
-            0.525,
-            0.55
-        ]],[0.8, [
-            0.55,
-            0.575,
-            0.6
-        ]],[0.85, [
-            0.55,
-            0.575,
-            0.6
-        ]]]
+        [0.60, [0.55, 0.60, 0.65]],
+        [0.65, [0.55, 0.60, 0.65]],
+        [0.7, [0.55, 0.60, 0.65]],
+        [0.75, [0.55, 0.60, 0.65]],
+        [0.8, [0.55, 0.60, 0.65]],
+        [0.85, [0.55, 0.60, 0.65]],
+        [0.90, [0.55, 0.60, 0.65]]
+    ]
 
     test_params = [
         [train_params[1][0],[train_params[1][1][1]]]
