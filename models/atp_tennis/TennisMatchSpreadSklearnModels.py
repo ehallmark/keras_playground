@@ -38,7 +38,9 @@ betting_input_attributes = [
         'height',
         'opp_height',
         'elo_score',
-        'opp_elo_score'
+        'opp_elo_score',
+        'avg_games_per_set',
+        'opp_avg_games_per_set'
     ]
 
 
