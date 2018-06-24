@@ -270,7 +270,7 @@ def predict(data, test_data):
     #    for test_year in [2016, 2017, 2018]:
     graph = False
     lr = lambda: LogisticRegression()
-    rf = lambda: RandomForestClassifier(n_estimators=300, max_depth=10)
+    rf = lambda: RandomForestClassifier(n_estimators=50)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -335,16 +335,16 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = False
+    train = True
     if train:
-        num_test_years = 1
+        num_test_years = 2
         num_epochs = 50
         test_year = 2018
         data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                     model=historical_model, spread_model=historical_spread_model)
         all_predictions = predict(data, test_data)
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-        genetic_algorithm.fit(all_predictions, num_solutions=30, num_epochs=num_epochs)
+        genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
         model_parameters['epsilon'] = 0.10
