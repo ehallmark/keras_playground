@@ -275,7 +275,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         print("Test params: ", params)
 
     for bayes_model_percent, epsilons in params:
+        if train:
+            bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * 0.001)
         for epsilon in epsilons:
+            if train:
+                epsilon = epsilon + float(np.random.randn(1)*0.001)
             print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
             logit_percent = 1.0 - bayes_model_percent
             total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
@@ -304,9 +308,12 @@ start_year = 2011
 if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    for num_test_years in [1, 2]:
-        for test_year in [2016, 2017, 2018]:
-            graph = False
-            all_predictions = []
-            data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
-            avg_predictions = predict(data, test_data, prediction_function=prediction_func, graph=False, train=True)
+    num_tests = 10
+    for i in range(num_tests):
+        print("TEST: ", i)
+        for num_test_years in [1, 2]:
+            for test_year in [2016, 2017, 2018]:
+                graph = False
+                all_predictions = []
+                data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
+                avg_predictions = predict(data, test_data, prediction_function=prediction_func, graph=False, train=True)

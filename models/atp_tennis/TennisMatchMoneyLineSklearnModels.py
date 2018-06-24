@@ -114,14 +114,12 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
 def load_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
-         select year,tournament,team1,team2,
-         min(price1) as min_price1, 
-         max(price1) as max_price1,
-         min(price2) as min_price2,
-         max(price2) as max_price2,
-         sum(odds1)/count(*) as odds1,
-         sum(odds2)/count(*) as odds2,
-         mode() within group(order by betting_date) as betting_date
+         select year,tournament,team1,team2,book_name,
+         price1 as max_price1,
+         price2 as max_price2,
+         odds1,
+         odds2,
+         betting_date
          from atp_tennis_betting_link 
          where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
          group by year,tournament,team1,team2
@@ -147,7 +145,7 @@ def load_data(start_year, test_year, num_test_years, model=None, spread_model=No
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'],
-        validate='1:1'
+        validate='1:m'
     )
     data = pd.DataFrame.merge(
         data,
@@ -155,7 +153,7 @@ def load_data(start_year, test_year, num_test_years, model=None, spread_model=No
         'inner',
         left_on=['year', 'player_id', 'opponent_id', 'tournament'],
         right_on=['year', 'team1', 'team2', 'tournament'],
-        validate='1:1'
+        validate='1:m'
     )
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
@@ -193,7 +191,7 @@ def bet_func(epsilon, parameters):
 
 def add_noise(parameters):
     model_parameters = parameters.copy()
-    variance = 0.05
+    variance = 0.005
     for k in model_parameters:
         model_parameters[k] = max(0.01, model_parameters[k]+float(np.random.randn(1))*variance)
     return model_parameters
@@ -208,9 +206,6 @@ def new_random_parameters():
     model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.3
     model_parameters['max_odds'] = float(np.random.rand(1))*0.4+0.3
     return model_parameters
-
-
-beta = 0.7
 
 
 class MoneyLineSolution(Solution):
@@ -293,7 +288,7 @@ def test(all_predictions, model_parameters, num_tests=1):
     #print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error),
     #      )  # ' Test years:', num_test_years, ' Test year:', test_year)
     if test_return > 0:
-        score = float(np.sqrt(max(0, test_return * float(num_bets - 10))))
+        score = max(0, test_return * float(num_bets - 100))
     else:
         score = test_return - float(np.log(1+num_bets))
     #print('Score: ', score)
@@ -372,13 +367,13 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = False
-    num_test_years = 2
-    test_year = 2018
-    data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
-                                model=historical_model, spread_model=historical_spread_model)
-    all_predictions = predict(data, test_data)
+    train = True
     if train:
+        num_test_years = 1
+        test_year = 2018
+        data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
+                                    model=historical_model, spread_model=historical_spread_model)
+        all_predictions = predict(data, test_data)
         num_epochs = 100
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
@@ -395,6 +390,8 @@ if __name__ == '__main__':
             for test_year in [2016, 2017, 2018]:
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                             model=historical_model, spread_model=historical_spread_model)
+                all_predictions = predict(data, test_data)
+
                 print('Year:', test_year, ' Test years:', num_test_years)
                 total_score = 0.0
                 total_return = 0.0
