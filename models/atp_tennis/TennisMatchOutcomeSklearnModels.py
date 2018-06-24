@@ -32,7 +32,7 @@ if __name__ == '__main__':
     sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     print('Max data year: ', max(sql['year']))
     train_outcome_model = True
-    train_spread_model = True
+    train_spread_model = False
     if train_outcome_model:
         lr = LogisticRegression()
         gnb = GaussianNB()

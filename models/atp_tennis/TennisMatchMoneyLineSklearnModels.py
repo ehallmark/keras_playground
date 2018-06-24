@@ -28,8 +28,8 @@ betting_input_attributes = [
         'mean_opp_duration',
         'mean_return_points_made',
         'mean_opp_return_points_made',
-        'mean_second_serve_points_made',
-        'mean_opp_second_serve_points_made',
+        #'mean_second_serve_points_made',
+        #'mean_opp_second_serve_points_made',
         'h2h_prior_win_percent',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
@@ -49,8 +49,8 @@ betting_input_attributes = [
         'opp_surface_experience',
         'experience',
         'opp_experience',
-        'age',
-        'opp_age',
+        #'age',
+        #'opp_age',
         #'lefty',
         #'opp_lefty',
         #'weight',
@@ -60,7 +60,9 @@ betting_input_attributes = [
         #'duration_prev_match',
         #'opp_duration_prev_match',
         'elo_score',
-        'opp_elo_score'
+        'opp_elo_score',
+        'avg_games_per_set',
+        'opp_avg_games_per_set'
     ]
 
 betting_only_attributes = [
@@ -69,7 +71,7 @@ betting_only_attributes = [
     'predictions',
     'round',
     'grand_slam',
-    'spread_predictions'
+    #'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -305,7 +307,7 @@ def predict(data, test_data):
     #    for test_year in [2016, 2017, 2018]:
     graph = False
     lr = lambda: LogisticRegression()
-    rf = lambda: RandomForestClassifier(n_estimators=50)
+    rf = lambda: RandomForestClassifier(n_estimators=100)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -370,7 +372,7 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = True
+    train = False
     if train:
         num_test_years = 2
         num_epochs = 100
@@ -382,16 +384,28 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['epsilon'] = 0.10
-        model_parameters['bayes_model_percent'] = 0.50
-        model_parameters['logit_model_percent'] = 0.50
-        model_parameters['rf_model_percent'] = 0.25
-        model_parameters['min_odds'] = 0.20
-        model_parameters['max_odds'] = 0.55
+        model_parameters['epsilon'] = 0.05
+        model_parameters['bayes_model_percent'] = 0.20
+        model_parameters['logit_model_percent'] = 0.60
+        model_parameters['rf_model_percent'] = 0.50
+        model_parameters['min_odds'] = 0.10
+        model_parameters['max_odds'] = 0.50
+        num_tests = 10
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                             model=historical_model, spread_model=historical_spread_model)
                 all_predictions = predict(data, test_data)
                 print('Year:', test_year, ' Test years:', num_test_years)
-                test(all_predictions, model_parameters, num_tests=10)
+                total_score = 0.0
+                total_return = 0.0
+                total_bets = 0
+                for i in range(num_tests):
+                    score, test_return, num_bets = test(all_predictions, add_noise(model_parameters), num_tests=5)
+                    total_score += score
+                    total_return += test_return
+                    total_bets += num_bets
+                print('AVG SCORE: ', total_score/num_tests)
+                print('AVG RETURN: ', total_return/num_tests)
+                print('AVG NUM BETS: ', total_bets/num_tests)
+

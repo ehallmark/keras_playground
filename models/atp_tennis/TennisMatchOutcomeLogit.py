@@ -232,72 +232,109 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 
 
 input_attributes = [
-        'prev_h2h2_wins_player',
-        'prev_h2h2_wins_opponent',
-        #'mean_duration',
-        #'mean_opp_duration',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
-        'mean_second_serve_points_made',
-        'mean_opp_second_serve_points_made',
-        'h2h_prior_win_percent',
-        'prev_year_prior_encounters',
-        'opp_prev_year_prior_encounters',
-        #'prev_year_avg_round',
-        #'opp_prev_year_avg_round',
-        #'opp_tourney_hist_avg_round',
-        #'tourney_hist_avg_round',
-        'tourney_hist_prior_encounters',
-        'opp_tourney_hist_prior_encounters',
-        #'mean_break_points_made',
-        #'mean_opp_break_points_made',
-        #'previous_tournament_round',
-        #'opp_previous_tournament_round',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
-        'surface_experience',
-        'opp_surface_experience',
-        'experience',
-        'opp_experience',
-        'age',
-        'opp_age',
-        #'lefty',
-        #'opp_lefty',
-        #'weight',
-        #'opp_weight',
-        'height',
-        'opp_height',
-        #'duration_prev_match',
-        #'opp_duration_prev_match',
-        'elo_score',
-        'opp_elo_score'
-    ]
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
+    #'mean_duration',
+    #'mean_opp_duration',
+    'mean_return_points_made',
+    'mean_opp_return_points_made',
+    #'mean_second_serve_points_made',
+    #'mean_opp_second_serve_points_made',
+    'h2h_prior_win_percent',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
+    #'prev_year_avg_round',
+    #'opp_prev_year_avg_round',
+    #'opp_tourney_hist_avg_round',
+    #'tourney_hist_avg_round',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
+    #'previous_tournament_round',
+    #'opp_previous_tournament_round',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    'experience',
+    'opp_experience',
+    'age',
+    'opp_age',
+    #'lefty',
+    #'opp_lefty',
+    #'weight',
+    #'opp_weight',
+    'height',
+    'opp_height',
+    #'duration_prev_match',
+    #'opp_duration_prev_match',
+    'elo_score',
+    'opp_elo_score',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
+    #'avg_spread_per_set',
+    #'opp_avg_spread_per_set'
+]
 
 
 input_attributes_spread = [
-        'prev_h2h2_wins_player',
-        'prev_h2h2_wins_opponent',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
-        'prev_year_prior_encounters',
-        'opp_prev_year_prior_encounters',
-        'tourney_hist_prior_encounters',
-        'opp_tourney_hist_prior_encounters',
-        'mean_break_points_made',
-        'mean_opp_break_points_made',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
-        'surface_experience',
-        'opp_surface_experience',
-        'experience',
-        'opp_experience',
-        'age',
-        'opp_age',
-        'height',
-        'opp_height',
-        'elo_score',
-        'opp_elo_score'
-    ]
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
+    'mean_return_points_made',
+    'mean_opp_return_points_made',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
+    'mean_break_points_made',
+    'mean_opp_break_points_made',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    'experience',
+    'opp_experience',
+    'age',
+    'opp_age',
+    'height',
+    'opp_height',
+    'elo_score',
+    'opp_elo_score'
+]
+
+
+
+input_attributes_spread2 = [
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
+    #'mean_second_serve_points_made',
+    #'mean_opp_second_serve_points_made',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
+    #'tourney_hist_prior_encounters',
+    #'opp_tourney_hist_prior_encounters',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
+    #'tiebreak_win_percent',
+    #'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    #'experience',
+    #'opp_experience',
+    #'age',
+    #'opp_age',
+    #'height',
+    #'opp_height',
+    'elo_score',
+    'opp_elo_score',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
+    # 'avg_spread_per_set',
+    #'opp_avg_spread_per_set'
+]
 
 y = 'y'
 y_spread = 'spread'
@@ -313,9 +350,13 @@ for attr in input_attributes_spread:
 for meta in meta_attributes:
     if meta not in all_attributes:
         all_attributes.append(meta)
+for attr in input_attributes_spread2:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
 
 if __name__ == '__main__':
-    train_spread_model = False
+    save = False
+    train_spread_model = True
     train_outcome_model = True
     sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     if train_outcome_model:
@@ -329,17 +370,19 @@ if __name__ == '__main__':
         print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
               ' ('+to_percentage(binary_percent)+')')
         print('Average error: ', to_percentage(avg_error))
-        results.save(model_file)
+        if save:
+            results.save(model_file)
 
     if train_spread_model:
         model_file = 'tennis_match_spread_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
-        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql).fit()
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread2), data=sql).fit()
         print(results.summary())
         n, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
-        results.save(model_file)
+        if save:
+            results.save(model_file)
 
     exit(0)
 
