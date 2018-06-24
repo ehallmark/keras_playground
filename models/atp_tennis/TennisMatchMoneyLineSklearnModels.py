@@ -24,8 +24,8 @@ from models.simulation.Simulate import simulate_money_line
 betting_input_attributes = [
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
-        #'mean_duration',
-        #'mean_opp_duration',
+        'mean_duration',
+        'mean_opp_duration',
         'mean_return_points_made',
         'mean_opp_return_points_made',
         'mean_second_serve_points_made',
@@ -37,10 +37,10 @@ betting_input_attributes = [
         #'opp_prev_year_avg_round',
         #'opp_tourney_hist_avg_round',
         #'tourney_hist_avg_round',
-        'tourney_hist_prior_encounters',
-        'opp_tourney_hist_prior_encounters',
-        'mean_break_points_made',
-        'mean_opp_break_points_made',
+        #'tourney_hist_prior_encounters',
+        #'opp_tourney_hist_prior_encounters',
+        #'mean_break_points_made',
+        #'mean_opp_break_points_made',
         #'previous_tournament_round',
         #'opp_previous_tournament_round',
         'tiebreak_win_percent',
@@ -55,8 +55,8 @@ betting_input_attributes = [
         #'opp_lefty',
         #'weight',
         #'opp_weight',
-        'height',
-        'opp_height',
+        #'height',
+        #'opp_height',
         #'duration_prev_match',
         #'opp_duration_prev_match',
         'elo_score',
@@ -67,7 +67,9 @@ betting_only_attributes = [
     'odds1',
     'odds2',
     'predictions',
-    #'spread_predictions'
+    'round',
+    'grand_slam',
+    'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -127,6 +129,9 @@ def load_betting_data(betting_sites, test_year=2018):
 
 def load_data(start_year, test_year, num_test_years, model=None, spread_model=None):
     attributes = list(tennis_model.all_attributes)
+    for attr in betting_input_attributes:
+        if attr not in attributes and attr not in betting_only_attributes:
+            attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years,
                                                            start_year=start_year, model=model, spread_model=spread_model)
     # merge betting data in memory
@@ -215,7 +220,7 @@ class MoneyLineSolution(Solution):
 
     def score(self, data):
         # run simulation
-        num_tests = 30
+        num_tests = 10
         if self.score_avg is None:
             total_score = 0.0
             total_return = 0.0
@@ -374,7 +379,7 @@ if __name__ == '__main__':
                                     model=historical_model, spread_model=historical_spread_model)
         all_predictions = predict(data, test_data)
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
-        genetic_algorithm.fit(all_predictions, num_solutions=100, num_epochs=num_epochs)
+        genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
         model_parameters['epsilon'] = 0.10
