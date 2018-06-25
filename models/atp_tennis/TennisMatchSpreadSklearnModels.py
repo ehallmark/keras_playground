@@ -25,14 +25,14 @@ betting_input_attributes = [
         'opp_prev_year_prior_encounters',
         'tourney_hist_prior_encounters',
         'opp_tourney_hist_prior_encounters',
-        #'mean_break_points_made',
-        #'mean_opp_break_points_made',
+        'mean_break_points_made',
+        'mean_opp_break_points_made',
         'tiebreak_win_percent',
         'opp_tiebreak_win_percent',
         'surface_experience',
         'opp_surface_experience',
-        #'experience',
-        #'opp_experience',
+        'experience',
+        'opp_experience',
         'age',
         'opp_age',
         'height',
@@ -42,11 +42,11 @@ betting_input_attributes = [
         'avg_games_per_set',
         'opp_avg_games_per_set',
     # new
-        'historical_avg_odds',
+        #'historical_avg_odds',
         'fave_spread',
         'opp_fave_spread',
-        'prev_odds',
-        'opp_prev_odds'
+        #'prev_odds',
+        #'opp_prev_odds'
     ]
 
 
@@ -273,10 +273,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     ]
 
     train_params = [
-        [0.8, [0.4, 0.5, 0.6]],
-        [0.85, [0.4, 0.5, 0.6]],
-        [0.9, [0.4, 0.5, 0.6]],
-        [0.95, [0.4, 0.5, 0.6]]
+        [0.85, [0.55, 0.6, 0.65]],
+        [0.875, [0.55, 0.6, 0.65]],
+        [0.9, [0.55, 0.6, 0.65]],
     ]
 
     test_params = [
