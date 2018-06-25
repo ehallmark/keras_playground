@@ -378,11 +378,11 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['epsilon'] = 0.5
-        model_parameters['bayes_model_percent'] = 0.60
-        model_parameters['logit_model_percent'] = 0.30
-        model_parameters['rf_model_percent'] = 0.15
-        model_parameters['min_odds'] = 0.15
+        model_parameters['epsilon'] = 0.10
+        model_parameters['bayes_model_percent'] = 0.50
+        model_parameters['logit_model_percent'] = 1.0
+        model_parameters['rf_model_percent'] = 0.01
+        model_parameters['min_odds'] = 0.30
         model_parameters['max_odds'] = 0.50
         num_tests = 10
         for num_test_years in [1, 2]:
@@ -396,7 +396,7 @@ if __name__ == '__main__':
                 total_return = 0.0
                 total_bets = 0
                 for i in range(num_tests):
-                    score, test_return, num_bets = test(all_predictions, add_noise(model_parameters), num_tests=5)
+                    score, test_return, num_bets = test(all_predictions, model_parameters, num_tests=5)
                     total_score += score
                     total_return += test_return
                     total_bets += num_bets

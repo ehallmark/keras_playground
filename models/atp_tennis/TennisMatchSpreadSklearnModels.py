@@ -258,13 +258,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     #]
 
     train_params = [
-        [0.60, [0.55, 0.60, 0.65]],
-        [0.65, [0.55, 0.60, 0.65]],
-        [0.7, [0.55, 0.60, 0.65]],
-        [0.75, [0.55, 0.60, 0.65]],
-        [0.8, [0.55, 0.60, 0.65]],
-        [0.85, [0.55, 0.60, 0.65]],
-        [0.90, [0.55, 0.60, 0.65]]
+        [0.9, [0.6, 0.625, 0.65]],
+        [0.925, [0.625, 0.65, 0.675]],
+        [0.95, [0.625, 0.65, 0.675]]
     ]
 
     test_params = [
@@ -280,8 +276,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     for bayes_model_percent, epsilons in params:
         for epsilon in epsilons:
             if train:
-                bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * 0.01)
-                epsilon = epsilon + float(np.random.randn(1)*0.01)
+                variance = 0.0001
+                bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
+                epsilon = epsilon + float(np.random.randn(1) * variance)
             print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
             logit_percent = 1.0 - bayes_model_percent
             total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
