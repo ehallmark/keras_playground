@@ -40,7 +40,7 @@ betting_input_attributes = [
         'elo_score',
         'opp_elo_score',
         'avg_games_per_set',
-        'opp_avg_games_per_set'
+        'opp_avg_games_per_set',
     ]
 
 
