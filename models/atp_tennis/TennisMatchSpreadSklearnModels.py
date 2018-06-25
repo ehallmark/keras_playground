@@ -25,14 +25,14 @@ betting_input_attributes = [
         'opp_prev_year_prior_encounters',
         'tourney_hist_prior_encounters',
         'opp_tourney_hist_prior_encounters',
-        'mean_break_points_made',
-        'mean_opp_break_points_made',
+        #'mean_break_points_made',
+        #'mean_opp_break_points_made',
         'tiebreak_win_percent',
         'opp_tiebreak_win_percent',
         'surface_experience',
         'opp_surface_experience',
-        'experience',
-        'opp_experience',
+        #'experience',
+        #'opp_experience',
         'age',
         'opp_age',
         'height',
@@ -41,6 +41,12 @@ betting_input_attributes = [
         'opp_elo_score',
         'avg_games_per_set',
         'opp_avg_games_per_set',
+    # new
+        'historical_avg_odds',
+        'fave_spread',
+        'opp_fave_spread',
+        'prev_odds',
+        'opp_prev_odds'
     ]
 
 
@@ -128,6 +134,9 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
+    for attr in betting_input_attributes:
+        if attr not in betting_only_attributes and attr not in attributes:
+            attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, spread_model=spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
@@ -164,7 +173,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.10 or odds > 0.70:
+        if odds < 0.10 or odds > 0.60:
             return 0
         #if spread > 5.:
         #    return 0
@@ -261,6 +270,13 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         [0.9, [0.6, 0.625, 0.65]],
         [0.925, [0.625, 0.65, 0.675]],
         [0.95, [0.625, 0.65, 0.675]]
+    ]
+
+    train_params = [
+        [0.8, [0.4, 0.5, 0.6]],
+        [0.85, [0.4, 0.5, 0.6]],
+        [0.9, [0.4, 0.5, 0.6]],
+        [0.95, [0.4, 0.5, 0.6]]
     ]
 
     test_params = [

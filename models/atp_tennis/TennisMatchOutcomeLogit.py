@@ -166,7 +166,14 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
                 else 0
             end as round,
         coalesce(elo.score1,0) as elo_score,
-        coalesce(elo.score2,0) as opp_elo_score
+        coalesce(elo.score2,0) as opp_elo_score,
+        coalesce(h2h_ml.avg_odds, 0.5) as historical_avg_odds,
+        coalesce(ml.favorite_wins, 0)-coalesce(ml.favorite_losses,0) as fave_spread,
+        coalesce(ml_opp.favorite_wins,0)-coalesce(ml_opp.favorite_losses,0) as opp_fave_spread,
+        coalesce(ml.underdog_wins, 0)-coalesce(ml.underdog_losses,0) as underdog_spread,
+        coalesce(ml_opp.underdog_wins,0)-coalesce(ml_opp.underdog_losses,0) as opp_underdog_spread,
+        coalesce(ml.avg_odds,0.5) as prev_odds,
+        coalesce(ml_opp.avg_odds,0.5) as opp_prev_odds
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -210,6 +217,12 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h2.player_id,h2h2.opponent_id,h2h2.tournament,h2h2.year))
         left outer join atp_player_opponent_score as elo
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(elo.player_id,elo.opponent_id,elo.tournament,elo.year))
+        left outer join atp_matches_prior_h2h_money_lines as h2h_ml
+            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h_ml.player_id,h2h_ml.opponent_id,h2h_ml.tournament,h2h_ml.year))
+        left outer join atp_matches_prior_money_lines as ml
+            on ((m.player_id,m.tournament,m.year)=(ml.player_id,ml.tournament,ml.year))
+        left outer join atp_matches_prior_money_lines as ml_opp
+            on ((m.opponent_id,m.tournament,m.year)=(ml_opp.player_id,ml_opp.tournament,ml_opp.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
@@ -274,8 +287,15 @@ input_attributes = [
     'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-    #'avg_spread_per_set',
-    #'opp_avg_spread_per_set'
+
+    # only available after 2011
+    #'opp_prev_odds',
+    #'prev_odds',
+    #'historical_avg_odds',
+    #'underdog_spread',
+    #'fave_spread',
+    #'opp_underdog_spread',
+    #'opp_fave_spread'
 ]
 
 
@@ -323,8 +343,8 @@ input_attributes_spread2 = [
     'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
+    #'experience',
+    #'opp_experience',
     #'age',
     #'opp_age',
     #'height',
@@ -333,6 +353,7 @@ input_attributes_spread2 = [
     #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
+    'historical_avg_odds'
     #'avg_spread_per_set',
     #'opp_avg_spread_per_set'
 ]
@@ -359,7 +380,7 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2017, start_year=2010)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
