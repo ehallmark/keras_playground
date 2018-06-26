@@ -22,49 +22,54 @@ from models.simulation.Simulate import simulate_money_line
 
 
 betting_input_attributes = [
-        'prev_h2h2_wins_player',
-        'prev_h2h2_wins_opponent',
-        'mean_duration',
-        'mean_opp_duration',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
-        #'mean_second_serve_points_made',
-        #'mean_opp_second_serve_points_made',
-        'h2h_prior_win_percent',
-        'prev_year_prior_encounters',
-        'opp_prev_year_prior_encounters',
-        #'prev_year_avg_round',
-        #'opp_prev_year_avg_round',
-        #'opp_tourney_hist_avg_round',
-        #'tourney_hist_avg_round',
-        #'tourney_hist_prior_encounters',
-        #'opp_tourney_hist_prior_encounters',
-        #'mean_break_points_made',
-        #'mean_opp_break_points_made',
-        #'previous_tournament_round',
-        #'opp_previous_tournament_round',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
-        'surface_experience',
-        'opp_surface_experience',
-        'experience',
-        'opp_experience',
-        #'age',
-        #'opp_age',
-        #'lefty',
-        #'opp_lefty',
-        #'weight',
-        #'opp_weight',
-        #'height',
-        #'opp_height',
-        #'duration_prev_match',
-        #'opp_duration_prev_match',
-        'elo_score',
-        'opp_elo_score',
-        'avg_games_per_set',
-        'opp_avg_games_per_set',
-        'historical_avg_odds'
-    ]
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
+    #'mean_duration',
+    #'mean_opp_duration',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
+    #'mean_second_serve_points_made',
+    #'mean_opp_second_serve_points_made',
+    'h2h_prior_win_percent',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
+    #'prev_year_avg_round',
+    #'opp_prev_year_avg_round',
+    #'opp_tourney_hist_avg_round',
+    #'tourney_hist_avg_round',
+    #'tourney_hist_prior_encounters',
+    #'opp_tourney_hist_prior_encounters',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
+    #'previous_tournament_round',
+    #'opp_previous_tournament_round',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    #'experience',
+    #'opp_experience',
+    #'age',
+    #'opp_age',
+    #'lefty',
+    #'opp_lefty',
+    #'weight',
+    #'opp_weight',
+    #'height',
+    #'opp_height',
+    #'duration_prev_match',
+    #'opp_duration_prev_match',
+    'elo_score',
+    'opp_elo_score',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
+    # new
+    'historical_avg_odds',
+    'fave_spread',
+    'opp_fave_spread',
+    'prev_odds',
+    'opp_prev_odds'
+]
 
 betting_only_attributes = [
     'odds1',
@@ -162,7 +167,9 @@ def load_data(start_year, test_year, num_test_years, model=None, spread_model=No
 
 
 def bet_func(epsilon, parameters):
+    alpha = 0.8
     def bet_func_helper(price, odds, prediction, row):
+        prediction = alpha * prediction + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
@@ -193,18 +200,18 @@ def add_noise(parameters):
     model_parameters = parameters.copy()
     variance = 0.005
     for k in model_parameters:
-        model_parameters[k] = max(0.01, model_parameters[k]+float(np.random.randn(1))*variance)
+        model_parameters[k] = max(0.001, model_parameters[k]+float(np.random.randn(1))*variance)
     return model_parameters
 
 
 def new_random_parameters():
     model_parameters = {}
-    model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.6
+    model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.3
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
     model_parameters['logit_model_percent'] = float(np.random.rand(1))
     model_parameters['rf_model_percent'] = float(np.random.rand(1))
-    model_parameters['min_odds'] = 0.05 + float(np.random.rand(1))*0.3
-    model_parameters['max_odds'] = float(np.random.rand(1))*0.4+0.3
+    model_parameters['min_odds'] = 0.10 + float(np.random.rand(1))*0.4
+    model_parameters['max_odds'] = float(np.random.rand(1))*0.4+0.4
     return model_parameters
 
 
@@ -367,7 +374,7 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = False
+    train = True
     if train:
         num_test_years = 1
         test_year = 2018

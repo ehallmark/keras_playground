@@ -25,7 +25,7 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
         betting_minimum = 5.0
         betting_maximum = 100.0
         max_loss_percent = 0.05
-        initial_capital = 1000.0
+        initial_capital = 10000.0
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
         if shuffle:
