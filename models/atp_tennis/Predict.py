@@ -26,7 +26,7 @@ for tournament in tournaments:
     bets_to_make = []
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
         #print("MAKE BET: ", conf, player1, player2)
-        if date >= datetime.datetime.now():
+        if date >= datetime.date.today():
             bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo
