@@ -43,8 +43,8 @@ betting_input_attributes = [
         'opp_avg_games_per_set',
     # new
         #'historical_avg_odds',
-        'fave_spread',
-        'opp_fave_spread',
+      #  'fave_spread',
+      #  'opp_fave_spread',
         #'prev_odds',
         #'opp_prev_odds'
     ]
@@ -266,17 +266,19 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     #    [0.85, [0.55,0.575,0.6]]
     #]
 
+    # production params DO NOT CHANGE!
     train_params = [
         [0.9, [0.6, 0.625, 0.65]],
         [0.925, [0.625, 0.65, 0.675]],
         [0.95, [0.625, 0.65, 0.675]]
     ]
 
-    train_params = [
-        [0.85, [0.55, 0.6, 0.65]],
-        [0.875, [0.55, 0.6, 0.65]],
-        [0.9, [0.55, 0.6, 0.65]],
-    ]
+    # dev parameters
+    #train_params = [
+    #    [0.85, [0.55, 0.6, 0.65]],
+    #    [0.875, [0.55, 0.6, 0.65]],
+    #    [0.9, [0.55, 0.6, 0.65]],
+    #]
 
     test_params = [
         [train_params[1][0],[train_params[1][1][1]]]
