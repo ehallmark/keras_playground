@@ -162,7 +162,7 @@ def load_data(start_year, test_year, num_test_years, model=None, spread_model=No
 
 
 def bet_func(epsilon, parameters):
-    def bet_func_helper(price, odds, prediction):
+    def bet_func_helper(price, odds, prediction, row):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)

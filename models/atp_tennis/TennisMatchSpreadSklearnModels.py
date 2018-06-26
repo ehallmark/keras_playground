@@ -6,6 +6,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
+from models.atp_tennis.SpreadMonteCarlo import probability_beat
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
@@ -161,15 +162,19 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     )
     data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
     test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
-    data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
-    test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
+    data = data.assign(probability_beat=pd.Series([probability_beat(x) for x in data['spread1'].iloc[:]]).values)
+    test_data = test_data.assign(probability_beat=pd.Series([probability_beat(x) for x in test_data['spread1'].iloc[:]]).values)
+    #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
+    #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
     #test_data.reset_index(drop=True, inplace=True)
     return data, test_data
 
 
 def bet_func(epsilon):
-    def bet_func_helper(price, odds, spread, prediction):
+    def bet_func_helper(price, odds, spread, prediction, row):
+        spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
+        prediction = (prediction + spread_prob)/2.
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)

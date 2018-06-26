@@ -65,7 +65,7 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
                 return_game = 0.0
                 actual_result = actual_label_func(i)
 
-                bet1 = bet_func(max_price1, best_odds1, prediction)
+                bet1 = bet_func(max_price1, best_odds1, prediction, bet_row)
                 if bet1 > 0:
                     confidence = betting_minimum * bet1
                     if is_under1:
@@ -103,7 +103,7 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
                         return_game += ret
                         available_capital += ret
                         num_bets += 1
-                bet2 = bet_func(max_price2, best_odds2, 1.0-prediction)
+                bet2 = bet_func(max_price2, best_odds2, 1.0-prediction, bet_row)
                 if bet2 > 0:
                     confidence = betting_minimum * bet2
                     if is_under2:
@@ -261,7 +261,7 @@ def simulate_spread(predictor_func, actual_spread_func,
                 else:
                     beat_spread2 = -spread2 < -actual_spread
 
-            bet1 = betting_decision_func(max_price1, best_odds1, spread1, prediction)
+            bet1 = betting_decision_func(max_price1, best_odds1, spread1, prediction, bet_row)
             if bet1 > 0:
                 confidence = betting_minimum * bet1
                 if is_price_under1:
@@ -314,7 +314,7 @@ def simulate_spread(predictor_func, actual_spread_func,
                             print(' MINUS: ', ret)
                         else:
                             print(' PLUS: ', ret)
-            bet2 = betting_decision_func(max_price2, best_odds2, spread2, 1.0-prediction)
+            bet2 = betting_decision_func(max_price2, best_odds2, spread2, 1.0-prediction, bet_row)
             if bet2 > 0:
                 confidence = betting_minimum * bet2
                 if is_price_under2:

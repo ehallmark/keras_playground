@@ -6,12 +6,15 @@ np.random.seed(1)
 
 
 def simulate_match(best_of):
-    def simulate_set(odds):
+    def simulate_set(odds1, odds2):
         s1, s2 = 0, 0
         for i in range(13):
             if s1 == 7 or s2 == 7 or (s1 == 6 and s2 <= 4) or (s2 == 6 and s1 <= 4):
                 break
-            odds = 1.0-odds
+            if i % 2 == 0:
+                odds = odds1
+            else:
+                odds = odds2
             if np.random.rand(1) < odds:
                 s1 += 1
             else:
@@ -21,13 +24,16 @@ def simulate_match(best_of):
     m1, m2 = 0, 0
     spread = 0
     best_to = int(best_of/2)+1
-    odds = 0.4 + np.random.rand(1)*0.2
+    odds1 = 0.4 + np.random.rand(1)*0.4
+    odds2 = 0.6 - np.random.rand(1)*0.4
     for i in range(best_of):
         if m1 >= best_to or m2 >= best_to:
             break
-        if abs(spread) % 2 == 1:
-            odds = 1.0-odds
-        s1, s2 = simulate_set(odds)
+        if abs(spread) % 2 == 0:
+            _odds1, _odds2 = odds1, odds2
+        else:
+            _odds1, _odds2 = odds2, odds1
+        s1, s2 = simulate_set(_odds1, _odds2)
         spread += s1 - s2
         if s1 > s2:
             m1 += 1
@@ -38,7 +44,7 @@ def simulate_match(best_of):
 
 x = []
 x_3 = []
-for i in range(20000):
+for i in range(50000):
     _, _, spread = simulate_match(5)
     x.append(spread)
     x.append(-spread)
