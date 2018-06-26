@@ -10,7 +10,7 @@ historical_model = load_outcome_model('Logistic')
 historical_spread_model = load_spread_model('Linear')
 
 test_year = 2018  # IMPORTANT!!
-tournaments = ['halle', 'london', 'eastbourne', 'antalya']
+tournaments = ['eastbourne', 'antalya']
 
 for tournament in tournaments:
     print("Tournament: ", tournament)

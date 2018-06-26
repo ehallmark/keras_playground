@@ -43,11 +43,11 @@ betting_input_attributes = [
         'avg_games_per_set',
         'opp_avg_games_per_set',
     # new
-        #'historical_avg_odds',
-      #  'fave_spread',
-      #  'opp_fave_spread',
-        #'prev_odds',
-        #'opp_prev_odds'
+        'historical_avg_odds',
+        'fave_spread',
+        'opp_fave_spread',
+        'prev_odds',
+        'opp_prev_odds'
     ]
 
 
@@ -172,7 +172,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 def bet_func(epsilon):
-    alpha = 0.70
+    alpha = 0.68
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
         prediction = alpha * prediction + (1.0 - alpha) * spread_prob
@@ -281,15 +281,15 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        [0.75, [0.175, 0.20, 0.225]],
-        [0.8, [0.20, 0.225, 0.25]],
-        [0.85, [0.225, 0.25, 0.275]],
-        [0.9, [0.25, 0.275, 0.30]],
-        [0.925, [0.25, 0.275, 0.30]],
+        [0.8, [0.225, 0.25, 0.275]],
+        [0.85, [0.25, 0.275, 0.3]],
+        [0.9, [0.275, 0.3, 0.325]],
+        [0.925, [0.3, 0.325, 0.35]],
     ]
 
+    test_idx = 2
     test_params = [
-        [train_params[1][0],[train_params[1][1][1]]]
+        [train_params[test_idx][0],[train_params[test_idx][1][1]]]
     ]
 
     if train:
