@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import datetime
 from random import shuffle
 from models.simulation.Simulate import simulate_spread
 import models.atp_tennis.TennisMatchSpreadSklearnModels as tennis_model
@@ -25,7 +26,8 @@ for tournament in tournaments:
     bets_to_make = []
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
         #print("MAKE BET: ", conf, player1, player2)
-        bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
+        if date >= datetime.datetime.now():
+            bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo
     epsilon = 0.0 ## just to see all possible
