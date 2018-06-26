@@ -285,6 +285,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         [0.8, [0.20, 0.225, 0.25]],
         [0.85, [0.225, 0.25, 0.275]],
         [0.9, [0.25, 0.275, 0.30]],
+        [0.925, [0.25, 0.275, 0.30]],
     ]
 
     test_params = [

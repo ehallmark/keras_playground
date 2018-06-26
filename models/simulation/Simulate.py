@@ -175,7 +175,7 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
 def simulate_spread(predictor_func, actual_spread_func,
                     betting_decision_func, test_data,
                     price_str='price', num_trials=50, sampling=0,
-                    verbose=False, shuffle=True, after_bet_function=None, initial_capital=10000):
+                    verbose=False, shuffle=True, after_bet_function=None, initial_capital=1000):
     worst_parameters = None
     best_parameters = None
     avg_best = 0.0
