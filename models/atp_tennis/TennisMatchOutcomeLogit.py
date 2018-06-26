@@ -248,12 +248,12 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 input_attributes = [
     'prev_h2h2_wins_player',
     'prev_h2h2_wins_opponent',
-    #'mean_duration',
-    #'mean_opp_duration',
+    'mean_duration',
+    'mean_opp_duration',
     'mean_return_points_made',
     'mean_opp_return_points_made',
-    #'mean_second_serve_points_made',
-    #'mean_opp_second_serve_points_made',
+    'mean_second_serve_points_made',
+    'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
@@ -287,7 +287,6 @@ input_attributes = [
     'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-
     # only available after 2011
     #'opp_prev_odds',
     #'prev_odds',
