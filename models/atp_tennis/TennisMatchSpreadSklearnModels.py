@@ -172,7 +172,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 def bet_func(epsilon):
-    alpha = 0.65
+    alpha = 0.70
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
         prediction = alpha * prediction + (1.0 - alpha) * spread_prob
