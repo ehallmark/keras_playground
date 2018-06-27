@@ -177,7 +177,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         m.year-coalesce(prior_best_year.best_year,m.year) as best_year,
         m.year-coalesce(prior_best_year_opp.best_year,m.year) as opp_best_year,
         m.year-coalesce(prior_worst_year.worst_year,m.year) as worst_year,
-        m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
+        m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -299,10 +299,12 @@ input_attributes = [
     #'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
-    'avg_games_per_set',
-    'opp_avg_games_per_set',
+    #'avg_games_per_set',
+    #'opp_avg_games_per_set',
     'best_year',
     'opp_best_year',
+    'worst_year',
+    'opp_worst_year',
     # only available after 2011 :(
     #'opp_prev_odds',
     #'prev_odds',
