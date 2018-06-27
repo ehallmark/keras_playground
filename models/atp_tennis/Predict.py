@@ -39,6 +39,8 @@ for tournament in tournaments:
 
     print('Num bets total: ', len(bets_to_make))
     print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date, Book Name')
+    bets_to_make.sort(key=lambda x: x[7])  # by book name
+    bets_to_make.sort(key=lambda x: x[6])  # by date
     for bet_to_make in bets_to_make:
         print(','.join([bet_to_make[0], bet_to_make[1], str(bet_to_make[2]), str(bet_to_make[3]), str(bet_to_make[4]), str(bet_to_make[5]), str(bet_to_make[6]), str(bet_to_make[7])]))
 

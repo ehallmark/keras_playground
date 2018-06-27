@@ -335,7 +335,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, 2]:
-            for test_year in [2017, 2018]:
+            for test_year in [2016, 2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
