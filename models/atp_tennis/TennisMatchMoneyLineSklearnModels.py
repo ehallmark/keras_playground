@@ -31,8 +31,8 @@ betting_input_attributes = [
     #'mean_second_serve_points_made',
     #'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
-    #'prev_year_prior_encounters',
-    #'opp_prev_year_prior_encounters',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
     'prev_year_avg_round',
     'opp_prev_year_avg_round',
     #'opp_tourney_hist_avg_round',
@@ -43,10 +43,10 @@ betting_input_attributes = [
     #'mean_opp_break_points_made',
     #'previous_tournament_round',
     #'opp_previous_tournament_round',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
-    #'surface_experience',
-    #'opp_surface_experience',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
     #'experience',
     #'opp_experience',
     #'age',
@@ -59,8 +59,8 @@ betting_input_attributes = [
     #'opp_height',
     'duration_prev_match',
     'opp_duration_prev_match',
-    #'elo_score',
-    #'opp_elo_score',
+    'elo_score',
+    'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     # new
@@ -72,7 +72,7 @@ betting_input_attributes = [
     'prev_odds',
     'opp_prev_odds',
     'best_year',
-    'opp_worst_year'
+    'opp_best_year'
 ]
 
 betting_only_attributes = [
@@ -377,13 +377,13 @@ def predict(data, test_data):
 
 
 model_parameters = {}
-model_parameters['alpha'] = 0.9
+model_parameters['alpha'] = 0.95
 model_parameters['epsilon'] = 0.1
 model_parameters['bayes_model_percent'] = 0.5
-model_parameters['logit_model_percent'] = 0.5
-model_parameters['rf_model_percent'] = 0.5
-model_parameters['min_odds'] = 0.05
-model_parameters['max_odds'] = 0.60
+model_parameters['logit_model_percent'] = 0.3
+model_parameters['rf_model_percent'] = 0.3
+model_parameters['min_odds'] = 0.10
+model_parameters['max_odds'] = 0.70
 
 start_year = 2011
 if __name__ == '__main__':
