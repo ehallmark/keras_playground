@@ -22,15 +22,15 @@ from models.simulation.Simulate import simulate_money_line
 
 
 betting_input_attributes = [
-    #'prev_h2h2_wins_player',
-    #'prev_h2h2_wins_opponent',
+    'prev_h2h2_wins_player',
+    'prev_h2h2_wins_opponent',
     #'mean_duration',
     #'mean_opp_duration',
     #'mean_return_points_made',
     #'mean_opp_return_points_made',
     #'mean_second_serve_points_made',
     #'mean_opp_second_serve_points_made',
-    #'h2h_prior_win_percent',
+    'h2h_prior_win_percent',
     #'prev_year_prior_encounters',
     #'opp_prev_year_prior_encounters',
     'prev_year_avg_round',
@@ -57,20 +57,22 @@ betting_input_attributes = [
     #'opp_weight',
     #'height',
     #'opp_height',
-    #'duration_prev_match',
-    #'opp_duration_prev_match',
+    'duration_prev_match',
+    'opp_duration_prev_match',
     #'elo_score',
     #'opp_elo_score',
-    #'avg_games_per_set',
-    #'opp_avg_games_per_set',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
     # new
-    'historical_avg_odds',
+    #'historical_avg_odds',
     'fave_spread',
     'opp_fave_spread',
-    'underdog_spread',
-    'opp_underdog_spread',
+    #'underdog_spread',
+    #'opp_underdog_spread',
     'prev_odds',
-    'opp_prev_odds'
+    'opp_prev_odds',
+    'best_year',
+    'opp_worst_year'
 ]
 
 betting_only_attributes = [
@@ -213,7 +215,7 @@ def new_random_parameters():
     model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.3
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
     model_parameters['logit_model_percent'] = float(np.random.rand(1))
-    #model_parameters['rf_model_percent'] = float(np.random.rand(1))
+    model_parameters['rf_model_percent'] = float(np.random.rand(1))
     model_parameters['min_odds'] = 0.15 + float(np.random.rand(1))*0.1
     model_parameters['max_odds'] = float(np.random.rand(1))*0.1+0.55
     return model_parameters
@@ -281,15 +283,15 @@ def sample2d(array, seed, max_samples):
 
 def test(all_predictions, model_parameters, num_tests=1):
     bayes_model_percent = model_parameters['bayes_model_percent']
-    #rf_percent = model_parameters['rf_model_percent']
+    rf_percent = model_parameters['rf_model_percent']
     logit_percent = model_parameters['logit_model_percent']
     price_str = 'max_price'
     total = logit_percent * len(all_predictions[0]) + \
-            bayes_model_percent * len(all_predictions[1]) #+ \
-            #rf_percent * len(all_predictions[2])
+            bayes_model_percent * len(all_predictions[1]) + \
+            rf_percent * len(all_predictions[2])
     avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                 np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0) / total #,
-                                 #np.vstack(all_predictions[2]) * rf_percent]).sum(0) / total
+                                 np.vstack(all_predictions[1]) * bayes_model_percent,
+                                 np.vstack(all_predictions[2]) * rf_percent]).sum(0) / total
 
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
@@ -313,7 +315,7 @@ def predict(data, test_data):
     #    for test_year in [2016, 2017, 2018]:
     graph = False
     lr = lambda: LogisticRegression()
-    rf = lambda: RandomForestClassifier(n_estimators=100)
+    rf = lambda: RandomForestClassifier(n_estimators=50)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -327,13 +329,13 @@ def predict(data, test_data):
     for _model, name in [
                     (lr, 'Logit Regression'),
                     (nb, 'Naive Bayes'),
-                    #(rf, 'Random Forest'),
+                    (rf, 'Random Forest'),
                 ]:
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
         model_predictions = []
         all_predictions.append(model_predictions)
-        for i in range(30):
+        for i in range(50):
             model = _model()
             X_train_sample = sample2d(X_train, i, 2)
             y_train_sample = sample2d(y_train, i, 2)
@@ -390,11 +392,11 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['alpha'] = 1.0
+        model_parameters['alpha'] = 0.8
         #model_parameters['epsilon'] = 0.10
         model_parameters['bayes_model_percent'] = 0.5
-        model_parameters['logit_model_percent'] = 0.3
-        #model_parameters['rf_model_percent'] = 0.33
+        model_parameters['logit_model_percent'] = 0.5
+        model_parameters['rf_model_percent'] = 0.8
         model_parameters['min_odds'] = 0.10
         model_parameters['max_odds'] = 0.60
         num_tests = 5
