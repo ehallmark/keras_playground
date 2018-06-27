@@ -287,13 +287,13 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     ]
 
     test_idx = 0  # 2
-    test_params = [
-        [train_params[test_idx][0],[train_params[test_idx][1][1]]]
-    ]
 
     if train:
         params = train_params
     else:
+        test_params = [
+            [train_params[test_idx][0], [train_params[test_idx][1][1]]]
+        ]
         params = test_params
         print("Test params: ", params)
 
