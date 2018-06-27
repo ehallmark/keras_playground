@@ -45,8 +45,8 @@ betting_input_attributes = [
 
     # new
         'historical_avg_odds',
-        'fave_spread',
-        'opp_fave_spread',
+        #'fave_spread',
+        #'opp_fave_spread',
         'prev_odds',
         'opp_prev_odds'
     ]
