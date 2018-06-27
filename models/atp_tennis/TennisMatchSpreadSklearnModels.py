@@ -45,11 +45,11 @@ betting_input_attributes = [
         'best_year',
         'opp_best_year',
     # new
-        #'historical_avg_odds',
+        'historical_avg_odds',
         #'fave_spread',
         #'opp_fave_spread',
-        #'prev_odds',
-        #'opp_prev_odds'
+        'prev_odds',
+        'opp_prev_odds'
     ]
 
 
