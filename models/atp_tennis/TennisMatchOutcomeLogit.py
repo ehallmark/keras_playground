@@ -262,12 +262,12 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 input_attributes = [
     'prev_h2h2_wins_player',
     'prev_h2h2_wins_opponent',
-    'mean_duration',
-    'mean_opp_duration',
-    'mean_return_points_made',
-    'mean_opp_return_points_made',
-    'mean_second_serve_points_made',
-    'mean_opp_second_serve_points_made',
+    #'mean_duration',
+    #'mean_opp_duration',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
+    #'mean_second_serve_points_made',
+    #'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
@@ -303,8 +303,8 @@ input_attributes = [
     #'opp_avg_games_per_set',
     'best_year',
     'opp_best_year',
-    'worst_year',
-    'opp_worst_year',
+    #'worst_year',
+    #'opp_worst_year',
     # only available after 2011 :(
     #'opp_prev_odds',
     #'prev_odds',
@@ -397,7 +397,7 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2017, start_year=2010)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
