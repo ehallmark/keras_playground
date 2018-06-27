@@ -406,12 +406,15 @@ if __name__ == '__main__':
                 total_score = 0.0
                 total_return = 0.0
                 total_bets = 0
-                for i in range(num_tests):
-                    score, test_return, num_bets = test(all_predictions, model_parameters, num_tests=5)
-                    total_score += score
-                    total_return += test_return
-                    total_bets += num_bets
-                print('AVG SCORE: ', total_score/num_tests)
-                print('AVG RETURN: ', total_return/num_tests)
-                print('AVG NUM BETS: ', total_bets/num_tests)
+                for eps in [0.01, 0.02, 0.05, 0.1, 0.2]:
+                    print('EPSILON: ', eps)
+                    model_parameters['epsilon'] = eps
+                    for i in range(num_tests):
+                        score, test_return, num_bets = test(all_predictions, model_parameters, num_tests=5)
+                        total_score += score
+                        total_return += test_return
+                        total_bets += num_bets
+                    print('AVG SCORE: ', total_score/num_tests)
+                    print('AVG RETURN: ', total_return/num_tests)
+                    print('AVG NUM BETS: ', total_bets/num_tests)
 
