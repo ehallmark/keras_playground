@@ -28,8 +28,8 @@ betting_input_attributes = [
         #'opp_tourney_hist_prior_encounters',
         #'mean_break_points_made',
         #'mean_opp_break_points_made',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
+        #'tiebreak_win_percent',
+        #'opp_tiebreak_win_percent',
         #'surface_experience',
         #'opp_surface_experience',
         #'experience',
@@ -45,11 +45,11 @@ betting_input_attributes = [
         'best_year',
         'opp_best_year',
     # new
-        'historical_avg_odds',
+        #'historical_avg_odds',
         #'fave_spread',
         #'opp_fave_spread',
-        'prev_odds',
-        'opp_prev_odds'
+        #'prev_odds',
+        #'opp_prev_odds'
     ]
 
 
@@ -170,7 +170,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.90
+alpha = 0.75
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -280,11 +280,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        [0.1, [0.01, 0.03, 0.05]],
-        [0.3, [0.10, 0.125, 0.15]],
-        [0.5, [0.025, 0.05, 0.075, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225]],
-        [0.7, [0.15, 0.175, 0.20]],
-        [0.9, [0.225, 0.25, 0.275]],
+        #[0.1, [0.01, 0.03, 0.05]],
+        [0.3, [0.05, 0.10, 0.15]],
+        [0.5, [0.10, 0.125, 0.15, 0.175, 0.20, 0.225]],
+        [0.7, [0.10, 0.15, 0.20]],
+        [0.9, [0.15, 0.20, 0.25]],
     ]
 
     test_idx = 0  # 2

@@ -8,7 +8,7 @@ from models.atp_tennis.TennisMatchSpreadSklearnModels import betting_input_attri
 
 outcome_model = tennis_model.load_outcome_model('Logistic')
 spread_model = None
-test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, model=outcome_model, test_tournament=None, spread_model=spread_model)
+test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, model=outcome_model, test_tournament='eastbourne', spread_model=spread_model)
 
 attributes = list(betting_input_attributes)
 #attributes.append('returns')
@@ -19,8 +19,8 @@ means_2018 = test_data_2018.mean(axis=0)
 var = test_data.var(axis=0)
 vars_2018 = test_data_2018.var(axis=0)
 
-average_diff = means_2018-means
-var_diff = vars_2018 - var
+average_diff = (means_2018-means) / means
+var_diff = (vars_2018 - var) / means
 
 print('Avg avg diff: ', np.abs(average_diff).mean())
 print('Var avg diff: ', np.abs(var_diff).mean(0))
