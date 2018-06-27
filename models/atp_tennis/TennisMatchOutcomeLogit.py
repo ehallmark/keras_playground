@@ -99,10 +99,6 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(mean_opp.duration,90.0) as mean_opp_duration,
             coalesce(var.duration,1000.0) as var_duration,
             coalesce(var_opp.duration,1000.0) as var_opp_duration,
-            coalesce(h2h2.both_win, 0) as prev_h2h2_both_win,
-            coalesce(h2h2.both_lost, 0) as prev_h2h2_both_lost,
-            coalesce(h2h2.wins_player, 0) as prev_h2h2_wins_player,
-            coalesce(h2h2.wins_opponent,0) as prev_h2h2_wins_opponent,
             coalesce(mean.first_serve_points_made, 0) as mean_first_serve_points_made,
             coalesce(mean_opp.first_serve_points_made, 0) as mean_opp_first_serve_points_made,
             coalesce(mean.second_serve_points_made, 0) as mean_second_serve_points_made,
@@ -213,8 +209,6 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.year))
         left outer join atp_matches_prior_match as prior_match_opp
             on ((m.opponent_id,m.player_id,m.tournament,m.year)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.year))
-        left outer join atp_matches_prior_h2h_level2 as h2h2
-            on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h2.player_id,h2h2.opponent_id,h2h2.tournament,h2h2.year))
         left outer join atp_player_opponent_score as elo
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(elo.player_id,elo.opponent_id,elo.tournament,elo.year))
         left outer join atp_matches_prior_h2h_money_lines as h2h_ml
@@ -255,8 +249,6 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 
 
 input_attributes = [
-    #'prev_h2h2_wins_player',
-    #'prev_h2h2_wins_opponent',
     #'mean_duration',
     #'mean_opp_duration',
     'mean_return_points_made',
@@ -280,14 +272,10 @@ input_attributes = [
     'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
+    'experience',
+    'opp_experience',
     'age',
     'opp_age',
-    #'lefty',
-    #'opp_lefty',
-    #'weight',
-    #'opp_weight',
     'height',
     'opp_height',
     #'duration_prev_match',
@@ -297,41 +285,29 @@ input_attributes = [
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
-    'opp_best_year',
-    #'worst_year',
-    #'opp_worst_year',
-    # only available after 2011 :(
-    #'opp_prev_odds',
-    #'prev_odds',
-    #'historical_avg_odds',
-    #'underdog_spread',
-    #'fave_spread',
-    #'opp_underdog_spread',
-    #'opp_fave_spread'
+    'opp_best_year'
 ]
 
 
 input_attributes_spread = [
-    'prev_h2h2_wins_player',
-    'prev_h2h2_wins_opponent',
     'mean_return_points_made',
     'mean_opp_return_points_made',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    'tourney_hist_prior_encounters',
-    'opp_tourney_hist_prior_encounters',
+    #'tourney_hist_prior_encounters',
+    #'opp_tourney_hist_prior_encounters',
     'mean_break_points_made',
     'mean_opp_break_points_made',
     'tiebreak_win_percent',
     'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
-    'age',
-    'opp_age',
-    'height',
-    'opp_height',
+    #'experience',
+    #'opp_experience',
+    #'age',
+    #'opp_age',
+    #'height',
+    #'opp_height',
     'elo_score',
     'opp_elo_score'
 ]
@@ -339,8 +315,6 @@ input_attributes_spread = [
 
 
 input_attributes_spread2 = [
-    'prev_h2h2_wins_player',
-    'prev_h2h2_wins_opponent',
     #'mean_return_points_made',
     #'mean_opp_return_points_made',
     #'mean_second_serve_points_made',

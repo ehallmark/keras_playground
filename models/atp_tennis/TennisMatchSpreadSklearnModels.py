@@ -48,8 +48,8 @@ betting_input_attributes = [
         'historical_avg_odds',
         #'fave_spread',
         #'opp_fave_spread',
-        #'prev_odds',
-        #'opp_prev_odds'
+        'prev_odds',
+        'opp_prev_odds'
     ]
 
 
@@ -170,7 +170,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.9
+alpha = 0.85
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -331,7 +331,7 @@ def prediction_func(avg_predictions, epsilon):
 start_year = 2011
 if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
-    historical_spread_model = load_spread_model('Linear')
+    historical_spread_model = None
     num_tests = 10
     for i in range(num_tests):
         print("TEST: ", i)

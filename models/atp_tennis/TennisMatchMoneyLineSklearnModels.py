@@ -22,8 +22,8 @@ from models.simulation.Simulate import simulate_money_line
 
 
 betting_input_attributes = [
-    'prev_h2h2_wins_player',
-    'prev_h2h2_wins_opponent',
+    #'prev_h2h2_wins_player',
+    #'prev_h2h2_wins_opponent',
     #'mean_duration',
     #'mean_opp_duration',
     #'mean_return_points_made',
