@@ -30,8 +30,8 @@ betting_input_attributes = [
         #'mean_opp_break_points_made',
         #'tiebreak_win_percent',
         #'opp_tiebreak_win_percent',
-        #'surface_experience',
-        #'opp_surface_experience',
+        'surface_experience',
+        'opp_surface_experience',
         #'experience',
         #'opp_experience',
         #'age',
@@ -55,7 +55,7 @@ betting_input_attributes = [
 betting_only_attributes = [
     'probability_beat',
     'grand_slam',
-    'round',
+    #'round',
     'predictions',
     #'spread_predictions'
 ]
@@ -170,14 +170,14 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 def bet_func(epsilon):
-    alpha = 0.68
+    alpha = 0.9
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
         prediction = alpha * prediction + (1.0 - alpha) * spread_prob
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.10 or odds > 0.65:
+        if odds < 0.20 or odds > 0.60:
             return 0
         #if spread > 5.:
         #    return 0
@@ -279,10 +279,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        [0.8, [0.225, 0.25, 0.275]],
-        [0.85, [0.25, 0.275, 0.3]],
-        [0.9, [0.275, 0.3, 0.325]],
-        [0.925, [0.3, 0.325, 0.35]],
+        [0.2, [0.1, 0.15, 0.25]],
+        [0.4, [0.1, 0.15, 0.25]],
+        [0.6, [0.1, 0.15, 0.25]],
+        [0.8, [0.1, 0.15, 0.25]],
+        [0.95, [0.1, 0.15, 0.25]],
     ]
 
     test_idx = 2
@@ -334,7 +335,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, 2]:
-            for test_year in [2016, 2017, 2018]:
+            for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
