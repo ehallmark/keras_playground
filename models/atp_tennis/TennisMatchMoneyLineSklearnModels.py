@@ -412,7 +412,5 @@ if __name__ == '__main__':
                     total_score += score
                     total_return += test_return
                     total_bets += num_bets
-                    print('AVG SCORE: ', total_score)
-                    print('AVG RETURN: ', total_return)
-                    print('AVG NUM BETS: ', total_bets)
+                    print('AVG SCORE:', total_score, ' AVG RETURN:', total_return, ' AVG NUM BETS:', total_bets)
 
