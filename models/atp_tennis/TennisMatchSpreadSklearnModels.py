@@ -169,8 +169,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
+alpha = 0.9
 def bet_func(epsilon):
-    alpha = 0.9
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
         prediction = alpha * prediction + (1.0 - alpha) * spread_prob
@@ -303,7 +303,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
                 variance = 0.0001
                 bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
                 epsilon = epsilon + float(np.random.randn(1) * variance)
-            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon)
+            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
             logit_percent = 1.0 - bayes_model_percent
             total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
             avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
