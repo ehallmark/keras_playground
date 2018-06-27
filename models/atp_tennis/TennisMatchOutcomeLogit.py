@@ -303,7 +303,7 @@ input_attributes = [
     'opp_avg_games_per_set',
     'best_year',
     'opp_best_year',
-    # only available after 2011
+    # only available after 2011 :(
     #'opp_prev_odds',
     #'prev_odds',
     #'historical_avg_odds',

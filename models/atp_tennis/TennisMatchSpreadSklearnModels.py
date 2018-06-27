@@ -20,28 +20,29 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 betting_input_attributes = [
         'prev_h2h2_wins_player',
         'prev_h2h2_wins_opponent',
-        'mean_return_points_made',
-        'mean_opp_return_points_made',
+        #'mean_return_points_made',
+        #'mean_opp_return_points_made',
         'prev_year_prior_encounters',
         'opp_prev_year_prior_encounters',
-        'tourney_hist_prior_encounters',
-        'opp_tourney_hist_prior_encounters',
-        'mean_break_points_made',
-        'mean_opp_break_points_made',
-        'tiebreak_win_percent',
-        'opp_tiebreak_win_percent',
-        'surface_experience',
-        'opp_surface_experience',
-        'experience',
-        'opp_experience',
-        'age',
-        'opp_age',
-        'height',
-        'opp_height',
-        'elo_score',
-        'opp_elo_score',
+        #'tourney_hist_prior_encounters',
+        #'opp_tourney_hist_prior_encounters',
+        #'mean_break_points_made',
+        #'mean_opp_break_points_made',
+        #'tiebreak_win_percent',
+        #'opp_tiebreak_win_percent',
+        #'surface_experience',
+        #'opp_surface_experience',
+        #'experience',
+        #'opp_experience',
+        #'age',
+        #'opp_age',
+        #'height',
+        #'opp_height',
+        #'elo_score',
+        #'opp_elo_score',
         'avg_games_per_set',
         'opp_avg_games_per_set',
+
     # new
         'historical_avg_odds',
         'fave_spread',
@@ -52,14 +53,11 @@ betting_input_attributes = [
 
 
 betting_only_attributes = [
-    'spread1',
-    'spread2',
-    'odds1',
-    'odds2',
+    'probability_beat',
     'grand_slam',
     'round',
-    #'predictions',
-    'spread_predictions'
+    'predictions',
+    #'spread_predictions'
 ]
 for attr in betting_only_attributes:
     betting_input_attributes.append(attr)
