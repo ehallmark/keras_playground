@@ -376,12 +376,12 @@ def predict(data, test_data):
     return all_predictions
 
 model_parameters = {}
-model_parameters['alpha'] = 0.8
+model_parameters['alpha'] = 0.9
 model_parameters['epsilon'] = 0.1
 model_parameters['bayes_model_percent'] = 0.5
 model_parameters['logit_model_percent'] = 0.5
-model_parameters['rf_model_percent'] = 0.8
-model_parameters['min_odds'] = 0.10
+model_parameters['rf_model_percent'] = 0.5
+model_parameters['min_odds'] = 0.05
 model_parameters['max_odds'] = 0.60
 
 start_year = 2011

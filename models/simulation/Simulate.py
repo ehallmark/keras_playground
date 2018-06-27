@@ -2,6 +2,7 @@ import numpy as np
 import statsmodels.formula.api as smf
 from random import shuffle
 import pandas as pd
+import math
 
 
 def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_data,
@@ -249,23 +250,23 @@ def simulate_spread(predictor_func, actual_spread_func,
             return_game = 0.0
             actual_spread = actual_spread_func(i)
             if spread1 > 0:
-                if spread1 == -actual_spread:
+                if math.isclose(spread1,-actual_spread):
                     beat_spread1 = None
                 else:
                     beat_spread1 = spread1 > -actual_spread
             else:
-                if -spread1 == actual_spread:
+                if math.isclose(-spread1, actual_spread):
                     beat_spread1 = None
                 else:
                     beat_spread1 = -spread1 < actual_spread
 
             if spread2 > 0:
-                if spread2 == actual_spread:
+                if math.isclose(spread2, actual_spread):
                     beat_spread2 = None
                 else:
                     beat_spread2 = spread2 > actual_spread
             else:
-                if -spread2 == -actual_spread:
+                if math.isclose(-spread2, -actual_spread):
                     beat_spread2 = None
                 else:
                     beat_spread2 = -spread2 < -actual_spread

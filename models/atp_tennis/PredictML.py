@@ -34,7 +34,7 @@ for tournament in tournaments:
     test_return, num_bets = simulate_money_line(lambda j: predictions[j],
                                             lambda j: 0,
                                             tennis_model.bet_func(epsilon, tennis_model.model_parameters), test_data,
-                                            'price', 1, after_bet_function=after_bet_func, sampling=0,
+                                            'max_price', 1, after_bet_function=after_bet_func, sampling=0,
                                             initial_capital=10000000, shuffle=True, verbose=False)
 
     print('Num bets total: ', len(bets_to_make))
