@@ -375,6 +375,7 @@ def predict(data, test_data):
 
     return all_predictions
 
+
 model_parameters = {}
 model_parameters['alpha'] = 0.9
 model_parameters['epsilon'] = 0.1
