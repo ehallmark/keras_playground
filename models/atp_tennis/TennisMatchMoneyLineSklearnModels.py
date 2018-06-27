@@ -388,13 +388,13 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['alpha'] = 1.0
+        model_parameters['alpha'] = 0.6
         model_parameters['epsilon'] = 0.10
-        model_parameters['bayes_model_percent'] = 0.50
-        model_parameters['logit_model_percent'] = 0.50
+        model_parameters['bayes_model_percent'] = 0.70
+        model_parameters['logit_model_percent'] = 0.30
         #model_parameters['rf_model_percent'] = 0.33
         model_parameters['min_odds'] = 0.15
-        model_parameters['max_odds'] = 0.60
+        model_parameters['max_odds'] = 0.75
         num_tests = 10
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
@@ -402,7 +402,7 @@ if __name__ == '__main__':
                                             model=historical_model, spread_model=historical_spread_model)
                 all_predictions = predict(data, test_data)
                 print('Year:', test_year, ' Test years:', num_test_years)
-                for eps in [0.01, 0.02, 0.05, 0.1, 0.2]:
+                for eps in [0.01, 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3]:
                     total_score = 0.0
                     total_return = 0.0
                     total_bets = 0
