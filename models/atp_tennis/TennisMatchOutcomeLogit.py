@@ -173,7 +173,11 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         coalesce(ml.underdog_wins, 0)-coalesce(ml.underdog_losses,0) as underdog_spread,
         coalesce(ml_opp.underdog_wins,0)-coalesce(ml_opp.underdog_losses,0) as opp_underdog_spread,
         coalesce(ml.avg_odds,0.5) as prev_odds,
-        coalesce(ml_opp.avg_odds,0.5) as opp_prev_odds
+        coalesce(ml_opp.avg_odds,0.5) as opp_prev_odds,
+        m.year-coalesce(prior_best_year.best_year,m.year) as best_year,
+        m.year-coalesce(prior_best_year_opp.best_year,m.year) as opp_best_year,
+        m.year-coalesce(prior_worst_year.worst_year,m.year) as worst_year,
+        m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -223,6 +227,14 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.tournament,m.year)=(ml.player_id,ml.tournament,ml.year))
         left outer join atp_matches_prior_money_lines as ml_opp
             on ((m.opponent_id,m.tournament,m.year)=(ml_opp.player_id,ml_opp.tournament,ml_opp.year))
+        left outer join atp_matches_prior_best_year as prior_best_year
+            on ((m.player_id,m.year)=(prior_best_year.player_id,prior_best_year.year))
+        left outer join atp_matches_prior_best_year as prior_best_year_opp
+            on ((m.opponent_id,m.year)=(prior_best_year_opp.player_id,prior_best_year_opp.year))
+        left outer join atp_matches_prior_worst_year as prior_worst_year
+            on ((m.player_id,m.year)=(prior_worst_year.player_id,prior_worst_year.year))
+        left outer join atp_matches_prior_worst_year as prior_worst_year_opp
+            on ((m.opponent_id,m.year)=(prior_worst_year_opp.player_id,prior_worst_year_opp.year))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
@@ -231,6 +243,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     sql = sql[attributes].astype(np.float64, errors='ignore')
     test_data = sql[sql.year == test_season]
     sql = sql[sql.year != test_season]
+    print('Data shape:', sql.shape)
+    print('Test shape:', test_data.shape)
     return sql, test_data
 
 
@@ -271,8 +285,8 @@ input_attributes = [
     'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
+    #'experience',
+    #'opp_experience',
     'age',
     'opp_age',
     #'lefty',
@@ -287,6 +301,8 @@ input_attributes = [
     'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
+    'best_year',
+    'opp_best_year',
     # only available after 2011
     #'opp_prev_odds',
     #'prev_odds',
