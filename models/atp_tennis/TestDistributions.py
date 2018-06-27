@@ -19,8 +19,8 @@ means_2018 = test_data_2018.mean(axis=0)
 var = test_data.var(axis=0)
 vars_2018 = test_data_2018.var(axis=0)
 
-average_diff = (means_2018-means) / means
-var_diff = (vars_2018 - var) / means
+average_diff = (means_2018-means)
+var_diff = (vars_2018 - var)/means
 
 print('Avg avg diff: ', np.abs(average_diff).mean())
 print('Var avg diff: ', np.abs(var_diff).mean(0))
