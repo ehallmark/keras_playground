@@ -199,7 +199,7 @@ def bet_func(epsilon, parameters):
 
 def add_noise(parameters):
     model_parameters = parameters.copy()
-    variance = 0.005
+    variance = 0.000
     for k in model_parameters:
         model_parameters[k] = max(0.000001, model_parameters[k]+float(np.random.randn(1))*variance)
     return model_parameters
@@ -388,7 +388,7 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['alpha'] = 0.85
+        model_parameters['alpha'] = 1.0
         model_parameters['epsilon'] = 0.10
         model_parameters['bayes_model_percent'] = 0.50
         model_parameters['logit_model_percent'] = 0.50
