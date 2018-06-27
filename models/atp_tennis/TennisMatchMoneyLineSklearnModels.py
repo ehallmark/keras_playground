@@ -211,7 +211,7 @@ def new_random_parameters():
     model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.3
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
     model_parameters['logit_model_percent'] = float(np.random.rand(1))
-    model_parameters['rf_model_percent'] = float(np.random.rand(1))
+    #model_parameters['rf_model_percent'] = float(np.random.rand(1))
     model_parameters['min_odds'] = 0.15 + float(np.random.rand(1))*0.1
     model_parameters['max_odds'] = float(np.random.rand(1))*0.1+0.55
     return model_parameters
@@ -279,15 +279,15 @@ def sample2d(array, seed, max_samples):
 
 def test(all_predictions, model_parameters, num_tests=1):
     bayes_model_percent = model_parameters['bayes_model_percent']
-    rf_percent = model_parameters['rf_model_percent']
+    #rf_percent = model_parameters['rf_model_percent']
     logit_percent = model_parameters['logit_model_percent']
     price_str = 'max_price'
     total = logit_percent * len(all_predictions[0]) + \
-            bayes_model_percent * len(all_predictions[1]) + \
-            rf_percent * len(all_predictions[2])
+            bayes_model_percent * len(all_predictions[1]) #+ \
+            #rf_percent * len(all_predictions[2])
     avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                 np.vstack(all_predictions[1]) * bayes_model_percent,
-                                 np.vstack(all_predictions[2]) * rf_percent]).sum(0) / total
+                                 np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0) / total #,
+                                 #np.vstack(all_predictions[2]) * rf_percent]).sum(0) / total
 
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data[y_str])
     test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j], lambda j: test_data[y_str].iloc[j],
@@ -325,7 +325,7 @@ def predict(data, test_data):
     for _model, name in [
                     (lr, 'Logit Regression'),
                     (nb, 'Naive Bayes'),
-                    (rf, 'Random Forest'),
+                    #(rf, 'Random Forest'),
                 ]:
         print('with Betting Model: ', name)
         #print("Shapes: ", X_train.shape, X_test.shape)
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
-    train = True
+    train = False
     if train:
         num_test_years = 1
         test_year = 2018
@@ -388,12 +388,13 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['epsilon'] = 0.173
-        model_parameters['bayes_model_percent'] = 0.478
-        model_parameters['logit_model_percent'] = 0.979
-        model_parameters['rf_model_percent'] = 0.0145
-        model_parameters['min_odds'] = 0.349
-        model_parameters['max_odds'] = 0.599
+        model_parameters['alpha'] = 0.85
+        model_parameters['epsilon'] = 0.10
+        model_parameters['bayes_model_percent'] = 0.50
+        model_parameters['logit_model_percent'] = 0.50
+        #model_parameters['rf_model_percent'] = 0.33
+        model_parameters['min_odds'] = 0.15
+        model_parameters['max_odds'] = 0.60
         num_tests = 10
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
