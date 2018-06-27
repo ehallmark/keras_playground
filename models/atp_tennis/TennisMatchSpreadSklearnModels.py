@@ -280,13 +280,13 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     # dev parameters
     train_params = [
 #        [0.1, [0.01, 0.03, 0.05]],
-        [0.3, [0.10, 0.125, 0.15]],
-        [0.5, [0.10, 0.125, 0.15, 0.175, 0.20]],
-        [0.7, [0.15, 0.175, 0.20]],
+      #  [0.3, [0.10, 0.125, 0.15]],
+        [0.5, [0.025, 0.05, 0.075, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225]],
+      #  [0.7, [0.15, 0.175, 0.20]],
  #       [0.9, [0.225, 0.25, 0.275]],
     ]
 
-    test_idx = 2
+    test_idx = 0  # 2
     test_params = [
         [train_params[test_idx][0],[train_params[test_idx][1][1]]]
     ]
