@@ -170,7 +170,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.85
+alpha = 0.90
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -280,11 +280,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-#        [0.1, [0.01, 0.03, 0.05]],
-      #  [0.3, [0.10, 0.125, 0.15]],
+        [0.1, [0.01, 0.03, 0.05]],
+        [0.3, [0.10, 0.125, 0.15]],
         [0.5, [0.025, 0.05, 0.075, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225]],
-      #  [0.7, [0.15, 0.175, 0.20]],
- #       [0.9, [0.225, 0.25, 0.275]],
+        [0.7, [0.15, 0.175, 0.20]],
+        [0.9, [0.225, 0.25, 0.275]],
     ]
 
     test_idx = 0  # 2
@@ -332,12 +332,13 @@ start_year = 2011
 if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = None
-    num_tests = 10
+    num_tests = 1
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
                 graph = False
                 all_predictions = []
-                data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year, model=historical_model, spread_model=historical_spread_model)
+                data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
+                                            test_year=test_year, model=historical_model, spread_model=historical_spread_model)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func, graph=False, train=True)

@@ -33,8 +33,8 @@ betting_input_attributes = [
     'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    'prev_year_avg_round',
-    'opp_prev_year_avg_round',
+    #'prev_year_avg_round',
+    #'opp_prev_year_avg_round',
     #'opp_tourney_hist_avg_round',
     #'tourney_hist_avg_round',
     #'tourney_hist_prior_encounters',
@@ -57,16 +57,16 @@ betting_input_attributes = [
     #'opp_weight',
     #'height',
     #'opp_height',
-    'duration_prev_match',
-    'opp_duration_prev_match',
+    #'duration_prev_match',
+    #'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     # new
     #'historical_avg_odds',
-    'fave_spread',
-    'opp_fave_spread',
+    #'fave_spread',
+    #'opp_fave_spread',
     #'underdog_spread',
     #'opp_underdog_spread',
     'prev_odds',
@@ -388,7 +388,7 @@ model_parameters['max_odds'] = 0.70
 start_year = 2011
 if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic')
-    historical_spread_model = load_spread_model('Linear')
+    historical_spread_model = None
     train = False
     if train:
         num_test_years = 1
