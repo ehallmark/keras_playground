@@ -22,8 +22,8 @@ from models.simulation.Simulate import simulate_money_line
 
 
 betting_input_attributes = [
-    'prev_h2h2_wins_player',
-    'prev_h2h2_wins_opponent',
+    #'prev_h2h2_wins_player',
+    #'prev_h2h2_wins_opponent',
     #'mean_duration',
     #'mean_opp_duration',
     #'mean_return_points_made',
@@ -31,10 +31,10 @@ betting_input_attributes = [
     #'mean_second_serve_points_made',
     #'mean_opp_second_serve_points_made',
     #'h2h_prior_win_percent',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
-    #'prev_year_avg_round',
-    #'opp_prev_year_avg_round',
+    #'prev_year_prior_encounters',
+    #'opp_prev_year_prior_encounters',
+    'prev_year_avg_round',
+    'opp_prev_year_avg_round',
     #'opp_tourney_hist_avg_round',
     #'tourney_hist_avg_round',
     #'tourney_hist_prior_encounters',
@@ -45,8 +45,8 @@ betting_input_attributes = [
     #'opp_previous_tournament_round',
     #'tiebreak_win_percent',
     #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
+    #'surface_experience',
+    #'opp_surface_experience',
     #'experience',
     #'opp_experience',
     #'age',
@@ -67,6 +67,8 @@ betting_input_attributes = [
     'historical_avg_odds',
     'fave_spread',
     'opp_fave_spread',
+    'underdog_spread',
+    'opp_underdog_spread',
     'prev_odds',
     'opp_prev_odds'
 ]
@@ -76,7 +78,7 @@ betting_only_attributes = [
     #'odds2',
     'predictions',
     #'round',
-    'grand_slam',
+    #'grand_slam',
     #'spread_predictions'
 ]
 
@@ -388,27 +390,27 @@ if __name__ == '__main__':
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
         model_parameters = {}
-        model_parameters['alpha'] = 0.6
-        model_parameters['epsilon'] = 0.10
-        model_parameters['bayes_model_percent'] = 0.70
-        model_parameters['logit_model_percent'] = 0.30
+        model_parameters['alpha'] = 1.0
+        #model_parameters['epsilon'] = 0.10
+        model_parameters['bayes_model_percent'] = 0.5
+        model_parameters['logit_model_percent'] = 0.3
         #model_parameters['rf_model_percent'] = 0.33
-        model_parameters['min_odds'] = 0.15
-        model_parameters['max_odds'] = 0.75
-        num_tests = 10
+        model_parameters['min_odds'] = 0.10
+        model_parameters['max_odds'] = 0.60
+        num_tests = 5
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years, test_year=test_year,
                                             model=historical_model, spread_model=historical_spread_model)
                 all_predictions = predict(data, test_data)
                 print('Year:', test_year, ' Test years:', num_test_years)
-                for eps in [0.01, 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3]:
+                for eps in [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:
                     total_score = 0.0
                     total_return = 0.0
                     total_bets = 0
                     print('EPSILON: ', eps)
                     model_parameters['epsilon'] = eps
-                    score, test_return, num_bets = test(all_predictions, model_parameters, num_tests=3)
+                    score, test_return, num_bets = test(all_predictions, model_parameters, num_tests=num_tests)
                     total_score += score
                     total_return += test_return
                     total_bets += num_bets
