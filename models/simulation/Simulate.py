@@ -5,7 +5,8 @@ import pandas as pd
 
 
 def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_data,
-                        price_str='price', num_trials=50, sampling=0, verbose=False, shuffle=False):
+                        price_str='price', num_trials=50, sampling=0, verbose=False,
+                        shuffle=False, initial_capital=10000, after_bet_function=None):
 
     avg_best = 0.0
     num_bets_total = 0
@@ -25,7 +26,6 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
         betting_minimum = 5.0
         betting_maximum = 100.0
         max_loss_percent = 0.05
-        initial_capital = 10000.0
         available_capital = initial_capital
         indices = list(range(test_meta_data.shape[0]))
         if shuffle:
@@ -76,6 +76,11 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
                     capital_ratio = capital_requirement_avail/capital_requirement
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
+                    if after_bet_function is not None:
+                        after_bet_function(bet1, bet_row['player_id'], bet_row['opponent_id'],
+                                           max_price1, capital_requirement, bet_row['betting_date'],
+                                           bet_row['book_name'])
+
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
                         if verbose:
@@ -115,6 +120,10 @@ def simulate_money_line(predictor_func, actual_label_func, bet_func, test_meta_d
                     capital_ratio = capital_requirement_avail / capital_requirement
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
+                    if after_bet_function is not None:
+                        after_bet_function(bet2, bet_row['opponent_id'], bet_row['player_id'],
+                                           max_price2, capital_requirement, bet_row['betting_date'],
+                                           bet_row['book_name'])
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
                         if verbose:

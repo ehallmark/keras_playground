@@ -137,12 +137,12 @@ def load_betting_data(betting_sites, test_year=2018):
     return betting_data
 
 
-def load_data(start_year, test_year, num_test_years, model=None, spread_model=None):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, spread_model=None):
     attributes = list(tennis_model.all_attributes)
     for attr in betting_input_attributes:
         if attr not in attributes and attr not in betting_only_attributes:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, test_year=test_year, num_test_years=num_test_years, test_tournament=test_tournament,
                                                            start_year=start_year, model=model, spread_model=spread_model)
     # merge betting data in memory
     betting_sites = ['Bovada',
@@ -375,9 +375,17 @@ def predict(data, test_data):
 
     return all_predictions
 
+model_parameters = {}
+model_parameters['alpha'] = 0.8
+model_parameters['epsilon'] = 0.1
+model_parameters['bayes_model_percent'] = 0.5
+model_parameters['logit_model_percent'] = 0.5
+model_parameters['rf_model_percent'] = 0.8
+model_parameters['min_odds'] = 0.10
+model_parameters['max_odds'] = 0.60
 
+start_year = 2011
 if __name__ == '__main__':
-    start_year = 2010
     historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
     train = False
@@ -391,14 +399,7 @@ if __name__ == '__main__':
         genetic_algorithm = GeneticAlgorithm(solution_generator=solution_generator)
         genetic_algorithm.fit(all_predictions, num_solutions=50, num_epochs=num_epochs)
     else:
-        model_parameters = {}
-        model_parameters['alpha'] = 0.8
-        #model_parameters['epsilon'] = 0.10
-        model_parameters['bayes_model_percent'] = 0.5
-        model_parameters['logit_model_percent'] = 0.5
-        model_parameters['rf_model_percent'] = 0.8
-        model_parameters['min_odds'] = 0.10
-        model_parameters['max_odds'] = 0.60
+
         num_tests = 5
         for num_test_years in [1, 2]:
             for test_year in [2016, 2017, 2018]:
