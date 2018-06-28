@@ -28,8 +28,8 @@ betting_input_attributes = [
     'opp_best_year',
 # new
     'historical_avg_odds',
-    'prev_odds',
-    'opp_prev_odds'
+    #'prev_odds',
+    #'opp_prev_odds'
 ]
 
 betting_only_attributes = [
@@ -147,7 +147,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.90
+alpha = 0.70
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
