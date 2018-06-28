@@ -8,7 +8,7 @@ from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_spread_model,
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
 historical_model = load_outcome_model('Logistic')
-historical_spread_model = load_spread_model('Linear')
+historical_spread_model = None  # load_spread_model('Linear')
 
 test_year = 2018  # IMPORTANT!!
 tournaments = ['eastbourne', 'antalya']

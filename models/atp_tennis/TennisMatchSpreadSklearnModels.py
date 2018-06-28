@@ -22,6 +22,8 @@ betting_input_attributes = [
     'opp_prev_year_prior_encounters',
     'surface_experience',
     'opp_surface_experience',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
     'elo_score',
     'opp_elo_score',
     'avg_games_per_set',
@@ -34,8 +36,8 @@ betting_input_attributes = [
     'opp_prev_odds',
     'underdog_wins',
     'opp_underdog_wins',
-    #'fave_losses',
-    #'opp_fave_losses'
+    'fave_wins',
+    'opp_fave_wins'
 ]
 
 betting_only_attributes = [
@@ -153,11 +155,11 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.85
+alpha = 0.4
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
-        prediction = alpha * prediction + (1.0 - alpha) * spread_prob
+        prediction = (1.0-alpha) * prediction + (alpha * spread_prob * float(row['predictions']))
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
@@ -265,12 +267,12 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     train_params = [
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
-        [0.90, [0.3, 0.35, 0.40]],
-        [0.95, [0.325, 0.375, 0.425]],
-        [1.0, [0.35, 0.4, 0.45]],
+        [0.90, [0.2, 0.3, 0.4]],
+        [0.95, [0.2, 0.3, 0.4]],
+        [1.0, [0.2, 0.3, 0.4]],
     ]
 
-    test_idx = 0  # 2
+    test_idx = 1  # 2
 
     if train:
         params = train_params
@@ -318,7 +320,7 @@ if __name__ == '__main__':
     num_tests = 1
     for i in range(num_tests):
         print("TEST: ", i)
-        for num_test_years in [1, 2]:
+        for num_test_years in [1, ]:
             for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
