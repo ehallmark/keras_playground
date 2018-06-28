@@ -31,8 +31,8 @@ def save_spread_model(model, model_name):
 if __name__ == '__main__':
     sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
     print('Max data year: ', max(sql['year']))
-    train_outcome_model = True
-    train_spread_model = False
+    train_outcome_model = False
+    train_spread_model = True
     if train_outcome_model:
         lr = LogisticRegression()
         gnb = GaussianNB()
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         for model, name in [(lr, 'Linear'),
                             #(rf, 'Random Forest')
                             ]:
-            y_str = 'spread'
+            y_str = 'spread_per_set'
             X = np.array(sql[input_attributes_spread])
             y = np.array(sql[y_str]).flatten()
             X_test = np.array(test_data[input_attributes_spread])

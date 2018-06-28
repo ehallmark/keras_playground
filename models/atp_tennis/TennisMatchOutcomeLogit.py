@@ -298,35 +298,8 @@ input_attributes = [
 
 
 input_attributes_spread = [
-    #'mean_return_points_made',
-    #'mean_opp_return_points_made',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
-    #'mean_break_points_made',
-    #'mean_opp_break_points_made',
-    'tiebreak_win_percent',
-    'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    #'age',
-    #'opp_age',
-    #'height',
-    #'opp_height',
-    #'avg_games_per_set',
-    #'opp_avg_games_per_set',
-    'elo_score',
-    'opp_elo_score'
-]
-
-
-
-input_attributes_spread2 = [
-    #'mean_return_points_made',
-    #'mean_opp_return_points_made',
+    'mean_return_points_made',
+    'mean_opp_return_points_made',
     #'mean_second_serve_points_made',
     #'mean_opp_second_serve_points_made',
     'prev_year_prior_encounters',
@@ -349,15 +322,13 @@ input_attributes_spread2 = [
     #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-    'historical_avg_odds',
-    'prev_odds',
-    'opp_prev_odds',
-    'underdog_wins',
-    'opp_underdog_wins',
-    'fave_wins',
-    'opp_fave_wins'
-    #'avg_spread_per_set',
-    #'opp_avg_spread_per_set'
+    #'historical_avg_odds',
+    #'prev_odds',
+    #'opp_prev_odds',
+    #'underdog_wins',
+    #'opp_underdog_wins',
+    #'fave_wins',
+    #'opp_fave_wins'
 ]
 
 y = 'y'
@@ -374,9 +345,6 @@ for attr in input_attributes_spread:
 for meta in meta_attributes:
     if meta not in all_attributes:
         all_attributes.append(meta)
-for attr in input_attributes_spread2:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
 
 if __name__ == '__main__':
     save = False
@@ -401,7 +369,7 @@ if __name__ == '__main__':
         model_file = 'tennis_match_spread_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
-        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread2), data=sql).fit()
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql).fit()
         print(results.summary())
         n, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)

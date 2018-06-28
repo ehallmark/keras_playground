@@ -18,20 +18,43 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 
 
 betting_input_attributes = [
+    # 'mean_duration',
+    # 'mean_opp_duration',
+    'mean_return_points_made',
+    'mean_opp_return_points_made',
+    # 'mean_second_serve_points_made',
+    # 'mean_opp_second_serve_points_made',
+    'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    'surface_experience',
-    'opp_surface_experience',
+    # 'prev_year_avg_round',
+    # 'opp_prev_year_avg_round',
+    # 'opp_tourney_hist_avg_round',
+    # 'tourney_hist_avg_round',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
+    # 'mean_break_points_made',
+    # 'mean_opp_break_points_made',
+    # 'previous_tournament_round',
+    # 'opp_previous_tournament_round',
     'tiebreak_win_percent',
     'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    'experience',
+    'opp_experience',
+    'age',
+    'opp_age',
+    'height',
+    'opp_height',
+    # 'duration_prev_match',
+    # 'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
     'opp_best_year',
-    'h2h_prior_win_percent'
-# new
     'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
@@ -43,7 +66,8 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     'probability_beat',
-    'predictions',
+    #'predictions',
+    'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -156,11 +180,11 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.4
+alpha = 0.8
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
-        prediction = (1.0-alpha) * prediction + (alpha * spread_prob * float(row['predictions']))
+        prediction = alpha * prediction + (1.0 - alpha) * spread_prob
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
@@ -316,8 +340,8 @@ def prediction_func(avg_predictions, epsilon):
 
 start_year = 2011
 if __name__ == '__main__':
-    historical_model = load_outcome_model('Logistic')
-    historical_spread_model = None
+    historical_model = None  # load_outcome_model('Logistic')
+    historical_spread_model = load_spread_model('Linear')
     num_tests = 1
     for i in range(num_tests):
         print("TEST: ", i)
