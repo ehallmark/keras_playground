@@ -30,6 +30,7 @@ betting_input_attributes = [
     'opp_avg_games_per_set',
     'best_year',
     'opp_best_year',
+    'h2h_prior_win_percent'
 # new
     'historical_avg_odds',
     'prev_odds',

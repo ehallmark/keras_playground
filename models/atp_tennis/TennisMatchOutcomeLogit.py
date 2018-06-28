@@ -298,14 +298,14 @@ input_attributes = [
 
 
 input_attributes_spread = [
-    'mean_return_points_made',
-    'mean_opp_return_points_made',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
     #'tourney_hist_prior_encounters',
     #'opp_tourney_hist_prior_encounters',
-    'mean_break_points_made',
-    'mean_opp_break_points_made',
+    #'mean_break_points_made',
+    #'mean_opp_break_points_made',
     'tiebreak_win_percent',
     'opp_tiebreak_win_percent',
     'surface_experience',
@@ -316,6 +316,8 @@ input_attributes_spread = [
     #'opp_age',
     #'height',
     #'opp_height',
+    #'avg_games_per_set',
+    #'opp_avg_games_per_set',
     'elo_score',
     'opp_elo_score'
 ]
@@ -347,7 +349,13 @@ input_attributes_spread2 = [
     #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-    'historical_avg_odds'
+    'historical_avg_odds',
+    'prev_odds',
+    'opp_prev_odds',
+    'underdog_wins',
+    'opp_underdog_wins',
+    'fave_wins',
+    'opp_fave_wins'
     #'avg_spread_per_set',
     #'opp_avg_spread_per_set'
 ]
@@ -374,7 +382,7 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2017, start_year=2011)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])

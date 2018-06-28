@@ -72,7 +72,11 @@ betting_input_attributes = [
     'prev_odds',
     'opp_prev_odds',
     'best_year',
-    'opp_best_year'
+    'opp_best_year',
+    'underdog_wins',
+    'opp_underdog_wins',
+    'fave_wins',
+    'opp_fave_wins'
 ]
 
 betting_only_attributes = [
