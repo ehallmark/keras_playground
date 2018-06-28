@@ -15,7 +15,7 @@ def ks_test(x1, x2):
 
 outcome_model = tennis_model.load_outcome_model('Logistic')
 spread_model = None
-test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, model=outcome_model, test_tournament='antalya', spread_model=spread_model)
+test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, model=outcome_model, test_tournament=None, spread_model=spread_model)
 
 attributes = list(betting_input_attributes)
 

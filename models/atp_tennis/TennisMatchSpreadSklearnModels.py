@@ -153,7 +153,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.9
+alpha = 0.85
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -263,11 +263,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        [0.1, [0.08, 0.1, 0.15]],
-        [0.3, [0.05, 0.10, 0.15]],
-        [0.5, [0.175, 0.20, 0.225, 0.25, 0.275, 0.3]],
-        [0.7, [0.20, 0.25, 0.30]],
-        [0.9, [0.20, 0.25, 0.30]],
+        #[0.1, [0.08, 0.1, 0.15]],
+        #[0.3, [0.05, 0.10, 0.15]],
+        [0.90, [0.3, 0.35, 0.40]],
+        [0.95, [0.30, 0.35, 0.40]],
+        [0.98, [0.30, 0.35, 0.40]],
     ]
 
     test_idx = 0  # 2
@@ -319,7 +319,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, 2]:
-            for test_year in [2016, 2017, 2018]:
+            for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
