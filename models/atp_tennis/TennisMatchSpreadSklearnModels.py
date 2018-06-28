@@ -20,6 +20,8 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 betting_input_attributes = [
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
+    'surface_experience',
+    'opp_surface_experience',
     'elo_score',
     'opp_elo_score',
     'avg_games_per_set',
@@ -28,8 +30,12 @@ betting_input_attributes = [
     'opp_best_year',
 # new
     'historical_avg_odds',
-    #'prev_odds',
-    #'opp_prev_odds'
+    'prev_odds',
+    'opp_prev_odds',
+    'underdog_wins',
+    'opp_underdog_wins',
+    'favorite_losses',
+    'opp_favorite_losses'
 ]
 
 betting_only_attributes = [
@@ -147,7 +153,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.70
+alpha = 0.9
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -155,7 +161,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.60:
+        if odds < 0.25 or odds > 0.60:
             return 0
         #if spread > 5.:
         #    return 0
@@ -257,11 +263,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        #[0.1, [0.01, 0.03, 0.05]],
+        [0.1, [0.08, 0.1, 0.15]],
         [0.3, [0.05, 0.10, 0.15]],
-        [0.5, [0.10, 0.125, 0.15, 0.175, 0.20, 0.225]],
-        [0.7, [0.10, 0.15, 0.20]],
-        [0.9, [0.15, 0.20, 0.25]],
+        [0.5, [0.175, 0.20, 0.225, 0.25, 0.275, 0.3]],
+        [0.7, [0.20, 0.25, 0.30]],
+        [0.9, [0.20, 0.25, 0.30]],
     ]
 
     test_idx = 0  # 2
@@ -297,7 +303,7 @@ def prediction_func(avg_predictions, epsilon):
     test_return, num_bets = simulate_spread(lambda j: avg_predictions[j],
                                             lambda j: test_data['spread'].iloc[j],
                                             bet_func(epsilon), test_data,
-                                            'price', 5, sampling=0, shuffle=True, verbose=False)
+                                            'price', 3, sampling=0, shuffle=True, verbose=False)
 
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',
           to_percentage(avg_error),
