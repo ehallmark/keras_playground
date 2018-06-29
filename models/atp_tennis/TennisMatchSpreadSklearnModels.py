@@ -180,7 +180,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.9
+alpha = 0.85
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -292,9 +292,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     train_params = [
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
+        [0.075, [0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08, 0.1]],
         [0.1, [0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08, 0.1]],
-        [0.3, [0.10, 0.15, 0.20]],
-        [0.5, [0.1, 0.2, 0.3]],
+        [0.125, [0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08, 0.1]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
