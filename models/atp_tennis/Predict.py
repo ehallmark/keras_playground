@@ -9,7 +9,7 @@ from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 
 historical_model = load_outcome_model('Logistic')
 historical_spread_model = load_spread_model('Linear')
-
+future_matches_only = False
 test_year = 2018  # IMPORTANT!!
 tournaments = ['eastbourne', 'antalya']
 
@@ -26,7 +26,7 @@ for tournament in tournaments:
     bets_to_make = []
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
         #print("MAKE BET: ", conf, player1, player2)
-        if date >= datetime.date.today():
+        if not future_matches_only or date >= datetime.date.today():
             bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo

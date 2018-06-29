@@ -49,8 +49,8 @@ betting_input_attributes = [
     'opp_height',
     # 'duration_prev_match',
     # 'opp_duration_prev_match',
-    'elo_score',
-    'opp_elo_score',
+    #'elo_score',
+    #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
@@ -188,7 +188,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.35 or odds > 0.60:
+        if odds < 0.45 or odds > 0.55:
             return 0
         #if spread > 5.:
         #    return 0
