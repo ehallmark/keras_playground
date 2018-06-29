@@ -41,12 +41,12 @@ betting_input_attributes = [
     'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
+    #'experience',
+    #'opp_experience',
     'age',
     'opp_age',
-    'height',
-    'opp_height',
+    #'height',
+    #'opp_height',
     # 'duration_prev_match',
     # 'opp_duration_prev_match',
     #'elo_score',
@@ -180,7 +180,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.9
+alpha = 0.85
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
