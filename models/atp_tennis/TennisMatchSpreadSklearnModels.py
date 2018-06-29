@@ -31,8 +31,8 @@ betting_input_attributes = [
     # 'opp_prev_year_avg_round',
     # 'opp_tourney_hist_avg_round',
     # 'tourney_hist_avg_round',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
     # 'mean_break_points_made',
     # 'mean_opp_break_points_made',
     # 'previous_tournament_round',
@@ -180,7 +180,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.875
+alpha = 0.9
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -188,7 +188,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.40 or odds > 0.55:
+        if odds < 0.45 or odds > 0.54:
             return 0
         #if spread > 5.:
         #    return 0

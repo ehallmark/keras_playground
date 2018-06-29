@@ -288,8 +288,8 @@ input_attributes = [
     'opp_height',
     #'duration_prev_match',
     #'opp_duration_prev_match',
-    'elo_score',
-    'opp_elo_score',
+    #'elo_score',
+    #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
@@ -298,14 +298,14 @@ input_attributes = [
 
 
 input_attributes_spread = [
-    'mean_return_points_made',
-    'mean_opp_return_points_made',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
     #'mean_second_serve_points_made',
     #'mean_opp_second_serve_points_made',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
+    'tourney_hist_prior_encounters',
+    'opp_tourney_hist_prior_encounters',
     #'mean_break_points_made',
     #'mean_opp_break_points_made',
     'tiebreak_win_percent',
@@ -313,11 +313,11 @@ input_attributes_spread = [
     'surface_experience',
     'opp_surface_experience',
     #'experience',
-    #'opp_experience',
-    #'age',
-    #'opp_age',
-    #'height',
-    #'opp_height',
+    'opp_experience',
+    'age',
+    'opp_age',
+    'height',
+    'opp_height',
     #'elo_score',
     #'opp_elo_score',
     'avg_games_per_set',
@@ -350,7 +350,7 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
-    sql, test_data = load_data(all_attributes, test_season=2017, start_year=2011)
+    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
