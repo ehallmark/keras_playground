@@ -180,7 +180,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.85
+alpha = 0.875
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -188,7 +188,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.40 or odds > 0.58:
+        if odds < 0.35 or odds > 0.60:
             return 0
         #if spread > 5.:
         #    return 0
