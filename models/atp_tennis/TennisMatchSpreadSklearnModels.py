@@ -20,41 +20,41 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 betting_input_attributes = [
     # 'mean_duration',
     # 'mean_opp_duration',
-    #'mean_return_points_made',
-    #'mean_opp_return_points_made',
+    # 'mean_return_points_made',
+    # 'mean_opp_return_points_made',
     # 'mean_second_serve_points_made',
     # 'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
+    # 'prev_year_prior_encounters',
+    # 'opp_prev_year_prior_encounters',
     # 'prev_year_avg_round',
     # 'opp_prev_year_avg_round',
     # 'opp_tourney_hist_avg_round',
     # 'tourney_hist_avg_round',
-    'tourney_hist_prior_encounters',
-    'opp_tourney_hist_prior_encounters',
+    # 'tourney_hist_prior_encounters',
+    # 'opp_tourney_hist_prior_encounters',
     # 'mean_break_points_made',
     # 'mean_opp_break_points_made',
     # 'previous_tournament_round',
     # 'opp_previous_tournament_round',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
-    #'surface_experience',
-    #'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    'age',
-    'opp_age',
-    #'height',
-    #'opp_height',
+    # 'tiebreak_win_percent',
+    # 'opp_tiebreak_win_percent',
+    # 'surface_experience',
+    # 'opp_surface_experience',
+    # 'experience',
+    # 'opp_experience',
+    # 'age',
+    # 'opp_age',
+    # 'height',
+    # 'opp_height',
     # 'duration_prev_match',
     # 'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
-    #'avg_games_per_set',
-    #'opp_avg_games_per_set',
-    'best_year',
-    'opp_best_year',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
+    #'best_year',
+    #'opp_best_year',
     #'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
@@ -66,7 +66,7 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     #'probability_beat',
-    #'predictions',
+    'predictions',
     'spread_predictions'
 ]
 
@@ -181,22 +181,19 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.6
+alpha = 1.0
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
         spread_prob_loss = probability_beat_given_loss(spread, row['grand_slam'] > 0.5)
-        if prediction < 1.0 - spread_prob:
-            return 0
+        prediction = prediction * alpha + (1.0 - alpha) * odds
         #prediction = alpha * prediction + (1.0 - alpha) * spread_prob
         prediction = spread_prob * prediction + spread_prob_loss * (1.0-prediction)
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.45 or odds > 0.53:
-            return 0
-        if spread_prob < 0.10:
+        if odds < 0.46 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -220,7 +217,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     all_predictions = []
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
-    rf = lambda: RandomForestClassifier(n_estimators=200)
+    rf = lambda: RandomForestClassifier(n_estimators=50)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -235,7 +232,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         (lr, 'Logit Regression'),
         # (svm, 'Support Vector'),
         (nb, 'Naive Bayes'),
-        # (rf, 'Random Forest'),
+        (rf, 'Random Forest'),
     ]:
         print('With betting model: ', name)
         model_predictions = []
@@ -299,35 +296,38 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     train_params = [
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
-        [0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.5, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
+        #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
+        [0.33, 0.1, [0.5, 0.075, 0.1, 0.15]],
+        [0.5, 0.1, [0.05, 0.075, 0.1, 0.15]],
+        [0.66, 0.1, [0.05, 0.075, 0.1, 0.15]],
+        [0.8, 0.1, [0.05, 0.075, 0.1, 0.15]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
 
-    test_idx = 1
+    test_idx = 3
 
     if train:
         params = train_params
     else:
         test_params = [
-            [train_params[test_idx][0], [train_params[test_idx][1][1]]]
+            [train_params[test_idx][0], train_params[test_idx][1], [train_params[test_idx][2][0]]]
         ]
         params = test_params
         print("Test params: ", params)
 
-    for bayes_model_percent, epsilons in params:
+    for bayes_model_percent, logit_percent, epsilons in params:
         for epsilon in epsilons:
             if train:
                 variance = 0.0001
                 bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
                 epsilon = epsilon + float(np.random.randn(1) * variance)
             print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
-            logit_percent = 1.0 - bayes_model_percent
-            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1])
+            rf_model_percent = 1.0 - logit_percent - bayes_model_percent
+            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) + rf_model_percent * len(all_predictions[2])
             avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                         np.vstack(all_predictions[1]) * bayes_model_percent]).sum(0) / total
+                                         np.vstack(all_predictions[1]) * bayes_model_percent,
+                                         np.vstack(all_predictions[2]) * rf_model_percent]).sum(0) / total
             predictions.append(avg_predictions)
             if prediction_function is not None:
                 prediction_function(avg_predictions, epsilon)
@@ -349,7 +349,7 @@ def prediction_func(avg_predictions, epsilon):
 
 start_year = 2011
 if __name__ == '__main__':
-    historical_model = None  # load_outcome_model('Logistic')
+    historical_model = load_outcome_model('Logistic')
     historical_spread_model = load_spread_model('Linear')
     num_tests = 1
     for i in range(num_tests):
