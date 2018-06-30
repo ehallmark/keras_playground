@@ -66,6 +66,7 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     #'probability_beat',
+    'ml_odds_avg',
     'predictions',
     'spread_predictions'
 ]
@@ -92,18 +93,23 @@ def predict_proba(model, X):
 def load_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
-        select year,tournament,team1,team2,
-        book_name,
-        price1,
-        price2,
-        spread1,
-        spread2,
-        odds1,
-        odds2,
-        betting_date
-        from atp_tennis_betting_link_spread 
-        where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
-        and spread1 = - spread2
+        select s.year,s.tournament,s.team1,s.team2,
+        s.book_name,
+        s.price1,
+        s.price2,
+        s.spread1,
+        s.spread2,
+        s.odds1,
+        s.odds2,
+        s.betting_date,
+        m.odds1 as ml_odds1,
+        m.odds2 as ml_odds2,   
+        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg     
+        from atp_tennis_betting_link_spread  as s join
+        atp_tennis_betting_link as m on 
+            ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
+        where s.year<={{YEAR}} and s.book_name in ({{BOOK_NAMES}})
+        and s.spread1 = - s.spread2
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
@@ -193,7 +199,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.46 or odds > 0.55:
+        if odds < 0.46 or odds > 0.54:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -297,10 +303,10 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.33, 0.1, [0.5, 0.075, 0.1, 0.15]],
-        [0.5, 0.1, [0.05, 0.075, 0.1, 0.15]],
-        [0.66, 0.1, [0.05, 0.075, 0.1, 0.15]],
-        [0.8, 0.1, [0.05, 0.075, 0.1, 0.15]],
+        [0.7, 0.1, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.7, 0.15, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.7, 0.20, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.7, 0.25, [0.01, 0.03, 0.05, 0.075, 0.1]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -355,7 +361,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2016, 2017, 2018]:
+            for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
