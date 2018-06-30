@@ -231,7 +231,7 @@ def spread_bet_func(epsilon):
             return 0
 
         if ml_bet_opp > 0:
-            prediction = min(1.0, prediction + 0.1)
+            return 1.1
 
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -335,9 +335,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, 0.05, [0.01, 0.03, 0.05, 0.075, 0.1]],
-        [0.75, 0.05, [0.01, 0.03, 0.05, 0.075, 0.1]],
-        [0.8, 0.05, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.7, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
+        [0.75, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
+        [0.8, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -396,7 +396,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2017, 2018]:
+            for test_year in [2016, 2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
