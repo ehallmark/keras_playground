@@ -46,6 +46,8 @@ def simulate_match(best_of):
 
 x = []
 x_3 = []
+x_loss = []
+x_3_loss = []
 use_monte_carlo = False
 if use_monte_carlo:
     for i in range(50000):
@@ -58,16 +60,23 @@ if use_monte_carlo:
 else:
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
-        select games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
+        select player_victory,games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
     sql = pd.read_sql(sql_str, conn)
     for i in range(sql.shape[0]):
         row = sql.iloc[i]
-        if row['grand_slam']>0.5:
-            x.append(int(row['spread']))
+        victory = row['player_victory']
+        if victory:
+            if row['grand_slam']>0.5:
+                x.append(int(row['spread']))
+            else:
+                x_3.append(int(row['spread']))
         else:
-            x_3.append(int(row['spread']))
+            if row['grand_slam'] > 0.5:
+                x_loss.append(int(row['spread']))
+            else:
+                x_3_loss.append(int(row['spread']))
 
 probabilities5 = {}
 probabilities3 = {}
@@ -91,10 +100,39 @@ for k in probabilities3:
 for k in probabilities5:
     probabilities5[k] /= len(x)
 
+probabilities5_loss = {}
+probabilities3_loss = {}
+
+for i in range(19):
+    probabilities5_loss[i] = 0.0
+    probabilities5_loss[-i] = 0.0
+
+for i in range(13):
+    probabilities3_loss[i] = 0.0
+    probabilities3_loss[-i] = 0.0
+
+for p in x:
+    probabilities5_loss[int(p)] += 1
+for p in x_3:
+    probabilities3_loss[int(p)] += 1
+
+for k in probabilities3_loss:
+    probabilities3_loss[k] /= len(x_3_loss)
+
+for k in probabilities5_loss:
+    probabilities5_loss[k] /= len(x_loss)
+
 probabilities5_under = {}
 probabilities3_under = {}
 probabilities5_over = {}
 probabilities3_over = {}
+
+
+probabilities5_under_loss = {}
+probabilities3_under_loss = {}
+probabilities5_over_loss = {}
+probabilities3_over_loss = {}
+
 
 for k in probabilities3:
     probabilities3_over[k] = 0.
@@ -115,7 +153,27 @@ for k in probabilities5:
             probabilities5_over[k] += probabilities5[j]
 
 
-def probability_beat(spread, grand_slam=False):
+for k in probabilities3_loss:
+    probabilities3_over_loss[k] = 0.
+    probabilities3_under_loss[k] = 0.
+    for j in probabilities3_loss:
+        if j < k:
+            probabilities3_under_loss[k] += probabilities3_loss[j]
+        if j > k:
+            probabilities3_over_loss[k] += probabilities3_loss[j]
+
+
+for k in probabilities5_loss:
+    probabilities5_over_loss[k] = 0.
+    probabilities5_under_loss[k] = 0.
+    for j in probabilities5_loss:
+        if j < k:
+            probabilities5_under_loss[k] += probabilities5_loss[j]
+        if j > k:
+            probabilities5_over_loss[k] += probabilities5_loss[j]
+
+
+def probability_beat_given_win(spread, grand_slam=False):
     if spread > 0:
         if grand_slam:
             return probabilities5_under[int(spread)]
@@ -126,6 +184,19 @@ def probability_beat(spread, grand_slam=False):
             return probabilities5_over[round(abs(spread))]
         else:
             return probabilities3_over[round(abs(spread))]
+
+
+def probability_beat_given_loss(spread, grand_slam=False):
+    if spread > 0:
+        if grand_slam:
+            return probabilities5_under_loss[int(spread)]
+        else:
+            return probabilities3_under_loss[int(spread)]
+    else:
+        if grand_slam:
+            return probabilities5_over_loss[round(abs(spread))]
+        else:
+            return probabilities3_over_loss[round(abs(spread))]
 
 
 if __name__ == '__main__':
