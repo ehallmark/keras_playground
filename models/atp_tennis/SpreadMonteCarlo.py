@@ -67,16 +67,19 @@ else:
     for i in range(sql.shape[0]):
         row = sql.iloc[i]
         victory = row['player_victory']
+        spread = int(row['spread'])
+        to_add_to = None
         if victory:
             if row['grand_slam']>0.5:
-                x.append(int(row['spread']))
+                x.append(spread)
             else:
-                x_3.append(int(row['spread']))
+                x_3.append(spread)
         else:
             if row['grand_slam'] > 0.5:
-                x_loss.append(int(row['spread']))
+                x_loss.append(spread)
             else:
-                x_3_loss.append(int(row['spread']))
+                x_3_loss.append(spread)
+
 
 probabilities5 = {}
 probabilities3 = {}
@@ -111,9 +114,9 @@ for i in range(13):
     probabilities3_loss[i] = 0.0
     probabilities3_loss[-i] = 0.0
 
-for p in x:
+for p in x_loss:
     probabilities5_loss[int(p)] += 1
-for p in x_3:
+for p in x_3_loss:
     probabilities3_loss[int(p)] += 1
 
 for k in probabilities3_loss:
@@ -176,27 +179,27 @@ for k in probabilities5_loss:
 def probability_beat_given_win(spread, grand_slam=False):
     if spread > 0:
         if grand_slam:
-            return probabilities5_under[int(spread)]
+            return probabilities5_over[-int(spread)]
         else:
-            return probabilities3_under[int(spread)]
+            return probabilities3_over[-int(spread)]
     else:
         if grand_slam:
-            return probabilities5_over[round(abs(spread))]
+            return probabilities5_over[-int(spread-0.55)]
         else:
-            return probabilities3_over[round(abs(spread))]
+            return probabilities3_over[-int(spread-0.55)]
 
 
 def probability_beat_given_loss(spread, grand_slam=False):
     if spread > 0:
         if grand_slam:
-            return probabilities5_under_loss[int(spread)]
+            return probabilities5_over_loss[int(-spread)]
         else:
-            return probabilities3_under_loss[int(spread)]
+            return probabilities3_over_loss[int(-spread)]
     else:
         if grand_slam:
-            return probabilities5_over_loss[round(abs(spread))]
+            return probabilities5_over_loss[-int(spread-0.55)]
         else:
-            return probabilities3_over_loss[round(abs(spread))]
+            return probabilities3_over_loss[-int(spread-0.55)]
 
 
 if __name__ == '__main__':
@@ -210,17 +213,33 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.show()
 
-    print('Beat 5', probability_beat(5))
-    print('Beat 4', probability_beat(4))
-    print('Beat 3', probability_beat(3))
-    print('Beat 2', probability_beat(2))
-    print('Beat 1', probability_beat(1))
-    print('Beat 0', probability_beat(0))
-    print('Beat -1', probability_beat(-1))
-    print('Beat -2', probability_beat(-2))
-    print('Beat -3', probability_beat(-3))
-    print('Beat -4', probability_beat(-4))
-    print('Beat -4.5', probability_beat(-4.5))
-    print('Beat -5', probability_beat(-5))
-    print('Beat -6', probability_beat(-6))
+    print('Given WIN')
+    print('Beat 5', probability_beat_given_win(5))
+    print('Beat 4', probability_beat_given_win(4))
+    print('Beat 3', probability_beat_given_win(3))
+    print('Beat 2', probability_beat_given_win(2))
+    print('Beat 1', probability_beat_given_win(1))
+    print('Beat 0', probability_beat_given_win(0))
+    print('Beat -1', probability_beat_given_win(-1))
+    print('Beat -2', probability_beat_given_win(-2))
+    print('Beat -3', probability_beat_given_win(-3))
+    print('Beat -4', probability_beat_given_win(-4))
+    print('Beat -4.5', probability_beat_given_win(-4.5))
+    print('Beat -5', probability_beat_given_win(-5))
+    print('Beat -6', probability_beat_given_win(-6))
+
+    print('Given LOSS')
+    print('Beat 5', probability_beat_given_loss(5))
+    print('Beat 4', probability_beat_given_loss(4))
+    print('Beat 3', probability_beat_given_loss(3))
+    print('Beat 2', probability_beat_given_loss(2))
+    print('Beat 1', probability_beat_given_loss(1))
+    print('Beat 0', probability_beat_given_loss(0))
+    print('Beat -1', probability_beat_given_loss(-1))
+    print('Beat -2', probability_beat_given_loss(-2))
+    print('Beat -3', probability_beat_given_loss(-3))
+    print('Beat -4', probability_beat_given_loss(-4))
+    print('Beat -4.5', probability_beat_given_loss(-4.5))
+    print('Beat -5', probability_beat_given_loss(-5))
+    print('Beat -6', probability_beat_given_loss(-6))
 
