@@ -196,7 +196,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.30 or odds > 0.5:
+        if odds < 0.35 or odds > 0.45:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -228,9 +228,6 @@ def spread_bet_func(epsilon):
             exit(1)
         if ml_bet_opp > 0:
             prediction = min(1.0, prediction + 0.2)
-
-        if odds < 0.47 or odds > 0.53 or ml_bet_player > 0:
-            return 0
 
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
