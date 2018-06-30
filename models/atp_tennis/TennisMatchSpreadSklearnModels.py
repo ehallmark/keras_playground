@@ -196,7 +196,7 @@ def bet_func(epsilon):
             exit(1)
         if odds < 0.45 or odds > 0.53:
             return 0
-        if spread_prob < 0.30:
+        if spread_prob < 0.10:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
