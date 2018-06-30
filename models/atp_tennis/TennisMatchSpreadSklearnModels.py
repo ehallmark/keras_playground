@@ -13,7 +13,7 @@ from sklearn.calibration import calibration_curve
 import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
-from models.simulation.Simulate import simulate_spread
+from models.simulation.Simulate import simulate_money_line
 from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_outcome_predictions_and_actuals, spread_input_attributes
 
 
@@ -104,7 +104,9 @@ def load_betting_data(betting_sites, test_year=2018):
         s.betting_date,
         m.odds1 as ml_odds1,
         m.odds2 as ml_odds2,   
-        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg     
+        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
+        m.price1 as max_price1,
+        m.price2 as max_price2   
         from atp_tennis_betting_link_spread  as s join
         atp_tennis_betting_link as m on 
             ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
@@ -189,17 +191,45 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 alpha = 1.0
 def bet_func(epsilon):
-    def bet_func_helper(price, odds, spread, prediction, row):
+    def bet_func_helper(price, odds, prediction, row):
+        prediction = prediction * alpha + (1.0 - alpha) * odds
+        if 0 > prediction or prediction > 1:
+            print('Invalid prediction: ', prediction)
+            exit(1)
+        if odds < 0.4 or odds > 0.5:
+            return 0
+        if price > 0:
+            expectation_implied = odds * price + (1. - odds) * -100.
+            expectation = prediction * price + (1. - prediction) * -100.
+            expectation /= 100.
+            expectation_implied /= 100.
+        else:
+            expectation_implied = odds * 100. + (1. - odds) * price
+            expectation = prediction * 100. + (1. - prediction) * price
+            expectation /= -price
+            expectation_implied /= -price
+        if expectation > epsilon:
+            return 1. + expectation
+        else:
+            return 0
+    return bet_func_helper
+
+
+def spread_bet_func(epsilon):
+    def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp):
         spread_prob = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
         spread_prob_loss = probability_beat_given_loss(spread, row['grand_slam'] > 0.5)
         prediction = prediction * alpha + (1.0 - alpha) * odds
         #prediction = alpha * prediction + (1.0 - alpha) * spread_prob
         prediction = spread_prob * prediction + spread_prob_loss * (1.0-prediction)
+        if ml_bet_player:
+            return 0
+        
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.46 or odds > 0.54:
+        if odds < 0.47 or odds > 0.53 or ml_bet_opp > 0:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -303,15 +333,14 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, 0.1, [0.01, 0.03, 0.05, 0.075, 0.1]],
-        [0.7, 0.15, [0.01, 0.03, 0.05, 0.075, 0.1]],
-        [0.7, 0.20, [0.01, 0.03, 0.05, 0.075, 0.1]],
-        [0.7, 0.25, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.9, 0.1, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.9, 0.05, [0.01, 0.03, 0.05, 0.075, 0.1]],
+        [0.9, 0.0, [0.01, 0.03, 0.05, 0.075, 0.1]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
 
-    test_idx = 3
+    test_idx = 1
 
     if train:
         params = train_params
@@ -342,10 +371,14 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 def prediction_func(avg_predictions, epsilon):
     _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
-    test_return, num_bets = simulate_spread(lambda j: avg_predictions[j],
-                                            lambda j: test_data['spread'].iloc[j],
-                                            bet_func(epsilon), test_data,
-                                            'price', 3, sampling=0, shuffle=True, verbose=False)
+    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
+                                                lambda j: test_data['y'].iloc[j],
+                                                lambda j: test_data['spread'].iloc[j],
+                                                bet_func(epsilon),
+                                                spread_bet_func(epsilon),
+                                                test_data,
+                                                'max_price', 'price', 3, sampling=0,
+                                                shuffle=True, verbose=False)
 
     print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',
           to_percentage(avg_error),
