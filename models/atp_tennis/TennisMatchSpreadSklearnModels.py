@@ -103,6 +103,7 @@ def load_betting_data(betting_sites, test_year=2018):
         betting_date
         from atp_tennis_betting_link_spread 
         where year<={{YEAR}} and book_name in ({{BOOK_NAMES}})
+        and spread1 = - spread2
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
@@ -180,7 +181,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.75
+alpha = 0.95
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
