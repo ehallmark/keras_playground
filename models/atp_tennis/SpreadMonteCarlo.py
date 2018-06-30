@@ -84,11 +84,11 @@ else:
 probabilities5 = {}
 probabilities3 = {}
 
-for i in range(19):
+for i in range(20):
     probabilities5[i] = 0.0
     probabilities5[-i] = 0.0
 
-for i in range(13):
+for i in range(14):
     probabilities3[i] = 0.0
     probabilities3[-i] = 0.0
 
@@ -106,11 +106,11 @@ for k in probabilities5:
 probabilities5_loss = {}
 probabilities3_loss = {}
 
-for i in range(19):
+for i in range(20):
     probabilities5_loss[i] = 0.0
     probabilities5_loss[-i] = 0.0
 
-for i in range(13):
+for i in range(14):
     probabilities3_loss[i] = 0.0
     probabilities3_loss[-i] = 0.0
 

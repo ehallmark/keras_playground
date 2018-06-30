@@ -1,1 +1,1 @@
-print(int(-2.5))
+print(-int(-12-0.55))

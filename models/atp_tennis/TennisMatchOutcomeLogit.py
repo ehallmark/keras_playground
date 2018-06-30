@@ -65,7 +65,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.player_id as player_id,
             m.opponent_id as opponent_id,
             m.tournament as tournament,
-            case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
+            case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
             coalesce(h2h.prior_encounters,0) as h2h_prior_encounters,
             coalesce(h2h.prior_victories,0) as h2h_prior_victories,
