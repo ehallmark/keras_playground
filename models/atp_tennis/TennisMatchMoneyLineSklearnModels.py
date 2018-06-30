@@ -212,12 +212,12 @@ def add_noise(parameters):
 def new_random_parameters():
     model_parameters = {}
     model_parameters['alpha'] = 1.0
-    model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.3
+    model_parameters['epsilon'] = 0.15
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
     model_parameters['logit_model_percent'] = 0.5
     model_parameters['rf_model_percent'] = float(np.random.rand(1))
-    model_parameters['min_odds'] = 0.20 + float(np.random.rand(1))*0.2
-    model_parameters['max_odds'] = float(np.random.rand(1))*0.1+0.5
+    model_parameters['min_odds'] = 0.4
+    model_parameters['max_odds'] = 0.6
     return model_parameters
 
 

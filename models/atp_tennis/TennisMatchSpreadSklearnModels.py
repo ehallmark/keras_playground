@@ -65,7 +65,7 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    'probability_beat',
+    #'probability_beat',
     #'predictions',
     'spread_predictions'
 ]
@@ -181,10 +181,12 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.85
+alpha = 0.75
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
+        if prediction < 1.0 - spread_prob:
+            return 0
         prediction = alpha * prediction + (1.0 - alpha) * spread_prob
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
         if 0 > prediction or prediction > 1:
@@ -192,7 +194,7 @@ def bet_func(epsilon):
             exit(1)
         if odds < 0.475 or odds > 0.525:
             return 0
-        if spread_prob < 0.25:
+        if spread_prob < 0.35:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.

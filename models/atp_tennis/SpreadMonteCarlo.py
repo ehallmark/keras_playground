@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from sqlalchemy import create_engine
 
 np.random.seed(1)
 
@@ -44,14 +46,28 @@ def simulate_match(best_of):
 
 x = []
 x_3 = []
-for i in range(50000):
-    _, _, spread = simulate_match(5)
-    x.append(spread)
-    x.append(-spread)
-    _, _, spread = simulate_match(3)
-    x_3.append(spread)
-    x_3.append(-spread)
-
+use_monte_carlo = False
+if use_monte_carlo:
+    for i in range(50000):
+        _, _, spread = simulate_match(5)
+        x.append(spread)
+        x.append(-spread)
+        _, _, spread = simulate_match(3)
+        x_3.append(spread)
+        x_3.append(-spread)
+else:
+    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    sql_str = '''
+        select games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
+                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
+    '''
+    sql = pd.read_sql(sql_str, conn)
+    for i in range(sql.shape[0]):
+        row = sql.iloc[i]
+        if row['grand_slam']>0.5:
+            x.append(int(row['spread']))
+        else:
+            x_3.append(int(row['spread']))
 
 probabilities5 = {}
 probabilities3 = {}
@@ -84,18 +100,18 @@ for k in probabilities3:
     probabilities3_over[k] = 0.
     probabilities3_under[k] = 0.
     for j in probabilities3:
-        if j <= k:
+        if j < k:
             probabilities3_under[k] += probabilities3[j]
-        if j >= k:
+        if j > k:
             probabilities3_over[k] += probabilities3[j]
 
 for k in probabilities5:
     probabilities5_over[k] = 0.
     probabilities5_under[k] = 0.
     for j in probabilities5:
-        if j <= k:
+        if j < k:
             probabilities5_under[k] += probabilities5[j]
-        if j >= k:
+        if j > k:
             probabilities5_over[k] += probabilities5[j]
 
 
@@ -124,9 +140,16 @@ if __name__ == '__main__':
     plt.show()
 
     print('Beat 5', probability_beat(5))
-
-    print('Beat 3.5', probability_beat(3.5))
-
+    print('Beat 4', probability_beat(4))
+    print('Beat 3', probability_beat(3))
+    print('Beat 2', probability_beat(2))
+    print('Beat 1', probability_beat(1))
+    print('Beat 0', probability_beat(0))
+    print('Beat -1', probability_beat(-1))
+    print('Beat -2', probability_beat(-2))
     print('Beat -3', probability_beat(-3))
+    print('Beat -4', probability_beat(-4))
+    print('Beat -4.5', probability_beat(-4.5))
+    print('Beat -5', probability_beat(-5))
+    print('Beat -6', probability_beat(-6))
 
-    print('Beat -5.0', probability_beat(-5.5))
