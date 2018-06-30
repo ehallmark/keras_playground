@@ -24,8 +24,8 @@ def simulate_match(best_of):
     m1, m2 = 0, 0
     spread = 0
     best_to = int(best_of/2)+1
-    odds1 = 0.3 + np.random.rand(1)*0.4
-    odds2 = 0.7 - np.random.rand(1)*0.4
+    odds1 = 0.5
+    odds2 = 0.5
     for i in range(best_of):
         if m1 >= best_to or m2 >= best_to:
             break
