@@ -30,7 +30,7 @@ for tournament in tournaments:
             bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo
-    epsilon = 0.0 ## just to see all possible
+    epsilon = 0.0
     test_return, num_bets = simulate_spread(lambda j: predictions[j],
                                             lambda j: 0,
                                             tennis_model.bet_func(epsilon), test_data,

@@ -43,14 +43,14 @@ betting_input_attributes = [
     #'mean_opp_break_points_made',
     #'previous_tournament_round',
     #'opp_previous_tournament_round',
-    'tiebreak_win_percent',
-    'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
+    #'tiebreak_win_percent',
+    #'opp_tiebreak_win_percent',
+    #'surface_experience',
+    #'opp_surface_experience',
     'experience',
     'opp_experience',
-    'age',
-    'opp_age',
+    #'age',
+    #'opp_age',
     #'lefty',
     #'opp_lefty',
     #'weight',
@@ -61,8 +61,8 @@ betting_input_attributes = [
     #'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
-    'avg_games_per_set',
-    'opp_avg_games_per_set',
+    #'avg_games_per_set',
+    #'opp_avg_games_per_set',
     # new
     'historical_avg_odds',
     'prev_odds',
@@ -211,13 +211,13 @@ def add_noise(parameters):
 
 def new_random_parameters():
     model_parameters = {}
-    model_parameters['alpha'] = 0.5 + float(np.random.rand(1))*0.45
+    model_parameters['alpha'] = 1.0
     model_parameters['epsilon'] = 0.0 + float(np.random.rand(1))*0.3
     model_parameters['bayes_model_percent'] = float(np.random.rand(1))
     model_parameters['logit_model_percent'] = 0.5
     model_parameters['rf_model_percent'] = float(np.random.rand(1))
-    model_parameters['min_odds'] = 0.10 + float(np.random.rand(1))*0.2
-    model_parameters['max_odds'] = float(np.random.rand(1))*0.2+0.4
+    model_parameters['min_odds'] = 0.20 + float(np.random.rand(1))*0.2
+    model_parameters['max_odds'] = float(np.random.rand(1))*0.1+0.5
     return model_parameters
 
 
@@ -383,7 +383,7 @@ model_parameters['bayes_model_percent'] = 0.1
 model_parameters['logit_model_percent'] = 1.0
 model_parameters['rf_model_percent'] = 0.1
 model_parameters['min_odds'] = 0.20
-model_parameters['max_odds'] = 0.58
+model_parameters['max_odds'] = 0.55
 
 start_year = 2011
 if __name__ == '__main__':
@@ -408,7 +408,7 @@ if __name__ == '__main__':
                                             model=historical_model, spread_model=historical_spread_model)
                 all_predictions = predict(data, test_data)
                 print('Year:', test_year, ' Test years:', num_test_years)
-                for eps in [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:
+                for eps in [0.00, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2]:
                     total_score = 0.0
                     total_return = 0.0
                     total_bets = 0

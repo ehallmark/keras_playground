@@ -43,8 +43,8 @@ betting_input_attributes = [
     #'opp_surface_experience',
     #'experience',
     #'opp_experience',
-    #'age',
-    #'opp_age',
+    'age',
+    'opp_age',
     #'height',
     #'opp_height',
     # 'duration_prev_match',
@@ -170,8 +170,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         right_on=['year', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
-    data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
-    test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
+    #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
+    #test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
     data = data.assign(probability_beat=pd.Series([probability_beat(x) for x in data['spread1'].iloc[:]]).values)
     test_data = test_data.assign(probability_beat=pd.Series([probability_beat(x) for x in test_data['spread1'].iloc[:]]).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
@@ -181,7 +181,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 1.0
+alpha = 0.85
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
@@ -190,10 +190,10 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.46 or odds > 0.525:
+        if odds < 0.475 or odds > 0.525:
             return 0
-        #if spread > 5.:
-        #    return 0
+        if spread_prob < 0.25:
+            return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.
@@ -222,10 +222,11 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+    y_str = 'y'  # 'beat_spread'
     X_train = np.array(data[betting_input_attributes].iloc[:, :])
-    y_train = np.array(data['beat_spread'].iloc[:]).flatten()
+    y_train = np.array(data[y_str].iloc[:]).flatten()
     X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
-    y_test = np.array(test_data['beat_spread'].iloc[:]).flatten()
+    y_test = np.array(test_data[y_str].iloc[:]).flatten()
     for _model, name in [
         (lr, 'Logit Regression'),
         # (svm, 'Support Vector'),
@@ -301,7 +302,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.9, [0.25, 0.3, 0.35]],
     ]
 
-    test_idx = 1  # 2
+    test_idx = 2
 
     if train:
         params = train_params

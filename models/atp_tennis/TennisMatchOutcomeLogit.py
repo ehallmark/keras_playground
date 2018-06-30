@@ -58,7 +58,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         select 
             (m.games_won-m.games_against)::double precision/coalesce(2.0,greatest(2.0,greatest(m.sets_won,m.num_sets-m.sets_won))) as spread_per_set,
             (m.games_won-m.games_against)::double precision as spread,
-            case when m.player_victory then 1.0 else 0.0 end as y, 
+            case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
             m.year as year,
