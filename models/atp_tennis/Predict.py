@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import datetime
 from random import shuffle
-from models.simulation.Simulate import simulate_spread
+from models.simulation.Simulate import simulate_money_line
 import models.atp_tennis.TennisMatchSpreadSklearnModels as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_spread_model, load_outcome_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
@@ -31,11 +31,18 @@ for tournament in tournaments:
 
     # run betting algo
     epsilon = 0.0
-    test_return, num_bets = simulate_spread(lambda j: predictions[j],
-                                            lambda j: 0,
-                                            tennis_model.bet_func(epsilon), test_data,
-                                            'price', 1, after_bet_function=after_bet_func, sampling=0,
-                                            initial_capital=10000000, shuffle=True, verbose=False)
+    test_return, num_bets = simulate_money_line(lambda j: predictions[j],
+                                                lambda j: 0,
+                                                lambda j: 0,
+                                                tennis_model.bet_func(epsilon),
+                                                tennis_model.spread_bet_func(epsilon),
+                                                test_data,
+                                                'max_price',
+                                                'price', 1,
+                                                after_bet_function=after_bet_func,
+                                                sampling=0,
+                                                initial_capital=10000000,
+                                                shuffle=True, verbose=False)
 
     print('Num bets total: ', len(bets_to_make))
     print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date, Book Name')

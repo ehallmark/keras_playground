@@ -78,7 +78,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
                     if after_bet_function is not None:
-                        after_bet_function(bet1, bet_row['player_id'], bet_row['opponent_id'],
+                        after_bet_function(bet1, bet_row['player_id'], bet_row['opponent_id'], 'ML',
                                            max_price1, capital_requirement, bet_row['betting_date'],
                                            bet_row['book_name'])
 
@@ -94,6 +94,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret > 0:
                                 raise ArithmeticError("Loss 1 should be positive")
                             num_losses = num_losses + 1
+                            num_losses1 += 1
                             amount_lost += abs(ret)
                         else:  # WON BET
                             if is_under1:
@@ -103,6 +104,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret < 0:
                                 raise ArithmeticError("win 1 should be positive")
                             num_wins = num_wins + 1
+                            num_wins1 += 1
                             amount_won += abs(ret)
                         return_game += ret
                         available_capital += ret
@@ -120,7 +122,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                     capital_requirement *= capital_ratio
                     confidence *= capital_ratio
                     if after_bet_function is not None:
-                        after_bet_function(bet2, bet_row['opponent_id'], bet_row['player_id'],
+                        after_bet_function(bet2, bet_row['opponent_id'], bet_row['player_id'], 'ML',
                                            max_price2, capital_requirement, bet_row['betting_date'],
                                            bet_row['book_name'])
                     if capital_requirement <= available_capital:
@@ -136,6 +138,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret < 0:
                                 raise ArithmeticError("win 2 should be positive")
                             num_wins += 1
+                            num_wins1 += 1
                             amount_won += abs(ret)
                         else:  # LOST BET :(
                             if is_under2:
@@ -145,6 +148,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret > 0:
                                 raise ArithmeticError("loss 2 should be negative")
                             num_losses += 1
+                            num_losses1 += 1
                             amount_lost += abs(ret)
                         return_game += ret
                         num_bets += 1
@@ -233,6 +237,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret < 0:
                                 raise ArithmeticError("win 1 should be positive")
                             num_wins = num_wins + 1
+                            num_wins2 += 1
                             amount_won += abs(ret)
                         else:
                             if is_price_under1:
@@ -242,6 +247,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret > 0:
                                 raise ArithmeticError("Loss 1 should be positive")
                             num_losses = num_losses + 1
+                            num_losses2 += 1
                             amount_lost += abs(ret)
 
                         return_game += ret
@@ -283,6 +289,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret < 0:
                                 raise ArithmeticError("win 2 should be positive")
                             num_wins += 1
+                            num_wins2 += 1
                             amount_won += abs(ret)
                         else:  # LOST BET :(
                             if is_price_under2:
@@ -292,6 +299,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                             if ret > 0:
                                 raise ArithmeticError("loss 2 should be negative")
                             num_losses += 1
+                            num_losses2 += 1
                             amount_lost += abs(ret)
                         return_game += ret
                         num_bets += 1
@@ -304,7 +312,8 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                 return_total = return_total + return_game
                 if return_game != 0 and verbose:
                     print('Return game:', return_game, ' Total: ', return_total, ' Wins:', num_wins, ' Losses:', num_losses)
-
+        print('ML wins:', num_wins1, ' ML losses:', num_losses1)
+        print('Spread wins:', num_wins2, ' Spread losses:', num_losses2)
         if verbose:
             print('Initial Capital: ', initial_capital)
             print('Final Capital: ', available_capital)
