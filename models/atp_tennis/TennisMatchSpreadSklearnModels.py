@@ -20,8 +20,8 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 betting_input_attributes = [
     # 'mean_duration',
     # 'mean_opp_duration',
-    'mean_return_points_made',
-    'mean_opp_return_points_made',
+    #'mean_return_points_made',
+    #'mean_opp_return_points_made',
     # 'mean_second_serve_points_made',
     # 'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
@@ -37,20 +37,20 @@ betting_input_attributes = [
     # 'mean_opp_break_points_made',
     # 'previous_tournament_round',
     # 'opp_previous_tournament_round',
-    'tiebreak_win_percent',
-    'opp_tiebreak_win_percent',
+    #'tiebreak_win_percent',
+    #'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    'age',
-    'opp_age',
+    'experience',
+    'opp_experience',
+    #'age',
+    #'opp_age',
     #'height',
     #'opp_height',
     # 'duration_prev_match',
     # 'opp_duration_prev_match',
-    #'elo_score',
-    #'opp_elo_score',
+    'elo_score',
+    'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
@@ -181,7 +181,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.95
+alpha = 0.90
 def bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row):
         spread_prob = probability_beat(spread, row['grand_slam'] > 0.5)
