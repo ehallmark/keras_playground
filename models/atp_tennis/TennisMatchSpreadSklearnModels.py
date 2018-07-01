@@ -66,7 +66,7 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     #'probability_beat',
-    #'ml_odds_avg',
+    'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -208,7 +208,7 @@ def bet_func(epsilon):
             expectation = prediction * 100. + (1. - prediction) * price
             expectation /= -price
             expectation_implied /= -price
-        if expectation > epsilon:
+        if expectation > epsilon * 2:
             return 1. + expectation
         else:
             return 0
@@ -227,10 +227,13 @@ def spread_bet_func(epsilon):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if ml_bet_player > 0 or odds < 0.475 or odds > 0.525:
+        if ml_bet_player > 0:
             return 0
 
-        if ml_bet_opp > 1.0 and ml_opp_odds < 0.40:
+        if odds < 0.45 or odds > 0.54:
+            return 0
+
+        if ml_bet_opp > 0.0 and ml_opp_odds < 0.3 and spread_prob > ml_opp_odds:
             return 1.1
 
         if price > 0:
@@ -335,9 +338,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
-        [0.75, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
-        [0.8, 0.05, [0.01, 0.05, 0.075, 0.1, 0.2]],
+        [0.7, 0.15, [0.1, 0.15, 0.25]],
+        [0.8, 0.1, [0.1, 0.15, 0.25]],
+        [0.9, 0.05, [0.1, 0.15, 0.25]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -396,7 +399,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2016, 2017, 2018]:
+            for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

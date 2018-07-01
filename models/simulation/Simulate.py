@@ -154,6 +154,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                         num_bets += 1
                         available_capital += ret
                 # spread data
+                ml_bet1 = bet1
+                ml_bet2 = bet2
+                ml_odds1 = best_odds1
+                ml_odds2 = best_odds2
                 max_price1 = np.array(bet_row[spread_price_str + '1']).flatten()[0]
                 max_price2 = np.array(bet_row[spread_price_str + '2']).flatten()[0]
                 # calculate odds ratio
@@ -204,10 +208,6 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, b
                         beat_spread2 = None
                     else:
                         beat_spread2 = -spread2 < -actual_spread
-                ml_bet1 = bet1
-                ml_bet2 = bet2
-                ml_odds1 = best_odds1
-                ml_odds2 = best_odds2
                 bet1 = spread_betting_func(max_price1, best_odds1, spread1, prediction, bet_row, ml_bet1, ml_bet2, ml_odds2)
                 if bet1 > 0:
                     confidence = betting_minimum * bet1
