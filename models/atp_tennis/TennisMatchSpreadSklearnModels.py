@@ -66,7 +66,7 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     #'probability_beat',
-    'ml_odds_avg',
+    #'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -196,7 +196,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.35 or odds > 0.50:
+        if odds < 0.20 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -216,7 +216,7 @@ def bet_func(epsilon):
 
 
 def spread_bet_func(epsilon):
-    def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp):
+    def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         spread_prob = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
         spread_prob_loss = probability_beat_given_loss(spread, row['grand_slam'] > 0.5)
         prediction = prediction * alpha + (1.0 - alpha) * odds
@@ -227,10 +227,10 @@ def spread_bet_func(epsilon):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if ml_bet_player or odds < 0.475 or odds > 0.525:
+        if ml_bet_player > 0 or odds < 0.475 or odds > 0.525:
             return 0
 
-        if ml_bet_opp > 0:
+        if ml_bet_opp > 1.0 and ml_opp_odds < 0.40:
             return 1.1
 
         if price > 0:
