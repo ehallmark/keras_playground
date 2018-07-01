@@ -73,6 +73,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(h2h.prior_victories,0)-coalesce(h2h.prior_losses,0) as h2h_prior_win_percent,        
             coalesce(prev_quarter.prior_victories,0)/greatest(1,coalesce(prev_quarter.prior_encounters,0)) as prior_quarter_win_percent,
             coalesce(prev_quarter_opp.prior_victories,0)/greatest(1,coalesce(prev_quarter_opp.prior_encounters,0)) as opp_prior_quarter_win_percent,
+            coalesce(prev_quarter.avg_round,0) as prior_quarter_avg_round,
+            coalesce(prev_quarter_opp.avg_round,0) as opp_prior_quarter_avg_round,
             coalesce(prev_year.prior_encounters,0) as prev_year_prior_encounters,
             coalesce(prev_year.prior_victories,0) as prev_year_prior_victories,
             coalesce(prev_year.prior_losses,0) as prev_year_prior_losses,
@@ -272,10 +274,10 @@ input_attributes = [
     #'h2h_prior_win_percent',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
-    #'prev_year_avg_round',
-    #'opp_prev_year_avg_round',
-    #'opp_tourney_hist_avg_round',
-    #'tourney_hist_avg_round',
+    'prev_year_avg_round',
+    'opp_prev_year_avg_round',
+    'opp_tourney_hist_avg_round',
+    'tourney_hist_avg_round',
     'tourney_hist_prior_encounters',
     'opp_tourney_hist_prior_encounters',
     #'mean_break_points_made',
@@ -299,7 +301,11 @@ input_attributes = [
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'best_year',
-    'opp_best_year'
+    'opp_best_year',
+    'prior_quarter_avg_round',
+    'opp_prior_quarter_avg_round',
+    'prior_quarter_win_percent',
+    'opp_prior_quarter_win_percent'
 ]
 
 
