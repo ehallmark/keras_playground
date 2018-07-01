@@ -184,9 +184,9 @@ def probability_beat_given_win(spread, grand_slam=False):
             return probabilities3_over[-int(spread)]
     else:
         if grand_slam:
-            return probabilities5_over[-int(spread-0.55)]
+            return probabilities5_over[-int(spread)]
         else:
-            return probabilities3_over[-int(spread-0.55)]
+            return probabilities3_over[-int(spread)]
 
 
 def probability_beat_given_loss(spread, grand_slam=False):
@@ -197,9 +197,9 @@ def probability_beat_given_loss(spread, grand_slam=False):
             return probabilities3_over_loss[int(-spread)]
     else:
         if grand_slam:
-            return probabilities5_over_loss[-int(spread-0.55)]
+            return probabilities5_over_loss[-int(spread)]
         else:
-            return probabilities3_over_loss[-int(spread-0.55)]
+            return probabilities3_over_loss[-int(spread)]
 
 
 if __name__ == '__main__':
@@ -215,6 +215,7 @@ if __name__ == '__main__':
 
     print('Given WIN')
     print('Beat 5', probability_beat_given_win(5))
+    print('Beat 4.5', probability_beat_given_win(4.5))
     print('Beat 4', probability_beat_given_win(4))
     print('Beat 3', probability_beat_given_win(3))
     print('Beat 2', probability_beat_given_win(2))
@@ -230,6 +231,7 @@ if __name__ == '__main__':
 
     print('Given LOSS')
     print('Beat 5', probability_beat_given_loss(5))
+    print('Beat 4.5', probability_beat_given_loss(4.5))
     print('Beat 4', probability_beat_given_loss(4))
     print('Beat 3', probability_beat_given_loss(3))
     print('Beat 2', probability_beat_given_loss(2))

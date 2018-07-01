@@ -62,8 +62,8 @@ betting_input_attributes = [
     'opp_underdog_wins',
     'fave_wins',
     'opp_fave_wins',
-    #'prior_quarter_win_percent',
-    #'opp_prior_quarter_win_percent',
+    'prior_quarter_win_percent',
+    'opp_prior_quarter_win_percent',
 ]
 
 betting_only_attributes = [
@@ -198,7 +198,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.35 or odds > 0.50:
+        if odds < 0.375 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -233,10 +233,10 @@ def spread_bet_func(epsilon):
             return 0
 
         double_down_below = 0  # 0.35
-        hedge_below = 0  # 0.35
+        hedge_below = 0  # 0.45
 
         if double_down_below > 0:
-            if ml_bet_player > 0 and ml_opp_odds < double_down_below:
+            if ml_bet_player > 0 and (1.0 - ml_opp_odds) < double_down_below:
                 return 1.05
 
         if hedge_below > 0:
@@ -347,8 +347,8 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
         [0.9, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
-        [0.475, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
-        [0.1, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
+        [0.8, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
+        [0.7, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
