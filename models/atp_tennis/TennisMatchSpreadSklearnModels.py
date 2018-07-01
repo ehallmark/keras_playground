@@ -62,15 +62,15 @@ betting_input_attributes = [
     'opp_underdog_wins',
     'fave_wins',
     'opp_fave_wins',
-    'prior_quarter_win_percent',
-    'opp_prior_quarter_win_percent',
-    'prior_quarter_encounters',
-    'opp_prior_quarter_encounters'
+    #'prior_quarter_win_percent',
+    #'opp_prior_quarter_win_percent',
+    #'prior_quarter_encounters',
+    #'opp_prior_quarter_encounters'
 ]
 
 betting_only_attributes = [
     #'probability_beat',
-    'ml_odds_avg',
+    #'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -200,7 +200,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.375 or odds > 0.50:
+        if odds < 0.40 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -221,16 +221,17 @@ def bet_func(epsilon):
 
 def spread_bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
-        spread_prob = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
+        spread_prob_win = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
         spread_prob_loss = probability_beat_given_loss(spread, row['grand_slam'] > 0.5)
         prediction = prediction * alpha + (1.0 - alpha) * odds
-        prediction = spread_prob * prediction + spread_prob_loss * (1.0-prediction)
+        prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
+        spread_prob = (spread_prob_loss + spread_prob_win) / 2
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.475 or odds > 0.525 or spread_prob < 0.65:
+        if odds < 0.475 or odds > 0.525 or spread_prob < 0.30:
             return 0
 
         double_down_below = 0  # 0.35
@@ -347,14 +348,14 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, 0.5, [0.08, 0.1, 0.15]],
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.5, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
-        [0.7, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
-        [0.9, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
+        [0.5, 0.25, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.7, 0.15, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.9, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
 
-    test_idx = 1
+    test_idx = 2
 
     if train:
         params = train_params
