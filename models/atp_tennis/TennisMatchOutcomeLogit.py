@@ -71,6 +71,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(h2h.prior_victories,0) as h2h_prior_victories,
             coalesce(h2h.prior_losses,0) as h2h_prior_losses,
             coalesce(h2h.prior_victories,0)-coalesce(h2h.prior_losses,0) as h2h_prior_win_percent,        
+            coalesce(prev_quarter.prior_victories,0)/greatest(1,coalesce(prev_quarter.prior_encounters,0)) as prior_quarter_win_percent,
+            coalesce(prev_quarter_opp.prior_victories,0)/greatest(1,coalesce(prev_quarter_opp.prior_encounters,0)) as opp_prior_quarter_win_percent,
             coalesce(prev_year.prior_encounters,0) as prev_year_prior_encounters,
             coalesce(prev_year.prior_victories,0) as prev_year_prior_victories,
             coalesce(prev_year.prior_losses,0) as prev_year_prior_losses,
@@ -181,6 +183,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         from atp_matches_individual as m
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
+        left outer join atp_matches_prior_quarter as prev_quarter
+            on ((m.player_id,m.tournament,m.year)=(prev_quarter.player_id,prev_quarter.tournament,prev_quarter.year))
+        left outer join atp_matches_prior_quarter as prev_quarter_opp
+            on ((m.opponent_id,m.tournament,m.year)=(prev_quarter_opp.player_id,prev_quarter_opp.tournament,prev_quarter_opp.year))
         left outer join atp_matches_prior_year as prev_year
             on ((m.player_id,m.tournament,m.year)=(prev_year.player_id,prev_year.tournament,prev_year.year))
         left outer join atp_matches_tournament_history as tourney_hist
