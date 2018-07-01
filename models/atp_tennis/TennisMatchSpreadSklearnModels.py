@@ -55,7 +55,7 @@ betting_input_attributes = [
     'opp_avg_games_per_set',
     #'best_year',
     #'opp_best_year',
-    #'historical_avg_odds',
+    'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
     'underdog_wins',
@@ -68,7 +68,7 @@ betting_only_attributes = [
     #'probability_beat',
     'ml_odds_avg',
     'predictions',
-    #'spread_predictions'
+    'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -196,7 +196,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.50:
+        if odds < 0.35 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -230,10 +230,10 @@ def spread_bet_func(epsilon):
         if ml_bet_player > 0:
             return 0
 
-        if odds < 0.45 or odds > 0.54:
+        if odds < 0.475 or odds > 0.525:
             return 0
 
-        if ml_bet_opp > 0.0 and ml_opp_odds < 0.3 and spread_prob > ml_opp_odds:
+        if ml_bet_opp > 0.0 and ml_opp_odds < 0.42 and spread_prob > ml_opp_odds:
             return 1.1
 
         if price > 0:
@@ -338,9 +338,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, [0.08, 0.1, 0.15]],
         #[0.3, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, 0.15, [0.1, 0.15, 0.25]],
-        [0.8, 0.1, [0.1, 0.15, 0.25]],
-        [0.9, 0.05, [0.1, 0.15, 0.25]],
+        [0.8, 0.1, [0.025, 0.05, 0.1, 0.15, 0.25]],
+        [0.85, 0.075, [0.025, 0.05, 0.1, 0.15, 0.25]],
+        [0.9, 0.05, [0.025, 0.05, 0.1, 0.15, 0.25]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
