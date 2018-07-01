@@ -51,8 +51,8 @@ betting_input_attributes = [
     # 'opp_duration_prev_match',
     'elo_score',
     'opp_elo_score',
-    'avg_games_per_set',
-    'opp_avg_games_per_set',
+    #'avg_games_per_set',
+    #'opp_avg_games_per_set',
     #'best_year',
     #'opp_best_year',
     'historical_avg_odds',
@@ -61,14 +61,16 @@ betting_input_attributes = [
     'underdog_wins',
     'opp_underdog_wins',
     'fave_wins',
-    'opp_fave_wins'
+    'opp_fave_wins',
+    #'prior_quarter_win_percent',
+    #'opp_prior_quarter_win_percent',
 ]
 
 betting_only_attributes = [
     #'probability_beat',
     'ml_odds_avg',
     'predictions',
-    'spread_predictions'
+    #'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -258,7 +260,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     all_predictions = []
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
-    rf = lambda: RandomForestClassifier(n_estimators=200)
+    rf = lambda: RandomForestClassifier(n_estimators=300)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
