@@ -193,14 +193,14 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.95
+alpha = 1.0
 def bet_func(epsilon):
     def bet_func_helper(price, odds, prediction, row):
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.40 or odds > 0.50:
+        if odds < 0.375 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -230,7 +230,7 @@ def spread_bet_func(epsilon):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.475 or odds > 0.525 or spread_prob < 0.4:
+        if odds < 0.475 or odds > 0.525 or spread_prob < 0.65:
             return 0
 
         double_down_below = 0  # 0.35
@@ -347,8 +347,8 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, 0.5, [0.08, 0.1, 0.15]],
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.7, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15]],
-        [0.8, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15]],
+        [0.5, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
+        [0.7, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
         [0.9, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
