@@ -196,7 +196,7 @@ def bet_func(epsilon):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.35 or odds > 0.50:
+        if odds < 0.40 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -208,7 +208,7 @@ def bet_func(epsilon):
             expectation = prediction * 100. + (1. - prediction) * price
             expectation /= -price
             expectation_implied /= -price
-        if expectation > epsilon * 2:
+        if expectation > epsilon:
             return 1. + expectation
         else:
             return 0
@@ -227,14 +227,14 @@ def spread_bet_func(epsilon):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if ml_bet_player > 0:
-            return 0
-
         if odds < 0.475 or odds > 0.525:
             return 0
 
-        if ml_bet_opp > 0.0 and ml_opp_odds < 0.42 and spread_prob > ml_opp_odds:
+        if ml_bet_player > 0:
             return 1.1
+
+        #if ml_bet_opp > 0.0 and ml_opp_odds < 0.42 and spread_prob > ml_opp_odds:
+        #    return 1.1
 
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -258,7 +258,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     all_predictions = []
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
-    rf = lambda: RandomForestClassifier(n_estimators=50)
+    rf = lambda: RandomForestClassifier(n_estimators=200)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -279,31 +279,32 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         model_predictions = []
         all_predictions.append(model_predictions)
         seed = int(np.random.randint(0, high=1000000, size=1)) * 2
-        for i in range(50):
+        if name == 'Random Forest':
             model = _model()
-            X_train_sample = sample2d(X_train, seed + i, 2)
-            y_train_sample = sample2d(y_train, seed + i, 2)
-            # print("Shapes: ", X_train.shape, X_test.shape)
-            model.fit(X_train_sample, y_train_sample)
-            binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
-            # print('Correctly predicted: ' + str(binary_correct) + ' out of ' + str(n) +
-            #      ' (' + to_percentage(binary_percent) + ')')
+            model.fit(X_train, y_train)
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
+        else:
+            for i in range(50):
+                model = _model()
+                X_train_sample = sample2d(X_train, seed + i, 2)
+                y_train_sample = sample2d(y_train, seed + i, 2)
+                model.fit(X_train_sample, y_train_sample)
+                prob_pos = predict_proba(model, X_test)
+                model_predictions.append(prob_pos)
+                if graph:
+                    fraction_of_positives, mean_predicted_value = \
+                        calibration_curve(y_test, prob_pos, n_bins=10)
+                    ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+                             label="%s" % (name,))
+                    ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+                             histtype="step", lw=2)
 
-            if graph:
-                fraction_of_positives, mean_predicted_value = \
-                    calibration_curve(y_test, prob_pos, n_bins=10)
-                ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                         label="%s" % (name,))
-                ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                         histtype="step", lw=2)
-
-            # test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
-            #                                  bet_func(model_to_epsilon[name]), test_data,
-            #                                  'price', 2, sampling=0, shuffle=True)
-            # print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
-            # print('---------------------------------------------------------')
+                # test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
+                #                                  bet_func(model_to_epsilon[name]), test_data,
+                #                                  'price', 2, sampling=0, shuffle=True)
+                # print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
+                # print('---------------------------------------------------------')
 
     if graph:
         ax1.set_ylabel("Fraction of positives")
@@ -335,12 +336,12 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     # dev parameters
     train_params = [
-        #[0.1, [0.08, 0.1, 0.15]],
-        #[0.3, [0.05, 0.10, 0.15]],
+        #[0.1, 0.5, [0.08, 0.1, 0.15]],
+        #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.8, 0.1, [0.025, 0.05, 0.1, 0.15, 0.25]],
-        [0.85, 0.075, [0.025, 0.05, 0.1, 0.15, 0.25]],
-        [0.9, 0.05, [0.025, 0.05, 0.1, 0.15, 0.25]],
+        [0.7, 0.10, [0.025, 0.05, 0.1, 0.15, 0.25]],
+        [0.5, 0.10, [0.025, 0.05, 0.1, 0.15, 0.25]],
+        [0.3, 0.10, [0.025, 0.05, 0.1, 0.15, 0.25]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -362,7 +363,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
                 variance = 0.0001
                 bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
                 epsilon = epsilon + float(np.random.randn(1) * variance)
-            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
+            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Logit Percentage:', logit_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
             rf_model_percent = 1.0 - logit_percent - bayes_model_percent
             total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) + rf_model_percent * len(all_predictions[2])
             avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
