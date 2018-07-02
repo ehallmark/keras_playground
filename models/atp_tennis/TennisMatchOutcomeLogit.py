@@ -61,6 +61,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
+            m.court_surface as court_surface,
             m.year as year,
             m.player_id as player_id,
             m.opponent_id as opponent_id,
@@ -77,6 +78,16 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(prev_quarter_opp.prior_encounters,0) as opp_prior_quarter_encounters,
             coalesce(prev_quarter.avg_round,0) as prior_quarter_avg_round,
             coalesce(prev_quarter_opp.avg_round,0) as opp_prior_quarter_avg_round,
+            coalesce(prev_year.avg_match_closeness,0) as prior_year_match_closeness,
+            coalesce(prev_year_opp.avg_match_closeness,0) as opp_prior_year_match_closeness,
+            coalesce(prev_quarter.avg_match_closeness,0) as prior_quarter_match_closeness,
+            coalesce(prev_quarter_opp.avg_match_closeness,0) as opp_prior_quarter_match_closeness,
+            coalesce(prev_quarter.avg_games_per_set,0) as prior_quarter_games_per_set,
+            coalesce(prev_quarter_opp.avg_games_per_set,0) as opp_prior_quarter_games_per_set,
+            coalesce(prev_quarter.prior_victories,0) as prior_quarter_victories,
+            coalesce(prev_quarter_opp.prior_victories,0) as opp_prior_quarter_victories,
+            coalesce(prev_quarter.prior_losses,0) as prior_quarter_losses,
+            coalesce(prev_quarter_opp.prior_losses,0) as opp_prior_quarter_losses,
             coalesce(prev_year.prior_encounters,0) as prev_year_prior_encounters,
             coalesce(prev_year.prior_victories,0) as prev_year_prior_victories,
             coalesce(prev_year.prior_losses,0) as prev_year_prior_losses,
@@ -266,49 +277,48 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
     return data, test_data
 
 
-input_attributes = [
-    #'mean_duration',
-    #'mean_opp_duration',
-    #'mean_return_points_made',
-    #'mean_opp_return_points_made',
-    #'mean_second_serve_points_made',
-    #'mean_opp_second_serve_points_made',
-    #'h2h_prior_win_percent',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
-    'prev_year_avg_round',
-    'opp_prev_year_avg_round',
-    'opp_tourney_hist_avg_round',
+# previous year quality
+input_attributes0 = [
     'tourney_hist_avg_round',
-    'tourney_hist_prior_encounters',
-    'opp_tourney_hist_prior_encounters',
-    #'mean_break_points_made',
-    #'mean_opp_break_points_made',
-    #'previous_tournament_round',
-    #'opp_previous_tournament_round',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
-    'surface_experience',
-    'opp_surface_experience',
-    #'experience',
-    #'opp_experience',
-    'age',
-    'opp_age',
-    'height',
-    'opp_height',
-    #'duration_prev_match',
-    #'opp_duration_prev_match',
-    #'elo_score',
-    #'opp_elo_score',
+    'prev_year_avg_round',
+    'prev_year_prior_victories',
+    'prev_year_prior_losses',
+    'prior_year_match_closeness',
     'avg_games_per_set',
-    'opp_avg_games_per_set',
-    'best_year',
-    'opp_best_year',
-    'prior_quarter_avg_round',
-    'opp_prior_quarter_avg_round',
-    #'prior_quarter_encounters',
-    #'opp_prior_quarter_encounters'
 ]
+
+# prior quarter
+input_attributes1 = [
+    'prior_quarter_avg_round',
+    'prior_quarter_games_per_set',
+    'prior_quarter_victories',
+    'prior_quarter_losses',
+    'prior_quarter_match_closeness'
+]
+
+# player qualities
+input_attributes2 = [
+    'elo_score',
+    'age',
+    'surface_experience',
+    'height',
+    'best_year'
+]
+
+# match stats
+input_attributes3 = [
+    'mean_second_serve_points_made',
+    'mean_first_serve_points_made',
+    'mean_break_points_made',
+    'mean_break_points_against',
+    'tiebreak_win_percent',
+]
+
+# opponent attrs
+opp_input_attributes0 = ['opp_'+attr for attr in input_attributes0]
+opp_input_attributes1 = ['opp_'+attr for attr in input_attributes1]
+opp_input_attributes2 = ['opp_'+attr for attr in input_attributes2]
+opp_input_attributes3 = ['opp_'+attr for attr in input_attributes3]
 
 
 input_attributes_spread = [
@@ -326,8 +336,8 @@ input_attributes_spread = [
     'opp_prev_year_avg_round',
     'opp_tourney_hist_avg_round',
     'tourney_hist_avg_round',
-    'tiebreak_win_percent',
-    'opp_tiebreak_win_percent',
+    #'tiebreak_win_percent',
+    #'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
     'experience',
@@ -342,6 +352,8 @@ input_attributes_spread = [
     #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
+    'prior_quarter_match_closeness',
+    'opp_prior_quarter_match_closeness',
     #'best_year',
     #'opp_best_year',
     #'historical_avg_odds',
@@ -355,13 +367,35 @@ input_attributes_spread = [
 
 y = 'y'
 y_spread = 'spread_per_set'
-all_attributes = list(input_attributes)
+all_attributes = list(input_attributes0)
 all_attributes.append('grand_slam')
 all_attributes.append('round')
+all_attributes.append('court_surface')
 all_attributes.append(y)
 all_attributes.append(y_spread)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for attr in input_attributes_spread:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in input_attributes1:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in input_attributes2:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in input_attributes3:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in opp_input_attributes0:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in opp_input_attributes1:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in opp_input_attributes2:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in opp_input_attributes3:
     if attr not in all_attributes:
         all_attributes.append(attr)
 for meta in meta_attributes:
@@ -377,7 +411,7 @@ if __name__ == '__main__':
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
-        results = smf.logit(y+' ~ '+'+'.join(input_attributes), data=sql).fit()
+        results = smf.logit(y+' ~ '+'+'.join(input_attributes0), data=sql).fit()
         print(results.summary())
         binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
 

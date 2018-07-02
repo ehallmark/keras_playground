@@ -13,7 +13,7 @@ import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
-from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes as outcome_input_attributes
+from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes0 as outcome_input_attributes
 from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes_spread as spread_input_attributes
 import numpy as np
 from sqlalchemy import create_engine
@@ -105,16 +105,25 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
-    X = np.array(data[outcome_input_attributes].iloc[:, :])
-    X_test = np.array(test_data[outcome_input_attributes].iloc[:, :])
     X_spread = np.array(data[spread_input_attributes].iloc[:, :])
     X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
-    if model is not None:
-        data = data.assign(predictions=pd.Series(predict_proba(model, X)).values)
-        test_data = test_data.assign(predictions=pd.Series(predict_proba(model, X_test)).values)
+    if models is not None:
+        for i in range(len(models)):
+            attrs = getattr(tennis_model, 'input_attributes'+str(i))
+            opp_attrs = getattr(tennis_model, 'opp_input_attributes'+str(i))
+            X = np.array(data[attrs].iloc[:, :])
+            X_test = np.array(test_data[attrs].iloc[:, :])
+            Xopp = np.array(data[opp_attrs].iloc[:, :])
+            Xopp_test = np.array(test_data[opp_attrs].iloc[:, :])
+            model = models[i]
+            data['predictions'+str(i)] = pd.Series(predict_proba(model, X), index=data.index)
+            test_data['predictions'+str(i)] = pd.Series(predict_proba(model, X_test), index=test_data.index)
+            data['opp_predictions' + str(i)] = pd.Series(predict_proba(model, Xopp), index=data.index)
+            test_data['opp_predictions' + str(i)] = pd.Series(predict_proba(model, Xopp_test), index=test_data.index)
+
     if spread_model is not None:
         data = data.assign(spread_predictions=pd.Series(spread_model.predict(X_spread)).values)
         test_data = test_data.assign(spread_predictions=pd.Series(spread_model.predict(X_test_spread)).values)

@@ -1,4 +1,4 @@
-from models.atp_tennis.TennisMatchOutcomeLogit import load_data, all_attributes, input_attributes_spread, input_attributes, test_model, to_percentage
+from models.atp_tennis.TennisMatchOutcomeLogit import load_data, input_attributes2, input_attributes3, input_attributes1, all_attributes, input_attributes_spread, input_attributes0, test_model, to_percentage
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -43,40 +43,43 @@ if __name__ == '__main__':
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+        inputs = [input_attributes0, input_attributes1, input_attributes2, input_attributes3]
         for model, name in [(lr, 'Logistic'),
                             (gnb, 'Naive Bayes'),
                             #(svc, 'Support Vector Classification'),
                             # (rfc, 'Random Forest')
                             ]:
             y_str = 'y'
-            X = np.array(sql[input_attributes])
             y = np.array(sql[y_str]).flatten()
-            X_test = np.array(test_data[input_attributes])
             y_test = np.array(test_data[y_str]).flatten()
-            model.fit(X, y)
-            print('Fit.')
-            save_outcome_model(model, name)
-            model = load_outcome_model(name)
-            print('Saved and reloaded.')
-            binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+            for i in range(len(inputs)):
+                attrs = inputs[i]
+                X = np.array(sql[attrs])
+                X_test = np.array(test_data[attrs])
+                model.fit(X, y)
+                print('Fit.')
+                save_outcome_model(model, name+str(i))
+                model = load_outcome_model(name+str(i))
+                print('Saved and reloaded.')
+                binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
 
-            print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
-                  ' ('+to_percentage(binary_percent)+')')
-            print('Average error: ', to_percentage(avg_error))
-            if hasattr(model, "predict_proba"):
-                prob_pos = model.predict_proba(X_test)[:, 1]
-            else:  # use decision function
-                prob_pos = model.decision_function(X_test)
-                prob_pos = \
-                    (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
-            fraction_of_positives, mean_predicted_value = \
-                calibration_curve(y_test, prob_pos, n_bins=10)
+                print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
+                      ' ('+to_percentage(binary_percent)+')')
+                print('Average error: ', to_percentage(avg_error))
+                if hasattr(model, "predict_proba"):
+                    prob_pos = model.predict_proba(X_test)[:, 1]
+                else:  # use decision function
+                    prob_pos = model.decision_function(X_test)
+                    prob_pos = \
+                        (prob_pos - prob_pos.min()) / (prob_pos.max() - prob_pos.min())
+                fraction_of_positives, mean_predicted_value = \
+                    calibration_curve(y_test, prob_pos, n_bins=10)
 
-            ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                     label="%s" % (name,))
+                ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
+                         label="%s" % (name,))
 
-            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                     histtype="step", lw=2)
+                ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
+                         histtype="step", lw=2)
 
         ax1.set_ylabel("Fraction of positives")
         ax1.set_ylim([-0.05, 1.05])

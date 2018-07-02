@@ -18,43 +18,7 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 
 
 betting_input_attributes = [
-    # 'mean_duration',
-    # 'mean_opp_duration',
-    # 'mean_return_points_made',
-    # 'mean_opp_return_points_made',
-    # 'mean_second_serve_points_made',
-    # 'mean_opp_second_serve_points_made',
     'h2h_prior_win_percent',
-    # 'prev_year_prior_encounters',
-    # 'opp_prev_year_prior_encounters',
-    # 'prev_year_avg_round',
-    # 'opp_prev_year_avg_round',
-    # 'opp_tourney_hist_avg_round',
-    # 'tourney_hist_avg_round',
-    # 'tourney_hist_prior_encounters',
-    # 'opp_tourney_hist_prior_encounters',
-    # 'mean_break_points_made',
-    # 'mean_opp_break_points_made',
-    # 'previous_tournament_round',
-    # 'opp_previous_tournament_round',
-    # 'tiebreak_win_percent',
-    # 'opp_tiebreak_win_percent',
-    # 'surface_experience',
-    # 'opp_surface_experience',
-    # 'experience',
-    # 'opp_experience',
-    # 'age',
-    # 'opp_age',
-    # 'height',
-    # 'opp_height',
-    # 'duration_prev_match',
-    # 'opp_duration_prev_match',
-    'elo_score',
-    'opp_elo_score',
-    #'avg_games_per_set',
-    #'opp_avg_games_per_set',
-    #'best_year',
-    #'opp_best_year',
     'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
@@ -62,17 +26,20 @@ betting_input_attributes = [
     'opp_underdog_wins',
     'fave_wins',
     'opp_fave_wins',
-    #'prior_quarter_win_percent',
-    #'opp_prior_quarter_win_percent',
-    #'prior_quarter_encounters',
-    #'opp_prior_quarter_encounters'
 ]
 
 betting_only_attributes = [
     #'probability_beat',
-    #'ml_odds_avg',
-    'predictions',
-    #'spread_predictions'
+    'ml_odds_avg',
+    'predictions0',
+    'predictions1',
+    'predictions2',
+    'predictions3',
+    'opp_predictions0',
+    'opp_predictions1',
+    'opp_predictions2',
+    'opp_predictions3',
+    'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -153,14 +120,14 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, spread_model=None):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_model=None):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
     for attr in betting_input_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, spread_model=spread_model, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, models=models, spread_model=spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
@@ -221,8 +188,8 @@ def bet_func(epsilon):
 
 def spread_bet_func(epsilon):
     def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
-        spread_prob_win = probability_beat_given_win(spread, row['grand_slam'] > 0.5)
-        spread_prob_loss = probability_beat_given_loss(spread, row['grand_slam'] > 0.5)
+        spread_prob_win = probability_beat_given_win(spread, row['court_surface'], row['grand_slam'] > 0.5)
+        spread_prob_loss = probability_beat_given_loss(spread,  row['court_surface'], row['grand_slam'] > 0.5)
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
@@ -403,7 +370,7 @@ def prediction_func(avg_predictions, epsilon):
 
 start_year = 2011
 if __name__ == '__main__':
-    historical_model = load_outcome_model('Logistic')
+    historical_models = [load_outcome_model('Logistic'+str(i)) for i in range(4)]
     historical_spread_model = load_spread_model('Linear')
     num_tests = 1
     for i in range(num_tests):
@@ -413,5 +380,5 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, model=historical_model, spread_model=historical_spread_model)
+                                            test_year=test_year, models=historical_models, spread_model=historical_spread_model)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func, graph=False, train=True)
