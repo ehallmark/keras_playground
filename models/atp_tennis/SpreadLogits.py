@@ -33,33 +33,37 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, surface='Hard',
             prior = abs_probabilities_per_surface[surface][1]
             sql = losses
     row = sql[((sql.player_id == player) & (sql.tournament == tournament) & (sql.year == year))]
-    if row.shape[0] == 0:
-        # unknown
-        return prior
-
     probabilities = prior.copy()
-    for k in probabilities:
-        probabilities[k] *= alpha * 100.0
-    print('prior: ', probabilities)
-    for i in r:
-        if i < 0:
-            x = int(row['minus'+str(abs(i))])
-        elif i > 0:
-            x = int(row['plus' + str(i)])
-        else:
-            x = int(row['even'])
-        probabilities[i] += x
-
-    s = 0.0
-    for _, v in probabilities.items():
-        s += v
-
-    if s > 0:
+    if row.shape[0] > 0:
         for k in probabilities:
-            probabilities[k] /= s
+            probabilities[k] *= alpha * 100.0
+        print('prior: ', probabilities)
+        for i in r:
+            if i < 0:
+                x = int(row['minus'+str(abs(i))])
+            elif i > 0:
+                x = int(row['plus' + str(i)])
+            else:
+                x = int(row['even'])
+            probabilities[i] += x
+
+        s = 0.0
+        for _, v in probabilities.items():
+            s += v
+
+        if s > 0:
+            for k in probabilities:
+                probabilities[k] /= s
 
     print('posterior: ', probabilities)
-    return probabilities
+    probabilities_over = {}
+    for k in probabilities:
+        probabilities_over[k] = 0.
+        for j in probabilities_over:
+            if j > k:
+                probabilities_over[k] += probabilities[j]
+
+    return probabilities_over[-int(spread)]
 
 
 print(spread_prob('roger-federer', 'wimbledon', 2018, 2, True, 'Clay', True))
