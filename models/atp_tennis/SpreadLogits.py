@@ -7,14 +7,7 @@ import statsmodels.formula.api as smf
 
 np.random.seed(1)
 sql_str = '''
-        select case when player_victory then 1.0 else 0.0 end as player_victory,
-        games_won-games_against as spread, 
-        case when court_surface='Clay' then 1.0 else 0.0 end as clay,
-        case when court_surface='Grass' then 1.0 else 0.0 end as grass, 
-        case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
-                then 1.0 else 0.0 end as grand_slam 
-        from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
-    '''
+        select * from atp_matches_spread_probabilities_win '''
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 sql = pd.read_sql(sql_str, conn)
