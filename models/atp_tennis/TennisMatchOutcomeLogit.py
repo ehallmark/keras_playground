@@ -113,23 +113,23 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(tourney_hist_opp.prior_victories,0)-coalesce(tourney_hist_opp.prior_losses,0) as opp_tourney_hist_prior_win_percent,
             coalesce(tourney_hist_opp.prior_losses,0) as opp_tourney_hist_prior_losses,
             coalesce(mean.duration,90.0) as mean_duration,
-            coalesce(mean_opp.duration,90.0) as mean_opp_duration,
+            coalesce(mean_opp.duration,90.0) as opp_mean_duration,
             coalesce(var.duration,1000.0) as var_duration,
             coalesce(var_opp.duration,1000.0) as var_opp_duration,
             coalesce(mean.first_serve_points_made, 0) as mean_first_serve_points_made,
-            coalesce(mean_opp.first_serve_points_made, 0) as mean_opp_first_serve_points_made,
+            coalesce(mean_opp.first_serve_points_made, 0) as opp_mean_first_serve_points_made,
             coalesce(mean.second_serve_points_made, 0) as mean_second_serve_points_made,
-            coalesce(mean_opp.second_serve_points_made, 0) as mean_opp_second_serve_points_made,
+            coalesce(mean_opp.second_serve_points_made, 0) as opp_mean_second_serve_points_made,
             coalesce(mean.return_points_won, 0) as mean_return_points_made,
-            coalesce(mean_opp.return_points_won, 0) as mean_opp_return_points_made,
+            coalesce(mean_opp.return_points_won, 0) as opp_mean_return_points_made,
             coalesce(mean.break_points_against, 0) as mean_break_points_against,
-            coalesce(mean_opp.break_points_against, 0) as mean_opp_break_points_against,
+            coalesce(mean_opp.break_points_against, 0) as opp_mean_break_points_against,
             coalesce(mean.break_points_saved, 0) as mean_break_points_saved,
-            coalesce(mean_opp.break_points_saved, 0) as mean_opp_break_points_saved,
+            coalesce(mean_opp.break_points_saved, 0) as opp_mean_break_points_saved,
             coalesce(mean.break_points_attempted, 0) as mean_break_points_attempted,
-            coalesce(mean_opp.break_points_attempted, 0) as mean_opp_break_points_attempted,
+            coalesce(mean_opp.break_points_attempted, 0) as opp_mean_break_points_attempted,
             coalesce(mean.break_points_made, 0) as mean_break_points_made,
-            coalesce(mean_opp.break_points_made, 0) as mean_opp_break_points_made,
+            coalesce(mean_opp.break_points_made, 0) as opp_mean_break_points_made,
             coalesce(prior_tourney.round, 0) as previous_tournament_round,
             coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round,
             coalesce(tb.tiebreaks_won,0)::float/(1+coalesce(tb.tiebreaks_total,0)) as tiebreak_win_percent,
@@ -285,28 +285,21 @@ input_attributes0 = [
     'prev_year_prior_losses',
     'prior_year_match_closeness',
     'avg_games_per_set',
-]
-
-# prior quarter
-input_attributes1 = [
+    # prior quarter
     'prior_quarter_avg_round',
     'prior_quarter_games_per_set',
     'prior_quarter_victories',
     'prior_quarter_losses',
-    'prior_quarter_match_closeness'
-]
+    'prior_quarter_match_closeness',
 
-# player qualities
-input_attributes2 = [
+    # player qualities
     'elo_score',
     'age',
     'surface_experience',
     'height',
-    'best_year'
-]
+    'best_year',
 
-# match stats
-input_attributes3 = [
+    # match stats
     'mean_second_serve_points_made',
     'mean_first_serve_points_made',
     'mean_break_points_made',
@@ -316,10 +309,6 @@ input_attributes3 = [
 
 # opponent attrs
 opp_input_attributes0 = ['opp_'+attr for attr in input_attributes0]
-opp_input_attributes1 = ['opp_'+attr for attr in input_attributes1]
-opp_input_attributes2 = ['opp_'+attr for attr in input_attributes2]
-opp_input_attributes3 = ['opp_'+attr for attr in input_attributes3]
-
 
 input_attributes_spread = [
     #'mean_return_points_made',
@@ -377,25 +366,7 @@ meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
-for attr in input_attributes1:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
-for attr in input_attributes2:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
-for attr in input_attributes3:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
 for attr in opp_input_attributes0:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
-for attr in opp_input_attributes1:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
-for attr in opp_input_attributes2:
-    if attr not in all_attributes:
-        all_attributes.append(attr)
-for attr in opp_input_attributes3:
     if attr not in all_attributes:
         all_attributes.append(attr)
 for meta in meta_attributes:

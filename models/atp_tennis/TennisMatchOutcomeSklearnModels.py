@@ -1,4 +1,4 @@
-from models.atp_tennis.TennisMatchOutcomeLogit import load_data, input_attributes2, input_attributes3, input_attributes1, all_attributes, input_attributes_spread, input_attributes0, test_model, to_percentage
+from models.atp_tennis.TennisMatchOutcomeLogit import load_data, all_attributes, input_attributes_spread, input_attributes0, test_model, to_percentage
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-        inputs = [input_attributes0, input_attributes1, input_attributes2, input_attributes3]
+        inputs = [input_attributes0]
         for model, name in [(lr, 'Logistic'),
                             (gnb, 'Naive Bayes'),
                             #(svc, 'Support Vector Classification'),

@@ -19,7 +19,7 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 
 betting_input_attributes = [
     'h2h_prior_win_percent',
-    'historical_avg_odds',
+    #'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
     'underdog_wins',
@@ -29,16 +29,9 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    #'probability_beat',
     'ml_odds_avg',
     'predictions0',
-    'predictions1',
-    'predictions2',
-    'predictions3',
-    'opp_predictions0',
-    'opp_predictions1',
-    'opp_predictions2',
-    'opp_predictions3',
+  #  'opp_predictions0',
     'spread_predictions'
 ]
 
@@ -151,8 +144,6 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     )
     #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
     #test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
-    data = data.assign(probability_beat=pd.Series([probability_beat_given_win(x) for x in data['spread1'].iloc[:]]).values)
-    test_data = test_data.assign(probability_beat=pd.Series([probability_beat_given_win(x) for x in test_data['spread1'].iloc[:]]).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
@@ -161,8 +152,10 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 alpha = 1.0
-def bet_func(epsilon):
+def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, row):
+        if not bet_ml:
+            return 0
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
@@ -186,8 +179,10 @@ def bet_func(epsilon):
     return bet_func_helper
 
 
-def spread_bet_func(epsilon):
+def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
+        if not bet_spread:
+            return 0
         spread_prob_win = probability_beat_given_win(spread, row['court_surface'], row['grand_slam'] > 0.5)
         spread_prob_loss = probability_beat_given_loss(spread,  row['court_surface'], row['grand_slam'] > 0.5)
         prediction = prediction * alpha + (1.0 - alpha) * odds
@@ -198,7 +193,7 @@ def spread_bet_func(epsilon):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.475 or odds > 0.525 or spread_prob < 0.30:
+        if odds < 0.45 or odds > 0.52:
             return 0
 
         double_down_below = 0  # 0.35
@@ -315,9 +310,10 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, 0.5, [0.08, 0.1, 0.15]],
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.5, 0.25, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.7, 0.15, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.9, 0.05, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.33, 0.33, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.8, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.1, 0.8, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.1, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -351,28 +347,31 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     return predictions
 
 
-def prediction_func(avg_predictions, epsilon):
-    _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
-    test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
-                                                lambda j: test_data['y'].iloc[j],
-                                                lambda j: test_data['spread'].iloc[j],
-                                                bet_func(epsilon),
-                                                spread_bet_func(epsilon),
-                                                test_data,
-                                                'max_price', 'price', 1, sampling=0,
-                                                shuffle=True, verbose=False)
+def prediction_func(bet_ml=True, bet_spread=True):
+    def prediction_func_helper(avg_predictions, epsilon):
+        _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
+        test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
+                                                    lambda j: test_data['y'].iloc[j],
+                                                    lambda j: test_data['spread'].iloc[j],
+                                                    bet_func(epsilon, bet_ml=bet_ml),
+                                                    spread_bet_func(epsilon, bet_spread=bet_spread),
+                                                    test_data,
+                                                    'max_price', 'price', 1, sampling=0,
+                                                    shuffle=True, verbose=False)
 
-    print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',
-          to_percentage(avg_error),
-          ' Test years:', num_test_years, ' Year:', test_year)
-    print('---------------------------------------------------------')
-
+        print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',
+              to_percentage(avg_error),
+              ' Test years:', num_test_years, ' Year:', test_year)
+        print('---------------------------------------------------------')
+    return prediction_func_helper
 
 start_year = 2011
 if __name__ == '__main__':
-    historical_models = [load_outcome_model('Logistic'+str(i)) for i in range(4)]
+    historical_models = [load_outcome_model('Logistic'+str(i)) for i in range(1)]
     historical_spread_model = load_spread_model('Linear')
     num_tests = 1
+    bet_spread = True
+    bet_ml = True
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
@@ -381,4 +380,4 @@ if __name__ == '__main__':
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
                                             test_year=test_year, models=historical_models, spread_model=historical_spread_model)
-                avg_predictions = predict(data, test_data, prediction_function=prediction_func, graph=False, train=True)
+                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread), graph=False, train=True)

@@ -119,10 +119,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             Xopp = np.array(data[opp_attrs].iloc[:, :])
             Xopp_test = np.array(test_data[opp_attrs].iloc[:, :])
             model = models[i]
-            data['predictions'+str(i)] = pd.Series(predict_proba(model, X), index=data.index)
-            test_data['predictions'+str(i)] = pd.Series(predict_proba(model, X_test), index=test_data.index)
-            data['opp_predictions' + str(i)] = pd.Series(predict_proba(model, Xopp), index=data.index)
-            test_data['opp_predictions' + str(i)] = pd.Series(predict_proba(model, Xopp_test), index=test_data.index)
+            data['predictions'+str(i)] = pd.Series(predict_proba(model, X)-predict_proba(model,Xopp), index=data.index)
+            test_data['predictions'+str(i)] = pd.Series(predict_proba(model, X_test)-predict_proba(model, Xopp_test), index=test_data.index)
 
     if spread_model is not None:
         data = data.assign(spread_predictions=pd.Series(spread_model.predict(X_spread)).values)

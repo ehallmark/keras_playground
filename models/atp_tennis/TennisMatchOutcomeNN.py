@@ -6,6 +6,7 @@ from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage
 import numpy as np
 np.random.seed(23952)
 
+
 def test_model(model, x, y):
     predictions = model.predict(x)
     avg_error = 0
