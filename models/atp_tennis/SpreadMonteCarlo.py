@@ -70,13 +70,11 @@ def create_spread_for_query(query):
 
 
 def create_totals_for_query(query):
-    probabilities3, probabilities3_loss, probabilities5, probabilities5_loss \
+    probabilities3, probabilities5 \
         = create_totals_probabilities_from_query(query)
     probabilities5_over = build_cumulative_probabilities(probabilities5)
     probabilities3_over = build_cumulative_probabilities(probabilities3)
-    probabilities5_over_loss = build_cumulative_probabilities(probabilities5_loss)
-    probabilities3_over_loss = build_cumulative_probabilities(probabilities3_loss)
-    return probabilities3_over, probabilities5_over, probabilities3_over_loss, probabilities5_over_loss
+    return probabilities3_over, probabilities5_over
 
 
 def create_spread_probabilities_from_query(query):
