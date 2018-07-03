@@ -39,7 +39,7 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, surface='Hard',
 
     probabilities = prior.copy()
     for k in probabilities:
-        probabilities[k] *= alpha
+        probabilities[k] *= alpha * 100.0
     print('prior: ', probabilities)
     for i in r:
         if i < 0:

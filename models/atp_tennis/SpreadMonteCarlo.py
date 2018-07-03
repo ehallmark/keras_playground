@@ -79,11 +79,9 @@ def create_probabilities(query, use_monte_carlo=False):
 
     for i in range(-18, 19):
         probabilities5[i] = 0.0
-        probabilities5[-i] = 0.0
 
     for i in range(-12, 13):
         probabilities3[i] = 0.0
-        probabilities3[-i] = 0.0
 
     for p in x:
         probabilities5[int(p)] += 1
@@ -101,11 +99,9 @@ def create_probabilities(query, use_monte_carlo=False):
 
     for i in range(-18, 19):
         probabilities5_loss[i] = 0.0
-        probabilities5_loss[-i] = 0.0
 
     for i in range(-12, 13):
         probabilities3_loss[i] = 0.0
-        probabilities3_loss[-i] = 0.0
 
     for p in x_loss:
         probabilities5_loss[int(p)] += 1
