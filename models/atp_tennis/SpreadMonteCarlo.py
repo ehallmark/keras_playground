@@ -43,7 +43,7 @@ def simulate_match(best_of):
     return m1, m2, spread
 
 
-def create_spread_for_query(query, use_monte_carlo=False):
+def create_probabilities(query, use_monte_carlo=False):
     x = []
     x_3 = []
     x_loss = []
@@ -63,7 +63,6 @@ def create_spread_for_query(query, use_monte_carlo=False):
             row = sql.iloc[i]
             victory = row['player_victory']
             spread = int(row['spread'])
-            to_add_to = None
             if victory:
                 if row['grand_slam'] > 0.5:
                     x.append(spread)
@@ -78,11 +77,11 @@ def create_spread_for_query(query, use_monte_carlo=False):
     probabilities5 = {}
     probabilities3 = {}
 
-    for i in range(20):
+    for i in range(-18, 19):
         probabilities5[i] = 0.0
         probabilities5[-i] = 0.0
 
-    for i in range(14):
+    for i in range(-12, 13):
         probabilities3[i] = 0.0
         probabilities3[-i] = 0.0
 
@@ -100,11 +99,11 @@ def create_spread_for_query(query, use_monte_carlo=False):
     probabilities5_loss = {}
     probabilities3_loss = {}
 
-    for i in range(20):
+    for i in range(-18, 19):
         probabilities5_loss[i] = 0.0
         probabilities5_loss[-i] = 0.0
 
-    for i in range(14):
+    for i in range(-12, 13):
         probabilities3_loss[i] = 0.0
         probabilities3_loss[-i] = 0.0
 
@@ -119,6 +118,11 @@ def create_spread_for_query(query, use_monte_carlo=False):
     for k in probabilities5_loss:
         probabilities5_loss[k] /= len(x_loss)
 
+    return probabilities3, probabilities3_loss, probabilities5, probabilities5_loss
+
+
+def create_spread_for_query(query, use_monte_carlo=False):
+    probabilities3, probabilities3_loss, probabilities5, probabilities5_loss = create_probabilities(query, use_monte_carlo)
     probabilities5_under = {}
     probabilities3_under = {}
     probabilities5_over = {}
@@ -166,6 +170,7 @@ def create_spread_for_query(query, use_monte_carlo=False):
                 probabilities5_over_loss[k] += probabilities5_loss[j]
     return probabilities3_over, probabilities5_over, probabilities3_over_loss, probabilities5_over_loss
 
+
 sql_str = '''
         select player_victory,games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
@@ -175,10 +180,18 @@ sql_clay = sql_str + ' and court_surface=\'Clay\''
 sql_grass = sql_str + ' and court_surface=\'Grass\''
 sql_hard = sql_str + ' and court_surface=\'Hard\''
 
+
 probabilities_per_surface = {
     'Clay': create_spread_for_query(sql_clay),
     'Grass': create_spread_for_query(sql_grass),
     'Hard': create_spread_for_query(sql_hard)
+}
+
+
+abs_probabilities_per_surface = {
+    'Clay': create_probabilities(sql_clay),
+    'Grass': create_probabilities(sql_grass),
+    'Hard': create_probabilities(sql_hard)
 }
 
 

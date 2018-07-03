@@ -3,45 +3,64 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
+from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface
 
 
 np.random.seed(1)
-sql_str = '''
-        select * from atp_matches_spread_probabilities_win '''
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-sql = pd.read_sql(sql_str, conn)
-
-grand_slam_data = sql[sql.grand_slam > 0.5]
-regular_data = sql[sql.grand_slam < 0.5]
-
-grand_slam_wins = grand_slam_data[grand_slam_data.player_victory > 0.5]
-grand_slam_losses = grand_slam_data[grand_slam_data.player_victory < 0.5]
-
-regular_wins = regular_data[regular_data.player_victory > 0.5]
-regular_losses = regular_data[regular_data.player_victory < 0.5]
+slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins', conn)
+slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
+wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
+losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
 
 
-def spread_func(x, i):
-    if x > i:
-        return 1.0
+def spread_prob(player, tournament, year, spread, is_grand_slam, surface='Hard', win=True, alpha=10.0):
+    if is_grand_slam:
+        r = range(-18, 19, 1)
+        if win:
+            prior = abs_probabilities_per_surface[surface][2]
+            sql = slam_wins
+        else:
+            prior = abs_probabilities_per_surface[surface][3]
+            sql = slam_losses
     else:
-        return 0.0
+        r = range(-12, 13, 1)
+        if win:
+            prior = abs_probabilities_per_surface[surface][0]
+            sql = wins
+        else:
+            prior = abs_probabilities_per_surface[surface][1]
+            sql = losses
+    row = sql[((sql.player_id == player) & (sql.tournament == tournament) & (sql.year == year))]
+    if row.shape[0] == 0:
+        # unknown
+        return prior
+
+    probabilities = prior.copy()
+    for k in probabilities:
+        probabilities[k] *= alpha
+    print('prior: ', probabilities)
+    for i in r:
+        if i < 0:
+            x = int(row['minus'+str(abs(i))])
+        elif i > 0:
+            x = int(row['plus' + str(i)])
+        else:
+            x = int(row['even'])
+        probabilities[i] += x
+
+    s = 0.0
+    for _, v in probabilities.items():
+        s += v
+
+    if s > 0:
+        for k in probabilities:
+            probabilities[k] /= s
+
+    print('posterior: ', probabilities)
+    return probabilities
 
 
-def train(data, min, max):
-    for i in range(min, max+1, 1):
-        print('Calculating odds for spread: ', i)
-        data['y'] = [spread_func(x, i) for x in data['spread']]
-        try:
-            results = smf.logit('y ~ ' + '+'.join(['clay', 'grass']), data=data).fit()
-            print(results.summary())
-        except:
-            print('Unable to predict: ', i)
-
-
-train(grand_slam_wins, -10, 10)
-train(grand_slam_losses, -10, 10)
-train(regular_wins, -6, 6)
-train(regular_losses, -6, 6)
+print(spread_prob('roger-federer', 'wimbledon', 2018, 2, True, 'Clay', True))
 
