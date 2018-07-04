@@ -129,10 +129,10 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
     if spread_model is not None and slam_spread_model is not None:
         X_spread = np.array(data[spread_input_attributes].iloc[:, :])
         X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
-        y_hat = predict_proba(spread_model, X_spread)
-        y_hat_test = predict_proba(spread_model, X_test_spread)
-        y_hat_slam = predict_proba(slam_spread_model, X_spread)
-        y_hat_slam_test = predict_proba(slam_spread_model, X_test_spread)
+        y_hat = spread_model.predict(X_spread)
+        y_hat_test = spread_model.predict(X_test_spread)
+        y_hat_slam = slam_spread_model.predict(X_spread)
+        y_hat_slam_test = slam_spread_model.predict(X_test_spread)
 
         def lam(y, y_slam, slam):
             if slam > 0.5:
