@@ -105,23 +105,26 @@ if __name__ == '__main__':
         for model, name in [(lr, 'Linear'),
                             #(rf, 'Random Forest')
                             ]:
-            y_str = 'spread_per_set'
-            X = np.array(sql[input_attributes_spread])
-            y = np.array(sql[y_str]).flatten()
-            X_test = np.array(test_data[input_attributes_spread])
-            y_test = np.array(test_data[y_str]).flatten()
-            model.fit(X, y)
-            print('Fit.')
-            save_spread_model(model, name)
-            model = load_spread_model(name)
-            print('Saved and reloaded.')
-            n, avg_error = test_model(model, X_test, y_test, include_binary=False)
-            print('Average error: ', avg_error)
-            spread_predictions = model.predict(X_test)
-            print('Predictions spread: ', spread_predictions)
+            y_str = 'spread'
+            i = 0
+            for sql, test_data in [(data, data_test), (slam_data, slam_data_test)]:
+                X = np.array(sql[input_attributes_spread])
+                y = np.array(sql[y_str]).flatten()
+                X_test = np.array(test_data[input_attributes_spread])
+                y_test = np.array(test_data[y_str]).flatten()
+                model.fit(X, y)
+                print('Fit.')
+                save_spread_model(model, name+str(i))
+                model = load_spread_model(name+str(i))
+                print('Saved and reloaded.')
+                n, avg_error = test_model(model, X_test, y_test, include_binary=False)
+                print('Average error: ', avg_error)
+                spread_predictions = model.predict(X_test)
+                print('Predictions spread: ', spread_predictions)
 
-            ax2.hist(spread_predictions, range=(min(spread_predictions), max(spread_predictions)), bins=10, label=name,
-                     histtype="step", lw=2)
+                ax2.hist(spread_predictions, range=(min(spread_predictions), max(spread_predictions)), bins=10, label=name,
+                         histtype="step", lw=2)
+                i += 1
 
         ax2.set_xlabel("Mean predicted value")
         ax2.set_ylabel("Count")

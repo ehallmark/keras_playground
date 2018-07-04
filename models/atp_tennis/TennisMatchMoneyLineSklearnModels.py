@@ -123,10 +123,10 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             else:
                 return y
 
-        data.assign(predictions=pd.Series([lam(y_hat.iloc[i],y_hat_slam.iloc[i],data['grand_slam']) for i in range(data.shape[0])]).values)
-        test_data.assign(predictions=pd.Series([lam(y_hat_test.iloc[i],y_hat_slam_test.iloc[i],test_data['grand_slam']) for i in range(test_data.shape[0])]).values)
+        data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
+        test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
 
-    if spread_model is not None:
+    if spread_model is not None and slam_spread_model is not None:
         X_spread = np.array(data[spread_input_attributes].iloc[:, :])
         X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
         y_hat = predict_proba(spread_model, X_spread)
@@ -141,16 +141,10 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 return y
 
         data.assign(spread_predictions=pd.Series(
-            [lam(y_hat.iloc[i], y_hat_slam.iloc[i], data['grand_slam']) for i in range(data.shape[0])]).values)
+            [lam(y_hat[i], y_hat_slam[i], data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
         test_data.assign(spread_predictions=pd.Series(
-            [lam(y_hat_test.iloc[i], y_hat_slam_test.iloc[i], test_data['grand_slam']) for i in
+            [lam(y_hat_test[i], y_hat_slam_test[i], test_data['grand_slam'].iloc[i]) for i in
              range(test_data.shape[0])]).values)
-
-    if slam_spread_model is not None:
-        X_spread = np.array(data[spread_input_attributes].iloc[:, :])
-        X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
-        data = data.assign(spread_predictions=pd.Series(slam_spread_model.predict(X_spread)).values)
-        test_data = test_data.assign(spread_predictions=pd.Series(slam_spread_model.predict(X_test_spread)).values)
 
     return data, test_data
 
