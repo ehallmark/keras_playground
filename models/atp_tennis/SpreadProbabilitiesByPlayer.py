@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
-from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface
+from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface, abs_total_probabilities_per_surface
 
 
 np.random.seed(1)
@@ -17,6 +17,11 @@ slam_wins.set_index(['player_id', 'tournament', 'year'], inplace=True)
 slam_losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
 wins.set_index(['player_id', 'tournament', 'year'], inplace=True)
 losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
+
+totals_slam = pd.read_sql('select * from atp_matches_total_probabilities_slam', conn)
+totals = pd.read_sql('select * from atp_matches_total_probabilities', conn)
+totals_slam.set_index(['player_id', 'tournament', 'year'], inplace=True)
+totals.set_index(['player_id', 'tournament', 'year'], inplace=True)
 
 
 def build_cumulative_probabilities(probabilities):
@@ -76,6 +81,44 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
     probabilities_over = build_cumulative_probabilities(probabilities)
     return probabilities_over[-int(spread)]
 
+
+def totals_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', under=True, alpha=5.0):
+    if is_grand_slam:
+        r = range(1, 67, 1)
+        prior = priors_per_surface[surface][1]
+        sql = totals_slam
+    else:
+        r = range(1, 41, 1)
+        prior = priors_per_surface[surface][0]
+        sql = totals
+
+    try:
+        row = sql.loc[(player, tournament, int(year)), :]
+    except KeyError as e:
+        row = np.array([])
+
+    probabilities = prior.copy()
+    if row.shape[0] > 0:
+        for k in probabilities:
+            probabilities[k] *= alpha * 100.0
+        for i in r:
+            x = int(row['plus' + str(i)])
+            probabilities[i] += x
+
+        s = 0.0
+        for _, v in probabilities.items():
+            s += v
+
+        if s > 0:
+            for k in probabilities:
+                probabilities[k] /= s
+
+    probabilities_over = build_cumulative_probabilities(probabilities)
+    if under:
+        prob = 1.0 - probabilities_over[int(total-1)]
+    else:
+        prob = probabilities_over[int(total)]
+    return prob
 
 
 print(spread_prob('roger-federer', 'wimbledon', 2017, -4, True, abs_probabilities_per_surface, 'Clay', True))
