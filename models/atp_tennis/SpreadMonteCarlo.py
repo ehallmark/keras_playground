@@ -84,8 +84,8 @@ def create_spread_probabilities_from_query(query):
 
 
 def create_totals_probabilities_from_query(query):
-    probabilities3, _ = create_probabilities(query, 1, 39, 'total', False)
-    probabilities5, _ = create_probabilities(query, 1, 66, 'total', True)
+    probabilities3, _ = create_probabilities(query, 0, 39, 'total', False)
+    probabilities5, _ = create_probabilities(query, 0, 66, 'total', True)
     return probabilities3, probabilities5
 
 
