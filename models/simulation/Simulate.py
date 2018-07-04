@@ -74,7 +74,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
 
                 ml_bet_option = BetOption(bet_row, price_str)
                 spread_bet_option = BetOption(bet_row, spread_price_str)
-                bet_decision = decision_func(ml_bet_option, spread_bet_option, prediction)
+                bet_decision = decision_func(ml_bet_option, spread_bet_option, bet_row, prediction)
                 ml_bet1 = bet_decision['ml_bet1']
                 ml_bet2 = bet_decision['ml_bet2']
                 spread_bet1 = bet_decision['spread_bet1']
@@ -350,3 +350,4 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
     #results = smf.OLS(np.array(regression_data['return_total']), np.array([regression_data['betting_epsilon1'],regression_data['betting_epsilon2']]).transpose()).fit()
     #print(results.summary())
     return avg_best, num_bets_avg
+
