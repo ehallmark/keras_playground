@@ -29,7 +29,7 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    'ml_odds_avg',
+    #'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -363,13 +363,18 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True):
         spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                         spread_bet_option.spread2, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
-
-        totals_prob_under = totals_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+        if totals_bet_option is not None:
+            totals_prob_under = totals_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
                                        totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_totals,
                                        bet_row['court_surface'], under=True)
-        totals_prob_over = totals_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+            totals_prob_over = totals_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                        totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_totals,
                                        bet_row['court_surface'], under=False)
+            over_bet = totals_prob_over
+            under_bet = totals_prob_under
+        else:
+            over_bet = 0
+            under_bet = 0
 
         ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
         ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
@@ -377,8 +382,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True):
                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
         spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
                                   1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
-        over_bet = totals_prob_over
-        under_bet = totals_prob_under
+
         return {
             'ml_bet1': ml_bet1,
             'ml_bet2': ml_bet2,
@@ -398,7 +402,7 @@ def prediction_func(bet_ml=True, bet_spread=True):
                                                     lambda j: test_data['spread'].iloc[j],
                                                     decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread),
                                                     test_data,
-                                                    'max_price', 'price', 1, sampling=0,
+                                                    'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
 
         print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',

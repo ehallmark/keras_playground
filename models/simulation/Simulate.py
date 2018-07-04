@@ -34,7 +34,7 @@ class BetOption:
 
 
 def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, decision_func, test_meta_data,
-                        price_str='max_price', spread_price_str='price', num_trials=50, sampling=0, verbose=False,
+                        price_str='max_price', spread_price_str='price', totals_price_str='totals_price', num_trials=50, sampling=0, verbose=False,
                         shuffle=False, initial_capital=10000, after_bet_function=None):
 
     avg_best = 0.0
@@ -76,7 +76,8 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
 
                 ml_bet_option = BetOption(bet_row, price_str)
                 spread_bet_option = BetOption(bet_row, spread_price_str)
-                bet_decision = decision_func(ml_bet_option, spread_bet_option, bet_row, prediction)
+                totals_bet_option = None # BetOption(bet_row, totals_price_str)
+                bet_decision = decision_func(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction)
                 ml_bet1 = bet_decision['ml_bet1']
                 ml_bet2 = bet_decision['ml_bet2']
                 spread_bet1 = bet_decision['spread_bet1']
