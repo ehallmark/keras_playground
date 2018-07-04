@@ -18,6 +18,7 @@ slam_losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
 wins.set_index(['player_id', 'tournament', 'year'], inplace=True)
 losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
 
+
 def build_cumulative_probabilities(probabilities):
     probabilities_over = {}
     for k in probabilities:
@@ -47,10 +48,10 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
             sql = losses
 
     try:
-        row = sql.loc[(player, tournament, year), :]
+        row = sql.loc[(player, tournament, int(year)), :]
         print('Success')
     except KeyError as e:
-        print('Error')
+        print('Error', e)
         row = np.array([])
     probabilities = prior.copy()
     if row.shape[0] > 0:
