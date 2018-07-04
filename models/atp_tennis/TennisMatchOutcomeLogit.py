@@ -319,7 +319,8 @@ input_attributes0 = [
     'mean_break_points_against',
     'tiebreak_win_percent',
     'major_avg_round',
-    'major_match_closeness'
+    'major_match_closeness',
+    'major_encounters',
 ]
 
 # opponent attrs
@@ -327,73 +328,51 @@ opp_input_attributes0 = ['opp_'+attr for attr in input_attributes0]
 input_attributes0 = input_attributes0 + opp_input_attributes0
 
 input_attributes_spread = [
-    #'mean_return_points_made',
-    #'mean_opp_return_points_made',
-    #'mean_second_serve_points_made',
-    #'mean_opp_second_serve_points_made',
-    #'prev_year_prior_encounters',
-    #'opp_prev_year_prior_encounters',
-    #'tourney_hist_prior_encounters',
-    #'opp_tourney_hist_prior_encounters',
-    #'mean_break_points_made',
-    #'mean_opp_break_points_made',
     'prev_year_avg_round',
     'opp_prev_year_avg_round',
     'opp_tourney_hist_avg_round',
     'tourney_hist_avg_round',
-    #'tiebreak_win_percent',
-    #'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
     'experience',
     'opp_experience',
     'prior_quarter_avg_round',
     'opp_prior_quarter_avg_round',
-    #'age',
-    #'opp_age',
-    #'height',
-    #'opp_height',
-    #'elo_score',
-    #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
     'prior_quarter_match_closeness',
     'opp_prior_quarter_match_closeness',
-
+    'major_encounters',
+    'opp_major_encounters',
+    'major_avg_round',
+    'opp_major_avg_round',
+    'major_match_closeness',
+    'opp_major_match_closeness'
 ]
 
 
 input_attributes_totals = [
-    'mean_return_points_made',
-    'opp_mean_return_points_made',
     'mean_second_serve_points_made',
     'opp_mean_second_serve_points_made',
+    #'mean_first_serve_points_made',
+    #'opp_mean_first_serve_points_made',
     'prev_year_prior_encounters',
     'opp_prev_year_prior_encounters',
     'prev_year_avg_round',
     'opp_prev_year_avg_round',
-    'opp_tourney_hist_avg_round',
-    'tourney_hist_avg_round',
-    'tiebreak_win_percent',
-    'opp_tiebreak_win_percent',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
-    'prior_quarter_avg_round',
-    'opp_prior_quarter_avg_round',
-    'age',
-    'opp_age',
-    'height',
-    'opp_height',
-    'elo_score',
-    'opp_elo_score',
+    #'elo_score',
+    #'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-    'prior_quarter_match_closeness',
-    'opp_prior_quarter_match_closeness',
+    #'prior_quarter_match_closeness',
+    #'opp_prior_quarter_match_closeness',
     #'grand_slam',
-    'round'
+    'round',
+    'major_encounters',
+    'opp_major_encounters'
+    #'spread_per_set'
 ]
 
 y = 'y'
@@ -451,6 +430,9 @@ if __name__ == '__main__':
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
+        if save:
+            results.save(model_file+'_slam')
+
         # regular model
         print('Regular model')
         results = smf.ols(y_totals+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
@@ -458,18 +440,28 @@ if __name__ == '__main__':
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
-            results.save(model_file)
+            results.save(model_file+'_regular')
 
     if train_spread_model:
         model_file = 'tennis_match_spread_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
-        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql).fit()
+        print('Grand Slam')
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql[sql.grand_slam > 0.5]).fit()
         print(results.summary())
-        n, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
-            results.save(model_file)
+            results.save(model_file + '_slam')
+
+        # regular model
+        print('Regular model')
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql[sql.grand_slam < 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        if save:
+            results.save(model_file + '_regular')
 
     exit(0)
 
