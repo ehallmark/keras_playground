@@ -14,6 +14,8 @@ class BetOption:
         Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
         Implied probability	=	100 / ( 'plus' moneyline odds + 100 )
         '''
+        self.spread1 = bet_row['spread1']
+        self.spread2 = bet_row['spread2']
         self.is_under1 = self.max_price1 < 0
         self.is_under2 = self.max_price2 < 0
         if self.max_price1 > 0:
@@ -81,8 +83,6 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                 spread_bet2 = bet_decision['spread_bet2']
 
                 # spread data
-                spread1 = bet_row['spread1']
-                spread2 = bet_row['spread2']
                 spread_price_is_under1 = spread_bet_option.is_under1
                 spread_price_is_under2 = spread_bet_option.is_under2
 
@@ -92,6 +92,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                 ml_price2 = ml_bet_option.max_price2
                 spread_price1 = spread_bet_option.max_price1
                 spread_price2 = spread_bet_option.max_price2
+                spread1 = spread_bet_option.spread1
+                spread2 = spread_bet_option.spread2
+                #total1 = total_bet_option.total1
+                #total2 = total_bet_option.total2
 
                 # money line result
                 actual_result = actual_label_func(i)
