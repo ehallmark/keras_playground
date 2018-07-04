@@ -108,94 +108,13 @@ sql_total_clay = sql_total_str + ' and court_surface=\'Clay\''
 sql_total_grass = sql_total_str + ' and court_surface=\'Grass\''
 sql_total_hard = sql_total_str + ' and court_surface=\'Hard\''
 
-
-probabilities_per_surface = {
-    'Clay': create_spread_for_query(sql_clay),
-    'Grass': create_spread_for_query(sql_grass),
-    'Hard': create_spread_for_query(sql_hard)
-}
-
-
 abs_probabilities_per_surface = {
     'Clay': create_spread_probabilities_from_query(sql_clay),
     'Grass': create_spread_probabilities_from_query(sql_grass),
     'Hard': create_spread_probabilities_from_query(sql_hard)
 }
-
-'''
-total_probabilities_per_surface = {
-    'Clay': create_totals_for_query(sql_total_clay),
-    'Grass': create_totals_for_query(sql_total_grass),
-    'Hard': create_totals_for_query(sql_total_hard)
-}
-
 abs_total_probabilities_per_surface = {
     'Clay': create_totals_probabilities_from_query(sql_total_clay),
     'Grass': create_totals_probabilities_from_query(sql_total_grass),
     'Hard': create_totals_probabilities_from_query(sql_total_hard)
-}'''
-
-def probability_beat_given_win(spread, court_surface, grand_slam=False):
-    if grand_slam:
-        return probabilities_per_surface[court_surface][1][-int(spread)]
-    else:
-        return probabilities_per_surface[court_surface][0][-int(spread)]
-
-
-def probability_beat_given_loss(spread, court_surface, grand_slam=False):
-    if grand_slam:
-        return probabilities_per_surface[court_surface][3][-int(spread)]
-    else:
-        return probabilities_per_surface[court_surface][2][-int(spread)]
-
-
-def probability_beat_total(total, court_surface, grand_slam=False):
-    if grand_slam:
-        return total_probabilities_per_surface[court_surface][1][int(total)]
-    else:
-        return total_probabilities_per_surface[court_surface][0][int(total)]
-
-
-if __name__ == '__main__':
-    for surf in ['Clay', 'Hard', 'Grass']:
-        print('Given WIN', surf)
-        print('Beat 5', probability_beat_given_win(5, surf))
-        print('Beat 4.5', probability_beat_given_win(4.5, surf))
-        print('Beat 4', probability_beat_given_win(4, surf))
-        print('Beat 3', probability_beat_given_win(3, surf))
-        print('Beat 2', probability_beat_given_win(2, surf))
-        print('Beat 1', probability_beat_given_win(1, surf))
-        print('Beat 0', probability_beat_given_win(0, surf))
-        print('Beat -1', probability_beat_given_win(-1, surf))
-        print('Beat -2', probability_beat_given_win(-2, surf))
-        print('Beat -3', probability_beat_given_win(-3, surf))
-        print('Beat -4', probability_beat_given_win(-4, surf))
-        print('Beat -4.5', probability_beat_given_win(-4.5, surf))
-        print('Beat -5', probability_beat_given_win(-5, surf))
-        print('Beat -6', probability_beat_given_win(-6, surf))
-
-        print('Given LOSS')
-        print('Beat 5', probability_beat_given_loss(5, surf))
-        print('Beat 4.5', probability_beat_given_loss(4.5, surf))
-        print('Beat 4', probability_beat_given_loss(4, surf))
-        print('Beat 3', probability_beat_given_loss(3, surf))
-        print('Beat 2', probability_beat_given_loss(2, surf))
-        print('Beat 1', probability_beat_given_loss(1, surf))
-        print('Beat 0', probability_beat_given_loss(0, surf))
-        print('Beat -1', probability_beat_given_loss(-1, surf))
-        print('Beat -2', probability_beat_given_loss(-2, surf))
-        print('Beat -3', probability_beat_given_loss(-3, surf))
-        print('Beat -4', probability_beat_given_loss(-4, surf))
-        print('Beat -4.5', probability_beat_given_loss(-4.5, surf))
-        print('Beat -5', probability_beat_given_loss(-5, surf))
-        print('Beat -6', probability_beat_given_loss(-6, surf))
-
-    for surf in ['Clay', 'Hard', 'Grass']:
-        print('TOTALS: Given WIN', surf)
-        print('Beat 25', probability_beat_total(25, surf))
-        print('Beat 20', probability_beat_total(20, surf))
-        print('Beat 15', probability_beat_total(15, surf))
-        print('Beat 13', probability_beat_total(13, surf))
-        print('Beat 12', probability_beat_total(12, surf))
-        print('Beat 11', probability_beat_total(11, surf))
-        print('Beat 10', probability_beat_total(10, surf))
+}

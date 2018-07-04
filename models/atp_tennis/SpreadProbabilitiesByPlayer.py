@@ -69,6 +69,7 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
     return probabilities_over[-int(spread)]
 
 
+
 print(spread_prob('roger-federer', 'wimbledon', 2017, -4, True, abs_probabilities_per_surface, 'Clay', True))
 print(spread_prob('roger-federer', 'wimbledon', 2017, -3, True, abs_probabilities_per_surface, 'Clay', True))
 print(spread_prob('roger-federer', 'wimbledon', 2017, -2, True, abs_probabilities_per_surface, 'Clay', True))

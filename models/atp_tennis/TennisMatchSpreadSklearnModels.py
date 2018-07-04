@@ -6,8 +6,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob
-from models.atp_tennis.SpreadMonteCarlo import probability_beat_given_win, probability_beat_given_loss
+from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, abs_probabilities_per_surface
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
@@ -31,9 +30,8 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     'ml_odds_avg',
-    'predictions0',
-  #  'opp_predictions0',
-    'spread_predictions'
+    #'predictions0',
+    #'spread_predictions'
 ]
 
 for attr in betting_only_attributes:
@@ -114,14 +112,15 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_model=None):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, slam_model=None,
+              spread_model=None, slam_spread_model=None):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
     for attr in betting_input_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, models=models, spread_model=spread_model, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
     betting_sites = ['Bovada', 'BetOnline']
     betting_data = load_betting_data(betting_sites, test_year=test_year)
@@ -181,15 +180,13 @@ def bet_func(epsilon, bet_ml=True):
 
 
 def spread_bet_func(epsilon, bet_spread=True):
-    def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
+    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        spread_prob_win = probability_beat_given_win(spread, row['court_surface'], row['grand_slam'] > 0.5)
-        spread_prob_loss = probability_beat_given_loss(spread,  row['court_surface'], row['grand_slam'] > 0.5)
+
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
-        #odds = alpha * odds + (1.0 - alpha) * spread_prob
-        #spread_prob = (spread_prob_loss + spread_prob_win) / 2
+
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
@@ -226,7 +223,6 @@ def spread_bet_func(epsilon, bet_spread=True):
 
 
 def predict(data, test_data, graph=False, train=True, prediction_function=None):
-    graph = False
     all_predictions = []
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
@@ -351,13 +347,19 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 def decision_func(epsilon, bet_ml=True, bet_spread=True):
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
+    priors = abs_probabilities_per_surface
 
     def decision_func_helper(ml_bet_option, spread_bet_option, bet_row, prediction):
+        spread_prob_win1 = spread_prob(bet_row['player_id'],bet_row['tournament'],bet_row['year'],spread_bet_option.spread1, bet_row['grand_slam']>0.5,priors, bet_row['court_surface'], win=True)
+        spread_prob_win2 = spread_prob(bet_row['opponent_id'],bet_row['tournament'],bet_row['year'],spread_bet_option.spread2, bet_row['grand_slam']>0.5,priors, bet_row['court_surface'], win=True)
+        spread_prob_loss1 = spread_prob(bet_row['player_id'],bet_row['tournament'],bet_row['year'],spread_bet_option.spread1, bet_row['grand_slam']>0.5,priors, bet_row['court_surface'], win=False)
+        spread_prob_loss2 = spread_prob(bet_row['opponent_id'],bet_row['tournament'],bet_row['year'],spread_bet_option.spread2, bet_row['grand_slam']>0.5,priors, bet_row['court_surface'], win=False)
+
         ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
         ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
-        spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_bet_option.spread1,
+        spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1, spread_prob_loss1,
                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
-        spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_bet_option.spread2,
+        spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
                                   1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
         return {
@@ -388,8 +390,10 @@ def prediction_func(bet_ml=True, bet_spread=True):
 
 start_year = 2011
 if __name__ == '__main__':
-    historical_models = [load_outcome_model('Logistic'+str(i)) for i in range(1)]
-    historical_spread_model = load_spread_model('Linear')
+    historical_model = load_outcome_model('Logistic1')
+    historical_spread_model = load_spread_model('Linear1')
+    historical_model_slam = load_outcome_model('Logistic2')
+    historical_spread_model_slam = load_spread_model('Linear2')
     num_tests = 1
     bet_spread = True
     bet_ml = True
@@ -400,5 +404,6 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=historical_models, spread_model=historical_spread_model)
+                                            test_year=test_year, model=historical_model, slam_model=historical_model_slam,
+                                            spread_model=historical_spread_model, slam_spread_model=historical_spread_model_slam)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread), graph=False, train=True)

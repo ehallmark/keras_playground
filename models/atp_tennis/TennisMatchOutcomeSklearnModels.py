@@ -29,8 +29,12 @@ def save_spread_model(model, model_name):
 
 
 if __name__ == '__main__':
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
-    print('Max data year: ', max(sql['year']))
+    data, data_test = load_data(all_attributes, test_season=2011, start_year=1996)
+    slam_data = data[data.grand_slam > 0.5]
+    data = data[data.grand_slam < 0.5]
+    slam_data_test = data_test[data_test.grand_slam > 0.5]
+    data_test = data_test[data_test.grand_slam < 0.5]
+
     train_outcome_model = True
     train_spread_model = True
     if train_outcome_model:
@@ -38,22 +42,21 @@ if __name__ == '__main__':
         gnb = GaussianNB()
         #svc = LinearSVC(C=1.0)
         # rfc = RandomForestClassifier(n_estimators=300)
-        print('Attrs: ', sql[all_attributes][0:20])
         plt.figure(figsize=(10, 10))
         ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
         ax2 = plt.subplot2grid((3, 1), (2, 0))
         ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-        inputs = [input_attributes0]
         for model, name in [(lr, 'Logistic'),
                             (gnb, 'Naive Bayes'),
                             #(svc, 'Support Vector Classification'),
                             # (rfc, 'Random Forest')
                             ]:
             y_str = 'y'
-            y = np.array(sql[y_str]).flatten()
-            y_test = np.array(test_data[y_str]).flatten()
-            for i in range(len(inputs)):
-                attrs = inputs[i]
+            i = 0
+            for sql, test_data in [(data, data_test), (slam_data, slam_data_test)]:
+                y = np.array(sql[y_str]).flatten()
+                y_test = np.array(test_data[y_str]).flatten()
+                attrs = input_attributes0
                 X = np.array(sql[attrs])
                 X_test = np.array(test_data[attrs])
                 model.fit(X, y)
@@ -80,6 +83,7 @@ if __name__ == '__main__':
 
                 ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
                          histtype="step", lw=2)
+                i += 1
 
         ax1.set_ylabel("Fraction of positives")
         ax1.set_ylim([-0.05, 1.05])

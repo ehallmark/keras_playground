@@ -105,26 +105,53 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, spread_model=None, slam_model=None, slam_spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
-    X_spread = np.array(data[spread_input_attributes].iloc[:, :])
-    X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
-    if models is not None:
-        for i in range(len(models)):
-            attrs = getattr(tennis_model, 'input_attributes'+str(i))
-            opp_attrs = getattr(tennis_model, 'opp_input_attributes'+str(i))
-            X = np.array(data[attrs].iloc[:, :])
-            X_test = np.array(test_data[attrs].iloc[:, :])
-            Xopp = np.array(data[opp_attrs].iloc[:, :])
-            Xopp_test = np.array(test_data[opp_attrs].iloc[:, :])
-            model = models[i]
-            data['predictions'+str(i)] = pd.Series(predict_proba(model, X)-predict_proba(model,Xopp), index=data.index)
-            test_data['predictions'+str(i)] = pd.Series(predict_proba(model, X_test)-predict_proba(model, Xopp_test), index=test_data.index)
+    if model is not None and slam_model is not None:
+        attrs = tennis_model.input_attributes0
+        X = np.array(data[attrs].iloc[:, :])
+        X_test = np.array(test_data[attrs].iloc[:, :])
+        y_hat = predict_proba(model, X)
+        y_hat_test = predict_proba(model, X_test)
+        y_hat_slam = predict_proba(slam_model, X)
+        y_hat_slam_test = predict_proba(slam_model, X_test)
+
+        def lam(y, y_slam, slam):
+            if slam > 0.5:
+                return y_slam
+            else:
+                return y
+
+        data.assign(predictions=pd.Series([lam(y_hat.iloc[i],y_hat_slam.iloc[i],data['grand_slam']) for i in range(data.shape[0])]).values)
+        test_data.assign(predictions=pd.Series([lam(y_hat_test.iloc[i],y_hat_slam_test.iloc[i],test_data['grand_slam']) for i in range(test_data.shape[0])]).values)
 
     if spread_model is not None:
-        data = data.assign(spread_predictions=pd.Series(spread_model.predict(X_spread)).values)
-        test_data = test_data.assign(spread_predictions=pd.Series(spread_model.predict(X_test_spread)).values)
+        X_spread = np.array(data[spread_input_attributes].iloc[:, :])
+        X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
+        y_hat = predict_proba(spread_model, X_spread)
+        y_hat_test = predict_proba(spread_model, X_test_spread)
+        y_hat_slam = predict_proba(slam_spread_model, X_spread)
+        y_hat_slam_test = predict_proba(slam_spread_model, X_test_spread)
+
+        def lam(y, y_slam, slam):
+            if slam > 0.5:
+                return y_slam
+            else:
+                return y
+
+        data.assign(spread_predictions=pd.Series(
+            [lam(y_hat.iloc[i], y_hat_slam.iloc[i], data['grand_slam']) for i in range(data.shape[0])]).values)
+        test_data.assign(spread_predictions=pd.Series(
+            [lam(y_hat_test.iloc[i], y_hat_slam_test.iloc[i], test_data['grand_slam']) for i in
+             range(test_data.shape[0])]).values)
+
+    if slam_spread_model is not None:
+        X_spread = np.array(data[spread_input_attributes].iloc[:, :])
+        X_test_spread = np.array(test_data[spread_input_attributes].iloc[:, :])
+        data = data.assign(spread_predictions=pd.Series(slam_spread_model.predict(X_spread)).values)
+        test_data = test_data.assign(spread_predictions=pd.Series(slam_spread_model.predict(X_test_spread)).values)
+
     return data, test_data
 
 

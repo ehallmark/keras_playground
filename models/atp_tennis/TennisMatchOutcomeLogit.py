@@ -56,8 +56,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 
-            (m.games_won-m.games_against)::double precision/coalesce(2.0,greatest(2.0,greatest(m.sets_won,m.num_sets-m.sets_won))) as spread_per_set,
-            (m.games_won+m.games_against)::double precision/coalesce(2.0,greatest(2.0,greatest(m.sets_won,m.num_sets-m.sets_won))) as totals_per_set,
+            (m.games_won+m.games_against)::double precision as totals,
             (m.games_won-m.games_against)::double precision as spread,
             case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
@@ -319,7 +318,6 @@ input_attributes0 = [
     'mean_break_points_against',
     'tiebreak_win_percent',
     'major_avg_round',
-    'major_match_closeness',
     'major_encounters',
 ]
 
@@ -356,8 +354,8 @@ input_attributes_totals = [
     'opp_mean_second_serve_points_made',
     #'mean_first_serve_points_made',
     #'opp_mean_first_serve_points_made',
-    'prev_year_prior_encounters',
-    'opp_prev_year_prior_encounters',
+    #'prev_year_prior_encounters',
+    #'opp_prev_year_prior_encounters',
     'prev_year_avg_round',
     'opp_prev_year_avg_round',
     'surface_experience',
@@ -376,8 +374,8 @@ input_attributes_totals = [
 ]
 
 y = 'y'
-y_spread = 'spread_per_set'
-y_totals = 'totals_per_set'
+y_spread = 'spread'
+y_totals = 'totals'
 
 all_attributes = list(input_attributes0)
 all_attributes.append('grand_slam')
@@ -410,15 +408,23 @@ if __name__ == '__main__':
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
-        results = smf.logit(y+' ~ '+'+'.join(input_attributes0), data=sql).fit()
+        # grand slam model
+        print('Grand Slam')
+        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql[sql.grand_slam > 0.5]).fit()
         print(results.summary())
-        binary_correct, n, binary_percent, avg_error = test_model(results, test_data, test_data[y])
-
-        print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
-              ' ('+to_percentage(binary_percent)+')')
-        print('Average error: ', to_percentage(avg_error))
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
         if save:
-            results.save(model_file)
+            results.save(model_file + '_slam')
+
+        # regular model
+        print('Regular model')
+        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql[sql.grand_slam < 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        if save:
+            results.save(model_file + '_regular')
 
     if train_totals_model:
         model_file = 'tennis_match_totals_logit.statmodel'
