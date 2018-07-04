@@ -6,6 +6,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
+from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob
 from models.atp_tennis.SpreadMonteCarlo import probability_beat_given_win, probability_beat_given_loss
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
@@ -183,12 +184,18 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        spread_prob_win = probability_beat_given_win(spread, row['court_surface'], row['grand_slam'] > 0.5)
-        spread_prob_loss = probability_beat_given_loss(spread,  row['court_surface'], row['grand_slam'] > 0.5)
+        #      spread_prob_win = probability_beat_given_win(spread, row['court_surface'], row['grand_slam'] > 0.5)
+        #      spread_prob_loss = probability_beat_given_loss(spread,  row['court_surface'], row['grand_slam'] > 0.5)
+        spread_prob_win = spread_prob(row['player_id'],row['tournament'],row['year'],spread,['grand_slam']>0.5, row['court_surface'], True)
+        spread_prob_loss = spread_prob(row['player_id'],row['tournament'],row['year'],spread,['grand_slam']>0.5, row['court_surface'], False)
+        spread_prob_loss += spread_prob(row['opponent_id'],row['tournament'],row['year'],-spread,['grand_slam']>0.5, row['court_surface'], True)
+        spread_prob_win += spread_prob(row['opponent_id'],row['tournament'],row['year'],-spread,['grand_slam']>0.5, row['court_surface'], False)
+        spread_prob_win /= 2.0
+        spread_prob_loss /= 2.0
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
         #odds = alpha * odds + (1.0 - alpha) * spread_prob
-        spread_prob = (spread_prob_loss + spread_prob_win) / 2
+        #spread_prob = (spread_prob_loss + spread_prob_win) / 2
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
@@ -347,14 +354,34 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     return predictions
 
 
+def decision_func(epsilon, bet_ml=True, bet_spread=True):
+    ml_func = bet_func(epsilon, bet_ml=bet_ml)
+    spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
+
+    def decision_func_helper(ml_bet_option, spread_bet_option, bet_row, prediction):
+        ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
+        ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
+        spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_bet_option.spread1,
+                                  prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+        spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_bet_option.spread2,
+                                  1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
+
+        return {
+            'ml_bet1': ml_bet1,
+            'ml_bet2': ml_bet2,
+            'spread_bet1': spread_bet1,
+            'spread_bet2': spread_bet2
+        }
+    return decision_func_helper
+
+
 def prediction_func(bet_ml=True, bet_spread=True):
     def prediction_func_helper(avg_predictions, epsilon):
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
         test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
                                                     lambda j: test_data['y'].iloc[j],
                                                     lambda j: test_data['spread'].iloc[j],
-                                                    bet_func(epsilon, bet_ml=bet_ml),
-                                                    spread_bet_func(epsilon, bet_spread=bet_spread),
+                                                    decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread),
                                                     test_data,
                                                     'max_price', 'price', 1, sampling=0,
                                                     shuffle=True, verbose=False)

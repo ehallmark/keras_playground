@@ -25,51 +25,6 @@ def build_cumulative_probabilities(probabilities):
     return probabilities_over
 
 
-def totals_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', win=True,
-                alpha=5.0):
-    if is_grand_slam:
-        r = range(-18, 19, 1)
-        if win:
-            prior = priors_per_surface[surface][2]
-            sql = slam_wins
-        else:
-            prior = priors_per_surface[surface][3]
-            sql = slam_losses
-    else:
-        r = range(-12, 13, 1)
-        if win:
-            prior = priors_per_surface[surface][0]
-            sql = wins
-        else:
-            prior = priors_per_surface[surface][1]
-            sql = losses
-
-    row = sql[((sql.player_id == player) & (sql.tournament == tournament) & (sql.year == year))]
-    probabilities = prior.copy()
-    if row.shape[0] > 0:
-        for k in probabilities:
-            probabilities[k] *= alpha * 100.0
-        for i in r:
-            if i < 0:
-                x = int(row['minus' + str(abs(i))])
-            elif i > 0:
-                x = int(row['plus' + str(i)])
-            else:
-                x = int(row['even'])
-            probabilities[i] += x
-
-        s = 0.0
-        for _, v in probabilities.items():
-            s += v
-
-        if s > 0:
-            for k in probabilities:
-                probabilities[k] /= s
-
-    probabilities_over = build_cumulative_probabilities(probabilities)
-    return probabilities_over[-int(spread)]
-
-
 def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
     if is_grand_slam:
         r = range(-18, 19, 1)

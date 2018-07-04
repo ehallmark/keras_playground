@@ -122,7 +122,7 @@ abs_probabilities_per_surface = {
     'Hard': create_spread_probabilities_from_query(sql_hard)
 }
 
-
+'''
 total_probabilities_per_surface = {
     'Clay': create_totals_for_query(sql_total_clay),
     'Grass': create_totals_for_query(sql_total_grass),
@@ -133,8 +133,7 @@ abs_total_probabilities_per_surface = {
     'Clay': create_totals_probabilities_from_query(sql_total_clay),
     'Grass': create_totals_probabilities_from_query(sql_total_grass),
     'Hard': create_totals_probabilities_from_query(sql_total_hard)
-}
-
+}'''
 
 def probability_beat_given_win(spread, court_surface, grand_slam=False):
     if grand_slam:
