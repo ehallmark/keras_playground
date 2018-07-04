@@ -46,7 +46,12 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
             prior = priors_per_surface[surface][1]
             sql = losses
 
-    row = sql.loc[(player, tournament, year), :]
+    try:
+        row = sql.loc[(player, tournament, year), :]
+        print('Success')
+    except KeyError as e:
+        print('Error')
+        row = np.array([])
     probabilities = prior.copy()
     if row.shape[0] > 0:
         for k in probabilities:
