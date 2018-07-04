@@ -19,7 +19,7 @@ from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_o
 
 betting_input_attributes = [
     'h2h_prior_win_percent',
-    #'historical_avg_odds',
+    'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
     'underdog_wins',
