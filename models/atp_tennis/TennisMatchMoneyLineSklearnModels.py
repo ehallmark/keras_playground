@@ -123,8 +123,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             else:
                 return y
 
-        data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
-        test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
+        data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
+        test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
 
     if spread_model is not None and slam_spread_model is not None:
         X_spread = np.array(data[spread_input_attributes].iloc[:, :])
@@ -140,9 +140,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             else:
                 return y
 
-        data.assign(spread_predictions=pd.Series(
+        data = data.assign(spread_predictions=pd.Series(
             [lam(y_hat[i], y_hat_slam[i], data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
-        test_data.assign(spread_predictions=pd.Series(
+        test_data = test_data.assign(spread_predictions=pd.Series(
             [lam(y_hat_test[i], y_hat_slam_test[i], test_data['grand_slam'].iloc[i]) for i in
              range(test_data.shape[0])]).values)
 
