@@ -13,7 +13,10 @@ slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_win
 slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
 wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
 losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
-
+slam_wins.set_index(['player_id', 'tournament', 'year'], inplace=True)
+slam_losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
+wins.set_index(['player_id', 'tournament', 'year'], inplace=True)
+losses.set_index(['player_id', 'tournament', 'year'], inplace=True)
 
 def build_cumulative_probabilities(probabilities):
     probabilities_over = {}
@@ -43,7 +46,7 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
             prior = priors_per_surface[surface][1]
             sql = losses
 
-    row = sql[((sql.player_id == player) & (sql.tournament == tournament) & (sql.year == year))]
+    row = sql.loc[(player, tournament, year), :]
     probabilities = prior.copy()
     if row.shape[0] > 0:
         for k in probabilities:
