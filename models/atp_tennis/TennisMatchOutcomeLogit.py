@@ -57,6 +57,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
     sql_str = '''
         select 
             (m.games_won-m.games_against)::double precision/coalesce(2.0,greatest(2.0,greatest(m.sets_won,m.num_sets-m.sets_won))) as spread_per_set,
+            (m.games_won+m.games_against)::double precision/coalesce(2.0,greatest(2.0,greatest(m.sets_won,m.num_sets-m.sets_won))) as totals_per_set,
             (m.games_won-m.games_against)::double precision as spread,
             case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
@@ -68,6 +69,16 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.tournament as tournament,
             case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
+            coalesce(majors.prior_encounters,0) as major_encounters,
+            coalesce(opp_majors.prior_encounters, 0) as opp_major_encounters,
+            coalesce(majors.prior_victories,0) as major_victories,
+            coalesce(opp_majors.prior_victories, 0) as opp_major_victories,
+            coalesce(majors.avg_round,0) as major_avg_round,
+            coalesce(opp_majors.avg_round, 0) as opp_major_avg_round,
+            coalesce(majors.avg_games_per_set,0) as major_games_per_set,
+            coalesce(opp_majors.avg_games_per_set, 0) as opp_major_games_per_set,
+            coalesce(majors.avg_match_closeness,0) as major_match_closeness,
+            coalesce(opp_majors.avg_match_closeness, 0) as opp_major_match_closeness,
             coalesce(h2h.prior_encounters,0) as h2h_prior_encounters,
             coalesce(h2h.prior_victories,0) as h2h_prior_victories,
             coalesce(h2h.prior_losses,0) as h2h_prior_losses,
@@ -208,6 +219,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.tournament,m.year)=(tourney_hist.player_id,tourney_hist.tournament,tourney_hist.year))
         left outer join atp_matches_prior_year as prev_year_opp
             on ((m.opponent_id,m.tournament,m.year)=(prev_year_opp.player_id,prev_year_opp.tournament,prev_year_opp.year))
+        left outer join atp_matches_prior_majors as majors
+            on ((m.player_id,m.tournament,m.year)=(majors.player_id,majors.tournament,majors.year))
+        left outer join atp_matches_prior_majors as opp_majors
+            on ((m.opponent_id,m.tournament,m.year)=(opp_majors.player_id,opp_majors.tournament,opp_majors.year))
         left outer join atp_matches_tournament_history as tourney_hist_opp
             on ((m.opponent_id,m.tournament,m.year)=(tourney_hist_opp.player_id,tourney_hist_opp.tournament,tourney_hist_opp.year))
         left outer join atp_matches_prior_year_avg as mean
@@ -291,24 +306,25 @@ input_attributes0 = [
     'prior_quarter_victories',
     'prior_quarter_losses',
     'prior_quarter_match_closeness',
-
     # player qualities
     'elo_score',
     'age',
     'surface_experience',
     'height',
     'best_year',
-
     # match stats
     'mean_second_serve_points_made',
     'mean_first_serve_points_made',
     'mean_break_points_made',
     'mean_break_points_against',
     'tiebreak_win_percent',
+    'major_avg_round',
+    'major_match_closeness'
 ]
 
 # opponent attrs
 opp_input_attributes0 = ['opp_'+attr for attr in input_attributes0]
+input_attributes0 = input_attributes0 + opp_input_attributes0
 
 input_attributes_spread = [
     #'mean_return_points_made',
@@ -343,30 +359,62 @@ input_attributes_spread = [
     'opp_avg_games_per_set',
     'prior_quarter_match_closeness',
     'opp_prior_quarter_match_closeness',
-    #'best_year',
-    #'opp_best_year',
-    #'historical_avg_odds',
-    #'prev_odds',
-    #'opp_prev_odds',
-    #'underdog_wins',
-    #'opp_underdog_wins',
-    #'fave_wins',
-    #'opp_fave_wins'
+
+]
+
+
+input_attributes_totals = [
+    'mean_return_points_made',
+    'opp_mean_return_points_made',
+    'mean_second_serve_points_made',
+    'opp_mean_second_serve_points_made',
+    'prev_year_prior_encounters',
+    'opp_prev_year_prior_encounters',
+    'prev_year_avg_round',
+    'opp_prev_year_avg_round',
+    'opp_tourney_hist_avg_round',
+    'tourney_hist_avg_round',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'surface_experience',
+    'opp_surface_experience',
+    'experience',
+    'opp_experience',
+    'prior_quarter_avg_round',
+    'opp_prior_quarter_avg_round',
+    'age',
+    'opp_age',
+    'height',
+    'opp_height',
+    'elo_score',
+    'opp_elo_score',
+    'avg_games_per_set',
+    'opp_avg_games_per_set',
+    'prior_quarter_match_closeness',
+    'opp_prior_quarter_match_closeness',
+    #'grand_slam',
+    'round'
 ]
 
 y = 'y'
 y_spread = 'spread_per_set'
+y_totals = 'totals_per_set'
+
 all_attributes = list(input_attributes0)
 all_attributes.append('grand_slam')
 all_attributes.append('round')
 all_attributes.append('court_surface')
 all_attributes.append(y)
 all_attributes.append(y_spread)
+all_attributes.append(y_totals)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
 for attr in opp_input_attributes0:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+for attr in input_attributes_totals:
     if attr not in all_attributes:
         all_attributes.append(attr)
 for meta in meta_attributes:
@@ -377,6 +425,7 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
+    train_totals_model = True
     sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
@@ -389,6 +438,25 @@ if __name__ == '__main__':
         print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
               ' ('+to_percentage(binary_percent)+')')
         print('Average error: ', to_percentage(avg_error))
+        if save:
+            results.save(model_file)
+
+    if train_totals_model:
+        model_file = 'tennis_match_totals_logit.statmodel'
+        # print('Attrs: ', sql[all_attributes][0:20])
+        # model to predict the total score (h_pts + a_pts)
+        # grand slam model
+        print('Grand Slam')
+        results = smf.ols(y_totals+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        # regular model
+        print('Regular model')
+        results = smf.ols(y_totals+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
         if save:
             results.save(model_file)
 
