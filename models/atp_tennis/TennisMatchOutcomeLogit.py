@@ -381,13 +381,10 @@ y_spread = 'spread'
 y_totals = 'totals'
 
 all_attributes = list(input_attributes0)
-all_attributes.append('grand_slam')
-all_attributes.append('round')
-all_attributes.append('court_surface')
 all_attributes.append(y)
 all_attributes.append(y_spread)
 all_attributes.append(y_totals)
-meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
