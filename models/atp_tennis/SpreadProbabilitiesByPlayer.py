@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
 from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface, abs_total_probabilities_per_surface
@@ -35,6 +36,8 @@ def build_cumulative_probabilities(probabilities):
 
 
 def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
+    if math.isnan(spread):
+        return np.NaN
     if is_grand_slam:
         r = range(-18, 19, 1)
         if win:
@@ -83,6 +86,8 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
 
 
 def totals_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', under=True, alpha=5.0):
+    if math.isnan(total):
+        return np.NaN
     if is_grand_slam:
         r = range(1, 67, 1)
         prior = priors_per_surface[surface][1]
