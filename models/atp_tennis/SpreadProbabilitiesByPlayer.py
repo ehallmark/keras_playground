@@ -90,11 +90,11 @@ def totals_prob(player, tournament, year, total, is_grand_slam, priors_per_surfa
         return np.NaN
     if is_grand_slam:
         r = range(1, 67, 1)
-        prior = priors_per_surface[surface][1]
+        prior = priors_per_surface[1]
         sql = totals_slam
     else:
         r = range(1, 41, 1)
-        prior = priors_per_surface[surface][0]
+        prior = priors_per_surface[0]
         sql = totals
 
     try:

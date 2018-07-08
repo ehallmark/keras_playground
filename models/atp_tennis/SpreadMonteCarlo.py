@@ -84,8 +84,8 @@ def create_spread_probabilities_from_query(query):
 
 
 def create_totals_probabilities_from_query(query):
-    probabilities3, _ = create_probabilities(query, 0, 39, 'total', False)
-    probabilities5, _ = create_probabilities(query, 0, 66, 'total', True)
+    probabilities3, _ = create_probabilities(query, 1, 40, 'total', False)
+    probabilities5, _ = create_probabilities(query, 1, 66, 'total', True)
     return probabilities3, probabilities5
 
 
@@ -98,23 +98,15 @@ sql_clay = sql_str + ' and court_surface=\'Clay\''
 sql_grass = sql_str + ' and court_surface=\'Grass\''
 sql_hard = sql_str + ' and court_surface=\'Hard\''
 
-
 sql_total_str = '''
         select player_victory,games_won+games_against as total, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
-
-sql_total_clay = sql_total_str + ' and court_surface=\'Clay\''
-sql_total_grass = sql_total_str + ' and court_surface=\'Grass\''
-sql_total_hard = sql_total_str + ' and court_surface=\'Hard\''
 
 abs_probabilities_per_surface = {
     'Clay': create_spread_probabilities_from_query(sql_clay),
     'Grass': create_spread_probabilities_from_query(sql_grass),
     'Hard': create_spread_probabilities_from_query(sql_hard)
 }
-abs_total_probabilities_per_surface = {
-    'Clay': create_totals_probabilities_from_query(sql_total_clay),
-    'Grass': create_totals_probabilities_from_query(sql_total_grass),
-    'Hard': create_totals_probabilities_from_query(sql_total_hard)
-}
+abs_total_probabilities_per_surface = \
+    create_totals_probabilities_from_query(sql_total_str)
