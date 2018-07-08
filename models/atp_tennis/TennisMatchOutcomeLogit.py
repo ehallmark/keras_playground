@@ -63,6 +63,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
             m.court_surface as court_surface,
             m.year as year,
+            r.round as round_num,
             m.player_id as player_id,
             m.opponent_id as opponent_id,
             m.tournament as tournament,
@@ -268,6 +269,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.year)=(prior_worst_year.player_id,prior_worst_year.year))
         left outer join atp_matches_prior_worst_year as prior_worst_year_opp
             on ((m.opponent_id,m.year)=(prior_worst_year_opp.player_id,prior_worst_year_opp.year))
+        join atp_matches_round as r
+            on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
         where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:

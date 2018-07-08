@@ -35,7 +35,7 @@ class BetOption:
             raise ArithmeticError('Best odds2: ' + str(self.best_odds2))
 
 
-def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, decision_func, test_meta_data,
+def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, actual_totals_func, decision_func, test_meta_data,
                         price_str='max_price', spread_price_str='price', totals_price_str='totals_price', num_trials=50, sampling=0, verbose=False,
                         shuffle=False, initial_capital=10000, after_bet_function=None):
 
@@ -52,8 +52,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
         amount_lost = 0
         num_wins1 = 0
         num_wins2 = 0
+        num_wins3 = 0
         num_losses1 = 0
         num_losses2 = 0
+        num_losses3 = 0
         won_both = 0
         lost_both = 0
         won_spread_lost_ml = 0
@@ -94,7 +96,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                 # total data
                 totals_price_is_under1 = totals_bet_option.is_under1
                 totals_price_is_under2 = totals_bet_option.is_under2
-
+                totals_price1 = totals_bet_option.max_price1
+                totals_price2 = totals_bet_option.max_price2
+                totals_over = totals_bet_option.over
+                totals_under = totals_bet_option.under
                 ml_is_under1 = ml_bet_option.is_under1
                 ml_is_under2 = ml_bet_option.is_under2
                 ml_price1 = ml_bet_option.max_price1
@@ -107,6 +112,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                 # money line result
                 actual_result = actual_label_func(i)
                 actual_spread = actual_spread_func(i)
+                actual_totals = actual_totals_func(i)
 
                 won_ml = None
                 won_spread = None
@@ -324,6 +330,97 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                             else:
                                 print(' PLUS: ', ret)
                 return_total = return_total + return_game
+
+                if over_bet > 0:
+                    confidence = betting_minimum * over_bet
+                    if totals_price_is_under1:
+                        capital_requirement = -totals_price1 * confidence
+                    else:
+                        capital_requirement = 100.0 * confidence
+                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
+                    capital_ratio = capital_requirement_avail/capital_requirement
+                    capital_requirement *= capital_ratio
+                    confidence *= capital_ratio
+                    if after_bet_function is not None:
+                        after_bet_function(over_bet, bet_row['player_id'], bet_row['opponent_id'], 'Over '+str(totals_over),
+                                           totals_price1, capital_requirement, bet_row['betting_date'],
+                                           bet_row['book_name'])
+
+                    if capital_requirement <= available_capital:
+                        amount_invested += capital_requirement
+                        if math.isclose(actual_total, totals_over):
+                            # tie
+                            ret = 0
+                        elif actual_total < totals_over:  # LOST BET :(
+                            if totals_price_is_under1:
+                                ret = totals_price1 * confidence
+                            else:
+                                ret = - 100.0 * confidence
+                            if ret > 0:
+                                raise ArithmeticError("Loss 1 should be positive")
+                            num_losses = num_losses + 1
+                            num_losses3 += 1
+                            amount_lost += abs(ret)
+                            won_totals = False
+                        else:  # WON BET
+                            if totals_price_is_under1:
+                                ret = 100.0 * confidence
+                            else:
+                                ret = totals_price1 * confidence
+                            if ret < 0:
+                                raise ArithmeticError("win 1 should be positive")
+                            num_wins = num_wins + 1
+                            num_wins3 += 1
+                            won_totals = True
+                            amount_won += abs(ret)
+                        return_game += ret
+                        available_capital += ret
+                        num_bets += 1
+                if under_bet > 0:
+                    confidence = betting_minimum * under_bet
+                    if totals_price_is_under2:
+                        capital_requirement = -totals_price2 * confidence
+                    else:
+                        capital_requirement = 100.0 * confidence
+
+                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
+                    capital_ratio = capital_requirement_avail / capital_requirement
+                    capital_requirement *= capital_ratio
+                    confidence *= capital_ratio
+                    if after_bet_function is not None:
+                        after_bet_function(under_bet, bet_row['opponent_id'], bet_row['player_id'], 'Under '+str(totals_under),
+                                           totals_price2, capital_requirement, bet_row['betting_date'],
+                                           bet_row['book_name'])
+                    if capital_requirement <= available_capital:
+                        amount_invested += capital_requirement
+                        if math.isclose(actual_total, totals_under):
+                            # tie
+                            ret = 0
+                        elif actual_total < totals_under:  # WON BET
+                            if totals_price_is_under2:
+                                ret = 100.0 * confidence
+                            else:
+                                ret = totals_price2 * confidence
+                            if ret < 0:
+                                raise ArithmeticError("win 2 should be positive")
+                            num_wins += 1
+                            num_wins3 += 1
+                            won_totals = True
+                            amount_won += abs(ret)
+                        else:  # LOST BET :(
+                            if totals_price_is_under2:
+                                ret = ml_price2 * confidence
+                            else:
+                                ret = - 100.0 * confidence
+                            if ret > 0:
+                                raise ArithmeticError("loss 2 should be negative")
+                            num_losses += 1
+                            num_losses3 += 1
+                            won_totals = False
+                            amount_lost += abs(ret)
+                        return_game += ret
+                        num_bets += 1
+                        available_capital += ret
                 if return_game != 0 and verbose:
                     print('Return game:', return_game, ' Total: ', return_total, ' Wins:', num_wins, ' Losses:', num_losses)
                 if won_spread is not None and won_ml is not None:
@@ -336,93 +433,9 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
                     else:
                         lost_both += 1
 
-                if over_bet > 0:
-                    confidence = betting_minimum * ml_bet1
-                    if ml_is_under1:
-                        capital_requirement = -ml_price1 * confidence
-                    else:
-                        capital_requirement = 100.0 * confidence
-                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
-                    capital_ratio = capital_requirement_avail/capital_requirement
-                    capital_requirement *= capital_ratio
-                    confidence *= capital_ratio
-                    if after_bet_function is not None:
-                        after_bet_function(ml_bet1, bet_row['player_id'], bet_row['opponent_id'], 'ML',
-                                           ml_price1, capital_requirement, bet_row['betting_date'],
-                                           bet_row['book_name'])
-
-                    if capital_requirement <= available_capital:
-                        amount_invested += capital_requirement
-                        if actual_result < 0.5:  # LOST BET :(
-                            if ml_is_under1:
-                                ret = ml_price1 * confidence
-                            else:
-                                ret = - 100.0 * confidence
-                            if ret > 0:
-                                raise ArithmeticError("Loss 1 should be positive")
-                            num_losses = num_losses + 1
-                            num_losses1 += 1
-                            amount_lost += abs(ret)
-                            won_ml = False
-                        else:  # WON BET
-                            if ml_is_under1:
-                                ret = 100.0 * confidence
-                            else:
-                                ret = ml_price1 * confidence
-                            if ret < 0:
-                                raise ArithmeticError("win 1 should be positive")
-                            num_wins = num_wins + 1
-                            num_wins1 += 1
-                            won_ml = True
-                            amount_won += abs(ret)
-                        return_game += ret
-                        available_capital += ret
-                        num_bets += 1
-                if under_bet > 0:
-                    confidence = betting_minimum * ml_bet2
-                    if ml_is_under2:
-                        capital_requirement = -ml_price2 * confidence
-                    else:
-                        capital_requirement = 100.0 * confidence
-
-                    capital_requirement_avail = max(betting_minimum, min(min(max_loss_percent*available_capital, betting_maximum), capital_requirement))
-                    capital_ratio = capital_requirement_avail / capital_requirement
-                    capital_requirement *= capital_ratio
-                    confidence *= capital_ratio
-                    if after_bet_function is not None:
-                        after_bet_function(ml_bet2, bet_row['opponent_id'], bet_row['player_id'], 'ML',
-                                           ml_price2, capital_requirement, bet_row['betting_date'],
-                                           bet_row['book_name'])
-                    if capital_requirement <= available_capital:
-                        amount_invested += capital_requirement
-                        if actual_result < 0.5:  # WON BET
-                            if ml_is_under2:
-                                ret = 100.0 * confidence
-                            else:
-                                ret = ml_price2 * confidence
-                            if ret < 0:
-                                raise ArithmeticError("win 2 should be positive")
-                            num_wins += 1
-                            num_wins1 += 1
-                            won_ml = True
-                            amount_won += abs(ret)
-                        else:  # LOST BET :(
-                            if ml_is_under2:
-                                ret = ml_price2 * confidence
-                            else:
-                                ret = - 100.0 * confidence
-                            if ret > 0:
-                                raise ArithmeticError("loss 2 should be negative")
-                            num_losses += 1
-                            num_losses1 += 1
-                            won_ml = False
-                            amount_lost += abs(ret)
-                        return_game += ret
-                        num_bets += 1
-                        available_capital += ret
-
         print('ML wins:', num_wins1, ' ML losses:', num_losses1)
         print('Spread wins:', num_wins2, ' Spread losses:', num_losses2)
+        print('Totals wins:', num_wins3, ' Totals losses:', num_losses3)
         print('won_both:', won_both, ' lost_both:', lost_both, ' won_spread_lost_ml:', won_spread_lost_ml, ' lost_spread_won_ml:', lost_spread_won_ml)
         if verbose:
             print('Initial Capital: ', initial_capital)

@@ -119,6 +119,12 @@ def totals_prob(player, tournament, year, total, is_grand_slam, priors_per_surfa
                 probabilities[k] /= s
 
     probabilities_over = build_cumulative_probabilities(probabilities)
+    if is_grand_slam:
+        if total > 66:
+            total = 66
+    else:
+        if total > 40:
+            total = 40
     if under:
         prob = 1.0 - probabilities_over[int(total-1)]
     else:

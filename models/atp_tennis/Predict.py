@@ -31,12 +31,15 @@ for tournament in tournaments:
     bets_to_make = []
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
         #print("MAKE BET: ", conf, player1, player2)
+        if date is None:
+            return
         if not future_matches_only or date >= datetime.date.today():
             bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo
     epsilon = 0.0
     test_return, num_bets = simulate_money_line(lambda j: predictions[j],
+                                                lambda j: 0,
                                                 lambda j: 0,
                                                 lambda j: 0,
                                                 tennis_model.decision_func(epsilon),
