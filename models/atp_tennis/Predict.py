@@ -3,7 +3,7 @@ import pandas as pd
 import datetime
 from random import shuffle
 from models.simulation.Simulate import simulate_money_line
-import models.atp_tennis.TennisMatchSpreadSklearnModels as tennis_model
+import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_spread_model, load_outcome_model
 from models.atp_tennis.TennisMatchOutcomeNN import test_model,to_percentage
 

@@ -14,7 +14,6 @@ import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_money_line
-from models.atp_tennis.TennisMatchMoneyLineSklearnModels import sample2d, load_outcome_predictions_and_actuals, spread_input_attributes
 
 
 betting_input_attributes = [
@@ -53,11 +52,24 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_spread_betting_data(betting_sites, test_year=2018):
+def sample2d(array, seed, max_samples):
+    i = seed % max_samples
+    if i == 0:
+        np.random.seed(seed)
+        np.random.shuffle(array)
+        return array[0:int(array.shape[0]/max_samples)]
+    else:
+        interval = int(array.shape[0]/max_samples)
+        start = interval * i
+        end = interval * i + interval
+        return array[start:end]
+
+
+def load_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
-        select s.year,s.tournament,s.team1,s.team2,
-        s.book_name,
+        select m.year,m.tournament,m.team1,m.team2,
+        m.book_name,
         s.price1,
         s.price2,
         s.spread1,
@@ -69,39 +81,20 @@ def load_spread_betting_data(betting_sites, test_year=2018):
         m.odds2 as ml_odds2,   
         (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
         m.price1 as max_price1,
-        m.price2 as max_price2   
-        from atp_tennis_betting_link_spread  as s join
-        atp_tennis_betting_link as m on 
-            ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
-        where s.year<={{YEAR}} and s.book_name in ({{BOOK_NAMES}})
-        and s.spread1 = - s.spread2
-    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
-    return betting_data
+        m.price2 as max_price2,
+        t.price1 as totals_price1,
+        t.price2 as totals_price2,
+        t.over,
+        t.under  
+        from atp_tennis_betting_link as m 
+        left outer join atp_tennis_betting_link_spread  as s
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year)
+            and s.spread1=s.spread2)
+        left outer join atp_tennis_betting_link_totals as t
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(t.team1,t.team2,t.tournament,t.book_name,t.year)
+            and t.over=t.under)
+        where m.year<={{YEAR}} and m.book_name in ({{BOOK_NAMES}})
 
-
-
-def load_totals_betting_data(betting_sites, test_year=2018):
-    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-    betting_data = pd.read_sql('''
-        select s.year,s.tournament,s.team1,s.team2,
-        s.book_name,
-        s.price1,
-        s.price2,
-        s.spread1,
-        s.spread2,
-        s.odds1,
-        s.odds2,
-        s.betting_date,
-        m.odds1 as ml_odds1,
-        m.odds2 as ml_odds2,   
-        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
-        m.price1 as max_price1,
-        m.price2 as max_price2   
-        from atp_tennis_betting_link_totals  as s join
-        atp_tennis_betting_link as m on 
-            ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
-        where s.year<={{YEAR}} and s.book_name in ({{BOOK_NAMES}})
-        and s.spread1 = - s.spread2
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
@@ -139,6 +132,50 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, spread_model=None, slam_model=None, slam_spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
+    data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
+    test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
+    if model is not None and slam_model is not None:
+        attrs = tennis_model.input_attributes0
+        X = np.array(data[attrs].iloc[:, :])
+        X_test = np.array(test_data[attrs].iloc[:, :])
+        y_hat = predict_proba(model, X)
+        y_hat_test = predict_proba(model, X_test)
+        y_hat_slam = predict_proba(slam_model, X)
+        y_hat_slam_test = predict_proba(slam_model, X_test)
+
+        def lam(y, y_slam, slam):
+            if slam > 0.5:
+                return y_slam
+            else:
+                return y
+
+        data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
+        test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
+
+    if spread_model is not None and slam_spread_model is not None:
+        X_spread = np.array(data[tennis_model.input_attributes_spread].iloc[:, :])
+        X_test_spread = np.array(test_data[tennis_model.input_attributes_spread].iloc[:, :])
+        y_hat = spread_model.predict(X_spread)
+        y_hat_test = spread_model.predict(X_test_spread)
+        y_hat_slam = slam_spread_model.predict(X_spread)
+        y_hat_slam_test = slam_spread_model.predict(X_test_spread)
+
+        def lam(y, y_slam, slam):
+            if slam > 0.5:
+                return y_slam
+            else:
+                return y
+
+        data = data.assign(spread_predictions=pd.Series(
+            [lam(y_hat[i], y_hat_slam[i], data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
+        test_data = test_data.assign(spread_predictions=pd.Series(
+            [lam(y_hat_test[i], y_hat_slam_test[i], test_data['grand_slam'].iloc[i]) for i in
+             range(test_data.shape[0])]).values)
+
+    return data, test_data
+
+
 def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, slam_model=None,
               spread_model=None, slam_spread_model=None):
     attributes = list(tennis_model.all_attributes)
@@ -152,8 +189,13 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
-    spread_betting_sites = ['Bovada', 'BetOnline']
-    betting_data = load_spread_betting_data(spread_betting_sites, test_year=test_year)
+    spread_betting_sites = ['Bovada', 'BetOnline', '5Dimes']
+    spread_type_by_site = {  # describes the totals type for each betting site
+        'Bovada': 'Set',
+        'BetOnline': 'Game',
+        '5Dimes': 'Set',
+    }
+    betting_data = load_betting_data(spread_betting_sites, test_year=test_year)
 
     test_data = pd.DataFrame.merge(
         test_data,

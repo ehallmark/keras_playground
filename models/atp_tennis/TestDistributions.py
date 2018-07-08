@@ -4,8 +4,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from random import shuffle
 import matplotlib.pyplot as plt
-import models.atp_tennis.TennisMatchSpreadSklearnModels as tennis_model
-from models.atp_tennis.TennisMatchSpreadSklearnModels import betting_input_attributes,all_attributes,test_model,to_percentage
+import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
+from models.atp_tennis.TennisMatchBettingSklearnModels import betting_input_attributes,all_attributes,test_model,to_percentage
 from scipy import stats
 np.random.seed(12345678)  #fix random seed to get the same result
 
