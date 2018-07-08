@@ -53,7 +53,7 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def load_betting_data(betting_sites, test_year=2018):
+def load_spread_betting_data(betting_sites, test_year=2018):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select s.year,s.tournament,s.team1,s.team2,
@@ -71,6 +71,33 @@ def load_betting_data(betting_sites, test_year=2018):
         m.price1 as max_price1,
         m.price2 as max_price2   
         from atp_tennis_betting_link_spread  as s join
+        atp_tennis_betting_link as m on 
+            ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
+        where s.year<={{YEAR}} and s.book_name in ({{BOOK_NAMES}})
+        and s.spread1 = - s.spread2
+    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
+    return betting_data
+
+
+
+def load_totals_betting_data(betting_sites, test_year=2018):
+    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    betting_data = pd.read_sql('''
+        select s.year,s.tournament,s.team1,s.team2,
+        s.book_name,
+        s.price1,
+        s.price2,
+        s.spread1,
+        s.spread2,
+        s.odds1,
+        s.odds2,
+        s.betting_date,
+        m.odds1 as ml_odds1,
+        m.odds2 as ml_odds2,   
+        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
+        m.price1 as max_price1,
+        m.price2 as max_price2   
+        from atp_tennis_betting_link_totals  as s join
         atp_tennis_betting_link as m on 
             ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year))
         where s.year<={{YEAR}} and s.book_name in ({{BOOK_NAMES}})
@@ -117,14 +144,17 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
+    if 'totals' not in attributes:
+        attributes.append('totals')
+
     for attr in betting_input_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
-    betting_sites = ['Bovada', 'BetOnline']
-    betting_data = load_betting_data(betting_sites, test_year=test_year)
-    #print('pre headers: ', test_data.columns)
+    spread_betting_sites = ['Bovada', 'BetOnline']
+    betting_data = load_spread_betting_data(spread_betting_sites, test_year=test_year)
+
     test_data = pd.DataFrame.merge(
         test_data,
         betting_data,
