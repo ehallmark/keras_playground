@@ -181,6 +181,33 @@ def bet_func(epsilon, bet_ml=True):
     return bet_func_helper
 
 
+def totals_bet_func(epsilon, bet_totals=True):
+    def bet_func_helper(price, odds, prediction, row):
+        if not bet_totals:
+            return 0
+        prediction = prediction * alpha + (1.0 - alpha) * odds
+        if 0 > prediction or prediction > 1:
+            print('Invalid prediction: ', prediction)
+            exit(1)
+        if odds < 0.25 or odds > 0.55:
+            return 0
+        if price > 0:
+            expectation_implied = odds * price + (1. - odds) * -100.
+            expectation = prediction * price + (1. - prediction) * -100.
+            expectation /= 100.
+            expectation_implied /= 100.
+        else:
+            expectation_implied = odds * 100. + (1. - odds) * price
+            expectation = prediction * 100. + (1. - prediction) * price
+            expectation /= -price
+            expectation_implied /= -price
+        if expectation > epsilon:
+            return 1. + expectation
+        else:
+            return 0
+    return bet_func_helper
+
+
 def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
@@ -346,9 +373,10 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     return predictions
 
 
-def decision_func(epsilon, bet_ml=True, bet_spread=True):
+def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
+    totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
     priors_spread = abs_probabilities_per_surface
     priors_totals = abs_total_probabilities_per_surface
 
@@ -372,8 +400,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True):
             totals_prob_over = totals_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                        totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_totals,
                                        bet_row['court_surface'], under=False)
-            over_bet = totals_prob_over
-            under_bet = totals_prob_under
+            over_bet = totals_func(totals_prob_under, totals_bet_option.max_price1)
+            under_bet = totals_func(totals_prob_over, totals_bet_option.max_price2)
         else:
             over_bet = 0
             under_bet = 0
@@ -396,13 +424,14 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True):
     return decision_func_helper
 
 
-def prediction_func(bet_ml=True, bet_spread=True):
+def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
     def prediction_func_helper(avg_predictions, epsilon):
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
         test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
                                                     lambda j: test_data['y'].iloc[j],
                                                     lambda j: test_data['spread'].iloc[j],
-                                                    decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread),
+                                                    decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread,
+                                                                  bet_totals=bet_totals),
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
@@ -413,6 +442,7 @@ def prediction_func(bet_ml=True, bet_spread=True):
         print('---------------------------------------------------------')
     return prediction_func_helper
 
+
 start_year = 2011
 if __name__ == '__main__':
     historical_model = load_outcome_model('Logistic0')
@@ -422,6 +452,7 @@ if __name__ == '__main__':
     num_tests = 1
     bet_spread = True
     bet_ml = True
+    bet_totals = True
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
@@ -431,4 +462,4 @@ if __name__ == '__main__':
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
                                             test_year=test_year, model=historical_model, slam_model=historical_model_slam,
                                             spread_model=historical_spread_model, slam_spread_model=historical_spread_model_slam)
-                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread), graph=False, train=True)
+                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
