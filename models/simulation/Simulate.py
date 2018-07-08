@@ -16,8 +16,8 @@ class BetOption:
         '''
         self.spread1 = bet_row['spread1']
         self.spread2 = bet_row['spread2']
-        self.over = 100 # bet_row['over']
-        self.under = 100 # bet_row['under']
+        self.over = bet_row['over']
+        self.under = bet_row['under']
         self.is_under1 = self.max_price1 < 0
         self.is_under2 = self.max_price2 < 0
         if self.max_price1 > 0:
@@ -110,6 +110,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, d
 
                 won_ml = None
                 won_spread = None
+                won_totals = None
 
                 if ml_bet1 > 0:
                     confidence = betting_minimum * ml_bet1
