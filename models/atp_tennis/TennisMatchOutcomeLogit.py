@@ -68,6 +68,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.opponent_id as opponent_id,
             m.tournament as tournament,
             m.num_sets as num_sets,
+            case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
             case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
             coalesce(majors.prior_encounters,0) as major_encounters,
@@ -373,12 +374,14 @@ y = 'y'
 y_spread = 'spread'
 y_total_games = 'totals'
 y_total_sets = 'num_sets'
+y_total_sets_bin = 'num_sets_greater_than_2'
 
 all_attributes = list(input_attributes0)
 all_attributes.append(y)
 all_attributes.append(y_spread)
 all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
+all_attributes.append(y_total_sets_bin)
 
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
@@ -460,7 +463,7 @@ if __name__ == '__main__':
 
         # regular model
         print('Regular model')
-        results = smf.ols(y_total_sets+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.logit(y_total_sets_bin+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
