@@ -59,6 +59,7 @@ def build_cumulative_probabilities(probabilities):
     return probabilities_over
 
 
+'''
 def create_spread_for_query(query):
     probabilities3, probabilities3_loss, probabilities5, probabilities5_loss \
         = create_spread_probabilities_from_query(query)
@@ -67,14 +68,7 @@ def create_spread_for_query(query):
     probabilities5_over_loss = build_cumulative_probabilities(probabilities5_loss)
     probabilities3_over_loss = build_cumulative_probabilities(probabilities3_loss)
     return probabilities3_over, probabilities5_over, probabilities3_over_loss, probabilities5_over_loss
-
-
-def create_totals_for_query(query):
-    probabilities3, probabilities5 \
-        = create_totals_probabilities_from_query(query)
-    probabilities5_over = build_cumulative_probabilities(probabilities5)
-    probabilities3_over = build_cumulative_probabilities(probabilities3)
-    return probabilities3_over, probabilities5_over
+'''
 
 
 def create_spread_probabilities_from_query(query):
@@ -83,10 +77,16 @@ def create_spread_probabilities_from_query(query):
     return probabilities3, probabilities3_loss, probabilities5, probabilities5_loss
 
 
-def create_totals_probabilities_from_query(query):
-    probabilities3, _ = create_probabilities(query, 0, 40, 'total', False)
-    probabilities5, _ = create_probabilities(query, 0, 66, 'total', True)
-    return probabilities3, probabilities5
+def create_game_totals_probabilities_from_query(query):
+    probabilities3, probabilities3_loss = create_probabilities(query, 0, 40, 'total', False)
+    probabilities5, probabilities5_loss = create_probabilities(query, 0, 66, 'total', True)
+    return probabilities3, probabilities3_loss, probabilities5, probabilities5_loss
+
+
+def create_set_totals_probabilities_from_query(query):
+    probabilities3, probabilities3_loss = create_probabilities(query, 2, 3, 'total', False)
+    probabilities5, probabilities5_loss = create_probabilities(query, 3, 5, 'total', True)
+    return probabilities3, probabilities3_loss, probabilities5, probabilities5_loss
 
 
 sql_str = '''
@@ -98,8 +98,13 @@ sql_clay = sql_str + ' and court_surface=\'Clay\''
 sql_grass = sql_str + ' and court_surface=\'Grass\''
 sql_hard = sql_str + ' and court_surface=\'Hard\''
 
-sql_total_str = '''
+sql_game_total_str = '''
         select player_victory,games_won+games_against as total, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
+                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
+    '''
+
+sql_set_total_str = '''
+        select player_victory,num_sets as total, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
 
@@ -108,5 +113,9 @@ abs_probabilities_per_surface = {
     'Grass': create_spread_probabilities_from_query(sql_grass),
     'Hard': create_spread_probabilities_from_query(sql_hard)
 }
-abs_total_probabilities_per_surface = \
-    create_totals_probabilities_from_query(sql_total_str)
+
+abs_game_total_probabilities_per_surface = \
+    create_game_totals_probabilities_from_query(sql_game_total_str)
+
+abs_set_total_probabilities_per_surface = \
+    create_set_totals_probabilities_from_query(sql_set_total_str)
