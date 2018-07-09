@@ -23,10 +23,16 @@ game_totals = pd.read_sql('select * from atp_matches_total_probabilities', conn)
 game_totals_slam.set_index(['player_id', 'tournament', 'year'], inplace=True)
 game_totals.set_index(['player_id', 'tournament', 'year'], inplace=True)
 
-set_totals_slam = pd.read_sql('select * from atp_matches_set_total_probabilities_slam', conn)
-set_totals = pd.read_sql('select * from atp_matches_set_total_probabilities', conn)
-set_totals_slam.set_index(['player_id', 'tournament', 'year'], inplace=True)
-set_totals.set_index(['player_id', 'tournament', 'year'], inplace=True)
+set_totals_slam_win = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_win', conn)
+set_totals_win = pd.read_sql('select * from atp_matches_set_total_probabilities_win', conn)
+set_totals_slam_win.set_index(['player_id', 'tournament', 'year'], inplace=True)
+set_totals_win.set_index(['player_id', 'tournament', 'year'], inplace=True)
+
+set_totals_slam_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_loss', conn)
+set_totals_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_loss', conn)
+set_totals_slam_loss.set_index(['player_id', 'tournament', 'year'], inplace=True)
+set_totals_loss.set_index(['player_id', 'tournament', 'year'], inplace=True)
+
 
 
 def build_cumulative_probabilities(probabilities):
@@ -89,16 +95,22 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
     return probabilities_over[-int(spread)]
 
 
-def total_games_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', under=True, alpha=5.0):
+def total_games_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', under=True, win=True, alpha=5.0):
     if math.isnan(total):
         return np.NaN
     if is_grand_slam:
         r = range(1, 67, 1)
-        prior = priors_per_surface[1]
+        if win:
+            prior = priors_per_surface[2]
+        else:
+            prior = priors_per_surface[3]
         sql = game_totals_slam
     else:
         r = range(1, 41, 1)
-        prior = priors_per_surface[0]
+        if win:
+            prior = priors_per_surface[0]
+        else:
+            prior = priors_per_surface[1]
         sql = game_totals
 
     try:
@@ -136,18 +148,25 @@ def total_games_prob(player, tournament, year, total, is_grand_slam, priors_per_
     return prob
 
 
-def total_sets_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', under=True, alpha=5.0):
+def total_sets_prob(player, tournament, year, total, is_grand_slam, priors_per_surface, surface='Hard', win=True, under=True, alpha=5.0):
     if math.isnan(total):
         return np.NaN
     if is_grand_slam:
         r = range(3, 6, 1)
-        prior = priors_per_surface[1]
-        sql = set_totals_slam
+        if win:
+            prior = priors_per_surface[2]
+            sql = set_totals_slam_win
+        else:
+            prior = priors_per_surface[3]
+            sql = set_totals_slam_loss
     else:
         r = range(2, 4, 1)
-        prior = priors_per_surface[0]
-        sql = set_totals
-
+        if win:
+            prior = priors_per_surface[0]
+            sql = set_totals_win
+        else:
+            prior = priors_per_surface[1]
+            sql = set_totals_loss
     try:
         row = sql.loc[(player, tournament, int(year)), :]
     except KeyError as e:

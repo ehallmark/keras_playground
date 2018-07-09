@@ -257,15 +257,31 @@ def bet_func(epsilon, bet_ml=True):
 
 
 def totals_bet_func(epsilon, bet_totals=True):
-    def bet_func_helper(price, odds, prediction, row):
-        if not bet_totals or totals_type_by_betting_site[row['book_name']] == 'Set':
+    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, row, ml_bet_player,
+                        ml_bet_opp, ml_opp_odds):
+        if not bet_totals:
             return 0
         prediction = prediction * alpha + (1.0 - alpha) * odds
+        prediction = spread_prob_win * prediction + spread_prob_loss * (1.0 - prediction)
+
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.55:
+
+        if odds < 0.46 or odds > 0.525:
             return 0
+
+        double_down_below = 0  # 0.35
+        hedge_below = 0  # 0.45
+
+        if double_down_below > 0:
+            if ml_bet_player > 0 and (1.0 - ml_opp_odds) < double_down_below:
+                return 1.05
+
+        if hedge_below > 0:
+            if ml_bet_opp > 0.0 and ml_opp_odds < hedge_below:
+                return 1.05
+
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.
@@ -280,6 +296,7 @@ def totals_bet_func(epsilon, bet_totals=True):
             return 1. + expectation
         else:
             return 0
+
     return bet_func_helper
 
 
@@ -479,20 +496,31 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                                         spread_bet_option.spread2, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
         if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
-            totals_prob_under = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_totals,
-                                                 bet_row['court_surface'], under=True)
-            totals_prob_over = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, game_priors_totals,
-                                                bet_row['court_surface'], under=False)
-
+            totals_prob_under_win = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                 bet_row['court_surface'], under=True, win=True)
+            totals_prob_over_win = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                bet_row['court_surface'], under=False, win=True)
+            totals_prob_under_loss = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                 bet_row['court_surface'], under=True, win=False)
+            totals_prob_over_loss = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                bet_row['court_surface'], under=False, win=False)
         else:
-            totals_prob_under = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
-                                                bet_row['court_surface'], under=True)
-            totals_prob_over = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+            totals_prob_under_win = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                bet_row['court_surface'], win=True, under=True)
+            totals_prob_over_win = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
-                                               bet_row['court_surface'], under=False)
+                                               bet_row['court_surface'], win=True, under=False)
+            totals_prob_under_loss = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                bet_row['court_surface'], win=False, under=True)
+            totals_prob_over_loss = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+                                               totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                               bet_row['court_surface'], win=False, under=False)
 
         ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
         ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
@@ -500,8 +528,10 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
         spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
                                   1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
-        over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_under, bet_row)
-        under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_over, bet_row)
+        over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_over_win, totals_prob_over_loss,
+                               prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+        under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
+                                1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
         return {
             'ml_bet1': ml_bet1,
