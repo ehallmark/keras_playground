@@ -67,6 +67,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.player_id as player_id,
             m.opponent_id as opponent_id,
             m.tournament as tournament,
+            m.num_sets as num_sets,
             case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
             coalesce(majors.prior_encounters,0) as major_encounters,
@@ -181,14 +182,6 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
                 else m.year - pc.turned_pro end as experience,
             case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
                 else m.year - pc_opp.turned_pro end as opp_experience,
-            case when m.round='Round of 64' then 1
-                when m.round='Round of 32' then 2
-                when m.round='Round of 16' then 3
-                when m.round='Quarter-Finals' then 4
-                when m.round='Semi-Finals' then 5
-                when m.round='Finals' then 6
-                else 0
-            end as round,
         coalesce(elo.score1,0) as elo_score,
         coalesce(elo.score2,0) as opp_elo_score,
         coalesce(h2h_ml.avg_odds, 0.5) as historical_avg_odds,
@@ -370,7 +363,7 @@ input_attributes_totals = [
     #'prior_quarter_match_closeness',
     #'opp_prior_quarter_match_closeness',
     #'grand_slam',
-    'round',
+    'round_num',
     'major_encounters',
     'opp_major_encounters'
     #'spread_per_set'
@@ -378,12 +371,15 @@ input_attributes_totals = [
 
 y = 'y'
 y_spread = 'spread'
-y_totals = 'totals'
+y_total_games = 'totals'
+y_total_sets = 'num_sets'
 
 all_attributes = list(input_attributes0)
 all_attributes.append(y)
 all_attributes.append(y_spread)
-all_attributes.append(y_totals)
+all_attributes.append(y_total_games)
+all_attributes.append(y_total_sets)
+
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
@@ -402,7 +398,8 @@ if __name__ == '__main__':
     save = False
     train_spread_model = True
     train_outcome_model = True
-    train_totals_model = True
+    train_total_sets_model = True
+    train_total_games_model = True
     sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
@@ -426,13 +423,13 @@ if __name__ == '__main__':
         if save:
             results.save(model_file + '_regular')
 
-    if train_totals_model:
+    if train_total_games_model:
         model_file = 'tennis_match_totals_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
         # grand slam model
         print('Grand Slam')
-        results = smf.ols(y_totals+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
+        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
@@ -441,7 +438,29 @@ if __name__ == '__main__':
 
         # regular model
         print('Regular model')
-        results = smf.ols(y_totals+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        if save:
+            results.save(model_file+'_regular')
+
+    if train_total_sets_model:
+        model_file = 'tennis_match_total_sets_logit.statmodel'
+        # print('Attrs: ', sql[all_attributes][0:20])
+        # model to predict the total score (h_pts + a_pts)
+        # grand slam model
+        print('Grand Slam')
+        results = smf.ols(y_total_sets+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
+        print(results.summary())
+        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        print('Average error: ', avg_error)
+        if save:
+            results.save(model_file+'_slam')
+
+        # regular model
+        print('Regular model')
+        results = smf.ols(y_total_sets+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
