@@ -202,9 +202,8 @@ def total_sets_prob(player, tournament, year, total, is_grand_slam, priors_per_s
 
     if under:
         if total < 2.5:
-            print('Invalid total: ', total)
-            exit(1)
-        prob = 1.0 - probabilities_over[int(total-0.25)]
+            return 0
+        prob = 1.0 - probabilities_over[int(total-0.5)]
     else:
         prob = probabilities_over[int(total)]
     return prob
