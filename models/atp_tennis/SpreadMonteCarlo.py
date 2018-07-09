@@ -30,7 +30,7 @@ def create_probabilities(query, _min, _max, y, is_grand_slam=False):
         probabilities[i] = 0.0
 
     for p in x:
-        probabilities[min(_max, int(p))] += 1
+        probabilities[max(_min, min(_max, int(p)))] += 1
 
     for k in probabilities:
         probabilities[k] /= len(x)
@@ -41,7 +41,7 @@ def create_probabilities(query, _min, _max, y, is_grand_slam=False):
         probabilities_loss[i] = 0.0
 
     for p in x_loss:
-        probabilities_loss[min(_max, int(p))] += 1
+        probabilities_loss[max(_min, min(_max, int(p)))] += 1
 
     for k in probabilities_loss:
         probabilities_loss[k] /= len(x_loss)

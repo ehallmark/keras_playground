@@ -6,7 +6,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, total_sets_prob, total_games_prob, abs_probabilities_per_surface
+from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, total_sets_prob, total_games_prob, abs_probabilities_per_surface, abs_game_total_probabilities_per_surface, abs_set_total_probabilities_per_surface
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
@@ -453,8 +453,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
     priors_spread = abs_probabilities_per_surface
-    priors_totals = abs_total_probabilities_per_surface
-    priors_totals = abs_total_probabilities_per_surface
+    priors_set_totals = abs_set_total_probabilities_per_surface
+    priors_game_totals = abs_game_total_probabilities_per_surface
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
         if bet_row['round_num'] <= 1:
@@ -478,12 +478,21 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                         spread_bet_option.spread2, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
-        totals_prob_under = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                   totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_totals,
-                                   bet_row['court_surface'], under=True)
-        totals_prob_over = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                   totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_totals,
-                                   bet_row['court_surface'], under=False)
+        if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
+            totals_prob_under = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_totals,
+                                                 bet_row['court_surface'], under=True)
+            totals_prob_over = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, game_priors_totals,
+                                                bet_row['court_surface'], under=False)
+
+        else:
+            totals_prob_under = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                bet_row['court_surface'], under=True)
+            totals_prob_over = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+                                               totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                               bet_row['court_surface'], under=False)
 
         ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
         ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
