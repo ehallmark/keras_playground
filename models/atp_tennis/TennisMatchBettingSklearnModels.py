@@ -16,6 +16,14 @@ import pandas as pd
 from models.simulation.Simulate import simulate_money_line
 
 
+totals_type_by_betting_site = {  # describes the totals type for each betting site
+    'Bovada': 'Set',
+    'BetOnline': 'Game',
+    '5Dimes': 'Game',
+}
+
+betting_sites = list(totals_type_by_betting_site.keys())
+
 betting_input_attributes = [
     'h2h_prior_win_percent',
     'historical_avg_odds',
@@ -189,13 +197,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
-    spread_betting_sites = ['Bovada', 'BetOnline', '5Dimes']
-    spread_type_by_site = {  # describes the totals type for each betting site
-        'Bovada': 'Set',
-        'BetOnline': 'Game',
-        '5Dimes': 'Set',
-    }
-    betting_data = load_betting_data(spread_betting_sites, test_year=test_year)
+
+    betting_data = load_betting_data(betting_sites, test_year=test_year)
 
     test_data = pd.DataFrame.merge(
         test_data,
@@ -255,7 +258,7 @@ def bet_func(epsilon, bet_ml=True):
 
 def totals_bet_func(epsilon, bet_totals=True):
     def bet_func_helper(price, odds, prediction, row):
-        if not bet_totals:
+        if not bet_totals or totals_type_by_betting_site[row['book_name']] == 'Set':
             return 0
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
@@ -487,8 +490,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
         spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
                                   1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
-        over_bet = totals_func(totals_prob_under, totals_bet_option.max_price1, prediction, bet_row)
-        under_bet = totals_func(totals_prob_over, totals_bet_option.max_price2, 1.0 - prediction, bet_row)
+        over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_under, bet_row)
+        under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_over, bet_row)
 
         return {
             'ml_bet1': ml_bet1,
@@ -530,11 +533,11 @@ if __name__ == '__main__':
     num_tests = 1
     bet_spread = True
     bet_ml = True
-    bet_totals = False
+    bet_totals = True
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2017, 2018]:
+            for test_year in [2016, 2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

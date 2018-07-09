@@ -348,10 +348,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
 
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
-                        if math.isclose(actual_total, totals_over):
+                        if math.isclose(actual_totals, totals_over):
                             # tie
                             ret = 0
-                        elif actual_total < totals_over:  # LOST BET :(
+                        elif actual_totals < totals_over:  # LOST BET :(
                             if totals_price_is_under1:
                                 ret = totals_price1 * confidence
                             else:
@@ -393,10 +393,10 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
                                            bet_row['book_name'])
                     if capital_requirement <= available_capital:
                         amount_invested += capital_requirement
-                        if math.isclose(actual_total, totals_under):
+                        if math.isclose(actual_totals, totals_under):
                             # tie
                             ret = 0
-                        elif actual_total < totals_under:  # WON BET
+                        elif actual_totals < totals_under:  # WON BET
                             if totals_price_is_under2:
                                 ret = 100.0 * confidence
                             else:
@@ -409,7 +409,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
                             amount_won += abs(ret)
                         else:  # LOST BET :(
                             if totals_price_is_under2:
-                                ret = ml_price2 * confidence
+                                ret = totals_price2 * confidence
                             else:
                                 ret = - 100.0 * confidence
                             if ret > 0:
