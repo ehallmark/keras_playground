@@ -547,10 +547,17 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
     def prediction_func_helper(avg_predictions, epsilon):
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
+
+        def game_or_set_totals_func(i):
+            if totals_type_by_betting_site[test_data['book_name'].iloc[i]] == 'Game':
+                return test_data['totals'].iloc[i]
+            else:
+                return test_data['num_sets'].iloc[i]
+
         test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
                                                     lambda j: test_data['y'].iloc[j],
                                                     lambda j: test_data['spread'].iloc[j],
-                                                    lambda j: test_data['totals'].iloc[j],
+                                                    lambda j: game_or_set_totals_func(j),
                                                     decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread,
                                                                   bet_totals=bet_totals),
                                                     test_data,
