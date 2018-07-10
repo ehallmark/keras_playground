@@ -243,7 +243,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.55:
+        if odds < 0.25 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -544,8 +544,12 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
                                 1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
-        spread_bet1 = check_player_for_spread(spread_bet1, bet_row['opponent_id'])
-        spread_bet2 = check_player_for_spread(spread_bet2, bet_row['player_id'])
+        # check whether it's an amazing player in a grand slam
+        #   basically, we don't want to bet against them...
+        if bet_row['grand_slam'] > 0.5:
+            spread_bet1 = check_player_for_spread(spread_bet1, bet_row['opponent_id'])
+            spread_bet2 = check_player_for_spread(spread_bet2, bet_row['player_id'])
+
         return {
             'ml_bet1': ml_bet1,
             'ml_bet2': ml_bet2,
@@ -593,11 +597,11 @@ if __name__ == '__main__':
     num_tests = 1
     bet_spread = True
     bet_ml = True
-    bet_totals = True
+    bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2016, 2017, 2018]:
+            for test_year in [2017, 2018]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

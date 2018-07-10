@@ -223,27 +223,3 @@ def total_sets_prob(player, tournament, year, total, is_grand_slam, priors_per_s
         prob = probabilities_over[int(total)]
     return prob
 
-
-print(spread_prob('roger-federer', 'wimbledon', 2017, -4, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, -3, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, -2, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, -1, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, -0, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, 1, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, 2, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, 3, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, 4, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('roger-federer', 'wimbledon', 2017, 5, True, abs_probabilities_per_surface, 'Clay', True))
-
-
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, -4, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, -3, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, -2, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, -1, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, -0, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, 1, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, 2, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, 3, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, 4, True, abs_probabilities_per_surface, 'Clay', True))
-print(spread_prob('rafael-nadal', 'wimbledon', 2017, 5, True, abs_probabilities_per_surface, 'Clay', True))
-
