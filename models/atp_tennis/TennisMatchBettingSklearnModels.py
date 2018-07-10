@@ -243,7 +243,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.27 or odds > 0.53:
+        if odds < 0.20 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -274,7 +274,7 @@ def totals_bet_func(epsilon, bet_totals=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.46 or odds > 0.525:
+        if odds < 0.45 or odds > 0.54:
             return 0
 
         double_down_below = 0  # 0.35
