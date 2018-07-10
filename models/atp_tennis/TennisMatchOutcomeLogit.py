@@ -316,6 +316,7 @@ input_attributes0 = [
     'tiebreak_win_percent',
     'major_avg_round',
     'major_encounters',
+    #'duration_prev_match'
 ]
 
 # opponent attrs
@@ -342,7 +343,9 @@ input_attributes_spread = [
     'major_avg_round',
     'opp_major_avg_round',
     'major_match_closeness',
-    'opp_major_match_closeness'
+    'opp_major_match_closeness',
+    'duration_prev_match',
+    'opp_duration_prev_match'
 ]
 
 
@@ -357,17 +360,18 @@ input_attributes_totals = [
     'opp_prev_year_avg_round',
     'surface_experience',
     'opp_surface_experience',
-    #'elo_score',
-    #'opp_elo_score',
+    'elo_score',
+    'opp_elo_score',
     'avg_games_per_set',
     'opp_avg_games_per_set',
-    #'prior_quarter_match_closeness',
-    #'opp_prior_quarter_match_closeness',
+    'prior_quarter_match_closeness',
+    'opp_prior_quarter_match_closeness',
     #'grand_slam',
     'round_num',
     'major_encounters',
-    'opp_major_encounters'
-    #'spread_per_set'
+    'opp_major_encounters',
+    'duration_prev_match',
+    'opp_duration_prev_match'
 ]
 
 y = 'y'
@@ -402,7 +406,7 @@ if __name__ == '__main__':
     train_spread_model = True
     train_outcome_model = True
     train_total_sets_model = True
-    train_total_games_model = True
+    train_total_games_model = False
     sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
