@@ -295,9 +295,7 @@ input_attributes0 = [
     'prev_year_prior_victories',
     'prev_year_prior_losses',
     'prior_year_match_closeness',
-    'avg_games_per_set',
     # prior quarter
-    'prior_quarter_avg_round',
     'prior_quarter_games_per_set',
     'prior_quarter_victories',
     'prior_quarter_losses',
@@ -310,13 +308,13 @@ input_attributes0 = [
     'best_year',
     # match stats
     'mean_second_serve_points_made',
-    'mean_first_serve_points_made',
     'mean_break_points_made',
     'mean_break_points_against',
     'tiebreak_win_percent',
-    'major_avg_round',
     'major_encounters',
-    #'duration_prev_match'
+
+    # previous match
+    'duration_prev_match'
 ]
 
 # opponent attrs
