@@ -45,7 +45,7 @@ def build_cumulative_probabilities(probabilities):
     return probabilities_over
 
 
-def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
+def spread_prob(player, opponent, tournament, year, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
     if math.isnan(spread):
         return np.NaN
     if is_grand_slam:
@@ -53,36 +53,51 @@ def spread_prob(player, tournament, year, spread, is_grand_slam, priors_per_surf
         if win:
             prior = priors_per_surface[surface][2]
             sql = slam_wins
+            opp_sql = slam_losses
         else:
             prior = priors_per_surface[surface][3]
             sql = slam_losses
+            opp_sql = slam_wins
     else:
         r = range(-12, 13, 1)
         if win:
             prior = priors_per_surface[surface][0]
             sql = wins
+            opp_sql = losses
         else:
             prior = priors_per_surface[surface][1]
             sql = losses
+            opp_sql = wins
 
     try:
         row = sql.loc[(player, tournament, int(year)), :]
+        opp_row = opp_sql.loc[(opponent, tournament, int(year)), :]
     except KeyError as e:
         row = np.array([])
+        opp_row = np.array([])
 
     probabilities = prior.copy()
-    if row.shape[0] > 0:
+    if row.shape[0] > 0 or opp_row.shape[0] > 0:
         for k in probabilities:
             probabilities[k] *= alpha * 100.0
-        for i in r:
-            if i < 0:
-                x = int(row['minus'+str(abs(i))])
-            elif i > 0:
-                x = int(row['plus' + str(i)])
-            else:
-                x = int(row['even'])
-            probabilities[i] += x
-
+        if row.shape[0] > 0:
+            for i in r:
+                if i < 0:
+                    x = int(row['minus'+str(abs(i))])
+                elif i > 0:
+                    x = int(row['plus' + str(i)])
+                else:
+                    x = int(row['even'])
+                probabilities[i] += x
+        if opp_row.shape[0] > 0:
+            for i in r:
+                if i < 0:
+                    x = int(row['minus' + str(abs(i))])
+                elif i > 0:
+                    x = int(row['plus' + str(i)])
+                else:
+                    x = int(row['even'])
+                probabilities[i] += x
         s = 0.0
         for _, v in probabilities.items():
             s += v

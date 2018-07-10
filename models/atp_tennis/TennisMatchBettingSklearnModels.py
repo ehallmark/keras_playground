@@ -494,16 +494,16 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 'over_bet': 0,
                 'under_bet': 0
             }
-        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                        bet_row['court_surface'], win=True)
-        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['year'],
                                        spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                        bet_row['court_surface'], win=True)
-        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                         spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
-        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['year'],
                                         spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
         if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
