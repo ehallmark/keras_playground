@@ -227,11 +227,11 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 alpha = 1.0
-spread_cushion = 2.
+spread_cushion = 0.5
 dont_bet_against_spread = {
     'roger-federer',
     'rafael-nadal',
-    'novak djokovic'
+    'novak-djokovic'
 }
 
 
@@ -243,7 +243,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.55:
+        if odds < 0.27 or odds > 0.53:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -479,6 +479,11 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
 
+    def check_player_for_spread(bet, opponent):
+        if opponent in dont_bet_against_spread:
+            return 0.
+        return bet
+
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
         if bet_row['round_num'] <= 1:
             return {
@@ -539,6 +544,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
                                 1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
+        spread_bet1 = check_player_for_spread(spread_bet1, bet_row['opponent_id'])
+        spread_bet2 = check_player_for_spread(spread_bet2, bet_row['player_id'])
         return {
             'ml_bet1': ml_bet1,
             'ml_bet2': ml_bet2,
