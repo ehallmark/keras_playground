@@ -485,7 +485,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         return bet
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
-        if bet_row['round_num'] <= 1:
+        if bet_row['round_num'] < 1:
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
