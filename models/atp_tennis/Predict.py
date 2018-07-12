@@ -15,7 +15,7 @@ historical_spread_model_slam = load_spread_model('Linear1')
 
 future_matches_only = False
 test_year = 2018  # IMPORTANT!!
-tournaments = ['wimbledon']
+tournaments = ['roland-garros', 'geneva', 'antalya', 'wimbledon']
 
 for tournament in tournaments:
     print("Tournament: ", tournament)

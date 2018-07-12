@@ -440,7 +440,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.9, [0.25, 0.3, 0.35]],
     ]
 
-    test_idx = 0
+    test_idx = 1
 
     if train:
         params = train_params
