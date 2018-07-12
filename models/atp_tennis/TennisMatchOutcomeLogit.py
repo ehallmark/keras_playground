@@ -71,6 +71,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
             case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
+            case when coalesce(qualifying.had_qualifier,'f') then 1.0 else 0.0 end as had_qualifier,
+            case when coalesce(qualifying_opp.had_qualifier,'f') then 1.0 else 0.0 end as opp_had_qualifier,
             coalesce(majors.prior_encounters,0) as major_encounters,
             coalesce(opp_majors.prior_encounters, 0) as opp_major_encounters,
             coalesce(majors.prior_victories,0) as major_victories,
@@ -263,9 +265,13 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.year)=(prior_worst_year.player_id,prior_worst_year.year))
         left outer join atp_matches_prior_worst_year as prior_worst_year_opp
             on ((m.opponent_id,m.year)=(prior_worst_year_opp.player_id,prior_worst_year_opp.year))
+        left outer join atp_matches_qualifying as qualifying
+            on ((m.player_id,m.year,m.tournament)=(qualifying.player_id,qualifying.year,qualifying.tournament))
+        left outer join atp_matches_qualifying as qualifying_opp
+            on ((m.opponent_id,m.year,m.tournament)=(qualifying_opp.player_id,qualifying_opp.year,qualifying_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} 
+        where m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.first_serve_attempted > 0'
@@ -295,26 +301,34 @@ input_attributes0 = [
     'prev_year_prior_victories',
     'prev_year_prior_losses',
     'prior_year_match_closeness',
+
     # prior quarter
+
     'prior_quarter_games_per_set',
     'prior_quarter_victories',
-    'prior_quarter_losses',
+    # 'prior_quarter_losses',
     'prior_quarter_match_closeness',
+
     # player qualities
+
     'elo_score',
     'age',
     'surface_experience',
     'height',
     'best_year',
+
     # match stats
+
     'mean_second_serve_points_made',
     'mean_break_points_made',
     'mean_break_points_against',
-    'tiebreak_win_percent',
+    #'tiebreak_win_percent',
     'major_encounters',
 
     # previous match
-    'duration_prev_match'
+
+    'duration_prev_match',
+    'had_qualifier'
 ]
 
 # opponent attrs

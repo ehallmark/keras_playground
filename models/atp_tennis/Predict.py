@@ -20,17 +20,18 @@ tournaments = ['wimbledon']
 for tournament in tournaments:
     print("Tournament: ", tournament)
     data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=1, test_year=test_year,
-                                test_tournament=tournament, model=historical_model, spread_model=historical_spread_model,
-                                slam_model=historical_model_slam, slam_spread_model=historical_spread_model_slam)
-    #print('Test data: ', test_data[0:10])
+                                             test_tournament=tournament, model=historical_model, spread_model=historical_spread_model,
+                                             slam_model=historical_model_slam, slam_spread_model=historical_spread_model_slam)
+    # print('Test data: ', test_data[0:10])
     print('Test data shape: ', test_data.shape)
 
     predictions = np.array(tennis_model.predict(data, test_data, train=False)).flatten()
     print("predictions shape: ", predictions.shape)
 
     bets_to_make = []
+
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
-        #print("MAKE BET: ", conf, player1, player2)
+        # print("MAKE BET: ", conf, player1, player2)
         if date is None:
             return
         if not future_matches_only or date >= datetime.date.today():

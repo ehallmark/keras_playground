@@ -152,11 +152,12 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
 
+        lam_rat = 1.0
         def lam(y, y_slam, slam):
             if slam > 0.5:
-                return y_slam
+                return y_slam * lam_rat + y * (1.0 - lam_rat)
             else:
-                return y
+                return y * lam_rat + y_slam * (1.0 - lam_rat)
 
         data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
         test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
@@ -229,9 +230,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 alpha = 1.0
 spread_cushion = 0.5
 dont_bet_against_spread = {
-    'roger-federer',
-    'rafael-nadal',
-    'novak-djokovic'
+
 }
 
 
@@ -243,7 +242,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.50:
+        if odds < 0.30 or odds > 0.525:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -274,7 +273,7 @@ def totals_bet_func(epsilon, bet_totals=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.45 or odds > 0.54:
+        if odds < 0.46 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
