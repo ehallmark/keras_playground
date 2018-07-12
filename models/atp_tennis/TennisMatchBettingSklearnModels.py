@@ -228,7 +228,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
 
 
 alpha = 1.0
-spread_cushion = 0.5
+spread_cushion = 0.0
 dont_bet_against_spread = {
 
 }
@@ -242,7 +242,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.8:
+        if odds < 0.20 or odds > 0.60:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
