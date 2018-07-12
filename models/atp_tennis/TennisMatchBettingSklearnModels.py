@@ -375,8 +375,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         else:
             for i in range(100):
                 model = _model()
-                X_train_sample = sample2d(X_train, seed + i, 0.67)
-                y_train_sample = sample2d(y_train, seed + i, 0.67)
+                ratio = 0.67
+                X_train_sample = sample2d(X_train, seed + i, ratio)
+                y_train_sample = sample2d(y_train, seed + i, ratio)
                 model.fit(X_train_sample, y_train_sample)
                 prob_pos = predict_proba(model, X_test)
                 model_predictions.append(prob_pos)
