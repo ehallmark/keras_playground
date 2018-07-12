@@ -446,7 +446,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         params = train_params
     else:
         test_params = [
-            [train_params[test_idx][0], train_params[test_idx][1], [train_params[test_idx][2][0]]]
+            [train_params[test_idx][0], [train_params[test_idx][1][0]]]
         ]
         params = test_params
         print("Test params: ", params)

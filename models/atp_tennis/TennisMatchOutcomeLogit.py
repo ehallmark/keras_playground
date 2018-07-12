@@ -177,6 +177,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(var_opp.break_points_percent,0.05) as opp_var_break_points_percent,
             extract(epoch from coalesce(prior_match.duration,'01:30:00'::time))::float/3600.0 as duration_prev_match,
             extract(epoch from coalesce(prior_match_opp.duration,'01:30:00'::time))::float/3600.0 as opp_duration_prev_match,         
+            coalesce(prior_match.games_won, 6) + coalesce(prior_match.games_against, 6) as previous_games_total,
+            coalesce(prior_match_opp.games_won, 6) + coalesce(prior_match_opp.games_against, 6) as opp_previous_games_total,
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
                 else m.year - extract(year from pc.date_of_birth) end as age,
             case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
@@ -299,7 +301,7 @@ input_attributes0 = [
     'tourney_hist_avg_round',
     'prev_year_avg_round',
     'prev_year_prior_victories',
-    'prev_year_prior_losses',
+    #'prev_year_prior_losses',
     'prior_year_match_closeness',
 
     # prior quarter
@@ -307,7 +309,7 @@ input_attributes0 = [
     'prior_quarter_games_per_set',
     'prior_quarter_victories',
     # 'prior_quarter_losses',
-    'prior_quarter_match_closeness',
+    # 'prior_quarter_match_closeness',
 
     # player qualities
 
@@ -319,16 +321,16 @@ input_attributes0 = [
 
     # match stats
 
-    'mean_second_serve_points_made',
-    'mean_break_points_made',
-    'mean_break_points_against',
+    #'mean_second_serve_points_made',
+    #'mean_break_points_made',
+    #'mean_break_points_against',
     #'tiebreak_win_percent',
     'major_encounters',
 
     # previous match
-
-    'duration_prev_match',
-    'had_qualifier'
+    'previous_games_total',
+   # 'duration_prev_match',  DONT HAVE THE DATA FOR CURRENT
+   # 'had_qualifier'         DONT HAVE THE DATA FOR CURRENT
 ]
 
 # opponent attrs

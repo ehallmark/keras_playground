@@ -40,8 +40,10 @@ for tournament in tournaments:
     # run betting algo
     epsilon = 0.0
     test_return, num_bets = simulate_money_line(lambda j: predictions[j],
-                                                lambda j: 0,
-                                                lambda j: 0,
+                                                # lambda j: 0,
+                                                # lambda j: 0,
+                                                lambda j: test_data['y'].iloc[j],
+                                                lambda j: test_data['spread'].iloc[j],
                                                 lambda j: 0,
                                                 tennis_model.decision_func(epsilon),
                                                 test_data,
