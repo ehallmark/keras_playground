@@ -152,7 +152,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
 
-        lam_rat = 1.0
+        lam_rat = 0.9
         def lam(y, y_slam, slam):
             if slam > 0.5:
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
@@ -242,7 +242,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.30 or odds > 0.525:
+        if odds < 0.20 or odds > 0.8:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -433,10 +433,10 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, 0.5, [0.08, 0.1, 0.15]],
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.33, 0.33, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.8, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.1, 0.8, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.1, 0.1, [0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.33, 0.33, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.8, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.1, 0.8, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.1, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
