@@ -60,17 +60,11 @@ def predict_proba(model, X):
     return prob_pos
 
 
-def sample2d(array, seed, max_samples):
-    i = seed % max_samples
-    if i == 0:
-        np.random.seed(seed)
-        np.random.shuffle(array)
-        return array[0:int(array.shape[0]/max_samples)]
-    else:
-        interval = int(array.shape[0]/max_samples)
-        start = interval * i
-        end = interval * i + interval
-        return array[start:end]
+def sample2d(array, seed, sample_percent):
+    np.random.seed(seed)
+    np.random.shuffle(array)
+    return array[0:int(array.shape[0]*sample_percent)]
+
 
 
 def load_betting_data(betting_sites, test_year=2018):
@@ -379,10 +373,10 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(50):
+            for i in range(100):
                 model = _model()
-                X_train_sample = sample2d(X_train, seed + i, 2)
-                y_train_sample = sample2d(y_train, seed + i, 2)
+                X_train_sample = sample2d(X_train, seed + i, 0.67)
+                y_train_sample = sample2d(y_train, seed + i, 0.67)
                 model.fit(X_train_sample, y_train_sample)
                 prob_pos = predict_proba(model, X_test)
                 model_predictions.append(prob_pos)
