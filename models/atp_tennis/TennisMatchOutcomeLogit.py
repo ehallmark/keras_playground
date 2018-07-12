@@ -421,23 +421,27 @@ if __name__ == '__main__':
     train_outcome_model = True
     train_total_sets_model = True
     train_total_games_model = False
-    sql, test_data = load_data(all_attributes, test_season=2010, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
+    sql_slam = sql[sql.grand_slam > 0.5]
+    sql = sql[sql.grand_slam < 0.5]
+    test_data_slam = test_data[test_data.grand_slam > 0.5]
+    test_data = test_data[test_data.grand_slam < 0.5]
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
         # grand slam model
         print('Grand Slam')
-        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql[sql.grand_slam > 0.5]).fit()
+        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql_slam).fit()
         print(results.summary())
-        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        _, avg_error = test_model(results, test_data_slam, test_data_slam[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
             results.save(model_file + '_slam')
 
         # regular model
         print('Regular model')
-        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.logit(y + ' ~ ' + '+'.join(input_attributes0), data=sql).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
@@ -450,16 +454,16 @@ if __name__ == '__main__':
         # model to predict the total score (h_pts + a_pts)
         # grand slam model
         print('Grand Slam')
-        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
+        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql_slam).fit()
         print(results.summary())
-        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        _, avg_error = test_model(results, test_data_slam, test_data_slam[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
             results.save(model_file+'_slam')
 
         # regular model
         print('Regular model')
-        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.ols(y_total_games+' ~ '+'+'.join(input_attributes_totals), data=sql).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
@@ -472,16 +476,16 @@ if __name__ == '__main__':
         # model to predict the total score (h_pts + a_pts)
         # grand slam model
         print('Grand Slam')
-        results = smf.ols(y_total_sets+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam > 0.5]).fit()
+        results = smf.ols(y_total_sets+' ~ '+'+'.join(input_attributes_totals), data=sql_slam).fit()
         print(results.summary())
-        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        _, avg_error = test_model(results, test_data_slam, test_data_slam[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
             results.save(model_file+'_slam')
 
         # regular model
         print('Regular model')
-        results = smf.logit(y_total_sets_bin+' ~ '+'+'.join(input_attributes_totals), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.logit(y_total_sets_bin+' ~ '+'+'.join(input_attributes_totals), data=sql).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
@@ -493,16 +497,16 @@ if __name__ == '__main__':
         # print('Attrs: ', sql[all_attributes][0:20])
         # model to predict the total score (h_pts + a_pts)
         print('Grand Slam')
-        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql[sql.grand_slam > 0.5]).fit()
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql_slam).fit()
         print(results.summary())
-        _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
+        _, avg_error = test_model(results, test_data_slam, test_data_slam[y], include_binary=False)
         print('Average error: ', avg_error)
         if save:
             results.save(model_file + '_slam')
 
         # regular model
         print('Regular model')
-        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql[sql.grand_slam < 0.5]).fit()
+        results = smf.ols(y_spread + ' ~ ' + '+'.join(input_attributes_spread), data=sql).fit()
         print(results.summary())
         _, avg_error = test_model(results, test_data, test_data[y], include_binary=False)
         print('Average error: ', avg_error)
