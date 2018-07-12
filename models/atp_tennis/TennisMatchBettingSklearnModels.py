@@ -352,7 +352,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     all_predictions = []
     lr = lambda: LogisticRegression()
     svm = lambda: LinearSVC()
-    rf = lambda: RandomForestClassifier(n_estimators=300)
+   # rf = lambda: RandomForestClassifier(n_estimators=300)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -367,7 +367,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         (lr, 'Logit Regression'),
         # (svm, 'Support Vector'),
         (nb, 'Naive Bayes'),
-        (rf, 'Random Forest'),
+       # (rf, 'Random Forest'),
     ]:
         print('With betting model: ', name)
         model_predictions = []
@@ -433,10 +433,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         #[0.1, 0.5, [0.08, 0.1, 0.15]],
         #[0.3, 0.5, [0.05, 0.10, 0.15]],
         #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.33, 0.33, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.8, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.1, 0.8, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
-        [0.1, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.5, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
+        [0.9, [0., 0.01, 0.025, 0.05, 0.1, 0.15, 0.20]],
         #[0.7, [0.1, 0.15, 0.20]],
         #[0.9, [0.25, 0.3, 0.35]],
     ]
@@ -452,18 +451,20 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         params = test_params
         print("Test params: ", params)
 
-    for bayes_model_percent, logit_percent, epsilons in params:
+    for bayes_model_percent, epsilons in params:
         for epsilon in epsilons:
             if train:
                 variance = 0.0001
                 bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
                 epsilon = epsilon + float(np.random.randn(1) * variance)
-            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Logit Percentage:', logit_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
-            rf_model_percent = 1.0 - logit_percent - bayes_model_percent
-            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) + rf_model_percent * len(all_predictions[2])
+            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
+           # rf_model_percent = 1.0 - logit_percent - bayes_model_percent
+            logit_percent = 1.0 - bayes_model_percent
+            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) #+ rf_model_percent * len(all_predictions[2])
             avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                         np.vstack(all_predictions[1]) * bayes_model_percent,
-                                         np.vstack(all_predictions[2]) * rf_model_percent]).sum(0) / total
+                                         np.vstack(all_predictions[1]) * bayes_model_percent
+                                      #   np.vstack(all_predictions[2]) * rf_model_percent
+                                        ]).sum(0) / total
             predictions.append(avg_predictions)
             if prediction_function is not None:
                 prediction_function(avg_predictions, epsilon)
