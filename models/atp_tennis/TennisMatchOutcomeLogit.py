@@ -273,7 +273,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.opponent_id,m.year,m.tournament)=(qualifying_opp.player_id,qualifying_opp.year,qualifying_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where r.round_num > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
+        where r.round > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.first_serve_attempted > 0'
