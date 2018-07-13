@@ -90,8 +90,8 @@ def create_set_totals_probabilities_from_query(query):
 
 
 sql_str = '''
-        select player_victory,games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
-                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
+        select player_victory,games_won-games_against as spread, case when greatest(num_sets-sets_won,sets_won)=3
+                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and retirement is not null and not retirement and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
 
 sql_clay = sql_str + ' and court_surface=\'Clay\''
@@ -99,13 +99,13 @@ sql_grass = sql_str + ' and court_surface=\'Grass\''
 sql_hard = sql_str + ' and court_surface=\'Hard\''
 
 sql_game_total_str = '''
-        select player_victory,games_won+games_against as total, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
-                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
+        select player_victory,games_won+games_against as total, case when greatest(num_sets-sets_won,sets_won)=3
+                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and retirement is not null and not retirement and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
 
 sql_set_total_str = '''
-        select player_victory,num_sets as total, case when greatest(num_sets-sets_won,sets_won)=3 or tournament in ('roland-garros','wimbledon','us-open','australian-open')
-                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
+        select player_victory,num_sets as total, case when greatest(num_sets-sets_won,sets_won)=3 
+                then 1.0 else 0.0 end as grand_slam from atp_matches_individual where year >= 1991 and year <= 2010 and retirement is not null and not retirement and tournament is not null and num_sets is not null and sets_won is not null and games_won is not null
     '''
 
 abs_probabilities_per_surface = {
