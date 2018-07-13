@@ -236,7 +236,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.50:
+        if odds < 0.20 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -480,8 +480,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         return bet
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
-        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 2) or \
-                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 3):
+        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 3) or \
+                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 4):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,

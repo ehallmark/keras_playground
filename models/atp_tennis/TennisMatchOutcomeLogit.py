@@ -300,7 +300,7 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 input_attributes0 = [
     'tourney_hist_avg_round',
     'prev_year_avg_round',
-    'prev_year_prior_victories',
+    #'prev_year_prior_victories',
     #'prev_year_prior_losses',
     'prior_year_match_closeness',
 
@@ -321,9 +321,9 @@ input_attributes0 = [
 
     # match stats
 
-    #'mean_second_serve_points_made',
-    #'mean_break_points_made',
-    #'mean_break_points_against',
+    'mean_second_serve_points_made',
+    'mean_break_points_made',
+    'mean_break_points_against',
     #'tiebreak_win_percent',
     'major_encounters',
 
