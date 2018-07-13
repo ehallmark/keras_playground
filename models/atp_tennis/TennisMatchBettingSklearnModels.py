@@ -36,7 +36,7 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    #'ml_odds_avg',
+    'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -481,7 +481,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
         if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 2) or \
-                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 3):
+                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 4):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
@@ -591,7 +591,7 @@ if __name__ == '__main__':
     historical_model_slam = load_outcome_model('Logistic1')
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
-    bet_spread = False
+    bet_spread = True
     bet_ml = True
     bet_totals = False
     for i in range(num_tests):
