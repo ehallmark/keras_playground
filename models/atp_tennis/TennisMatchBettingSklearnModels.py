@@ -25,18 +25,18 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
 betting_sites = list(totals_type_by_betting_site.keys())
 
 betting_input_attributes = [
-    #'h2h_prior_win_percent',
-    #'historical_avg_odds',
+    'h2h_prior_win_percent',
+    'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
-    #'underdog_wins',
-    #'opp_underdog_wins',
-    #'fave_wins',
-    #'opp_fave_wins',
+    'underdog_wins',
+    'opp_underdog_wins',
+    'fave_wins',
+    'opp_fave_wins',
 ]
 
 betting_only_attributes = [
-    'ml_odds_avg',
+    #'ml_odds_avg',
     'predictions',
     #'spread_predictions'
 ]
@@ -145,7 +145,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
 
-        lam_rat = 0.9
+        lam_rat = 1.0
         def lam(y, y_slam, slam):
             if slam > 0.5:
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
@@ -228,9 +228,13 @@ dont_bet_against_spread = {
 
 
 def bet_func(epsilon, bet_ml=True):
-    def bet_func_helper(price, odds, prediction, row):
+    def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
+        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 2) or \
+                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 3):
+            return 0
+
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
