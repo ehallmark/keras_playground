@@ -69,7 +69,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.tournament as tournament,
             m.num_sets as num_sets,
             case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
-            case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(num_sets-sets_won, sets_won)=3,'f')
+            case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(m.num_sets-m.sets_won, m.sets_won)=3,'f')
                 then 1.0 else 0.0 end as grand_slam,
             case when coalesce(qualifying.had_qualifier,'f') then 1.0 else 0.0 end as had_qualifier,
             case when coalesce(qualifying_opp.had_qualifier,'f') then 1.0 else 0.0 end as opp_had_qualifier,
