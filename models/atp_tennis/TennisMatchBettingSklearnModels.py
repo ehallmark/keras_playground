@@ -50,6 +50,16 @@ for meta in meta_attributes:
     all_attributes.append(meta)
 
 
+spread_model_only = True
+if spread_model_only:
+    betting_input_attributes = {
+        'prev_odds',
+        'opp_prev_odds',
+        'ml_odds_avg',
+        'predictions'
+    }
+
+
 def predict_proba(model, X):
     if hasattr(model, "predict_proba"):
         prob_pos = model.predict_proba(X)[:, 1]
@@ -239,7 +249,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.525:
+        if odds < 0.25 or odds > 0.50:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -303,9 +313,12 @@ def totals_bet_func(epsilon, bet_totals=True):
 
 
 def spread_bet_func(epsilon, bet_spread=True):
-    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, row, ml_bet_player, ml_bet_opp, ml_opp_odds):
+    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
+        #if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 8): #or \
+        #        #(bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 3):
+        #    return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
@@ -594,8 +607,8 @@ if __name__ == '__main__':
     historical_model_slam = load_outcome_model('Logistic1')
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
-    bet_spread = False
-    bet_ml = True
+    bet_spread = spread_model_only
+    bet_ml = not spread_model_only
     bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
