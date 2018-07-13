@@ -69,7 +69,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             m.tournament as tournament,
             m.num_sets as num_sets,
             case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
-            case when greatest(m.num_sets-m.sets_won,m.sets_won)=3 or m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
+            case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open')
                 then 1.0 else 0.0 end as grand_slam,
             case when coalesce(qualifying.had_qualifier,'f') then 1.0 else 0.0 end as had_qualifier,
             case when coalesce(qualifying_opp.had_qualifier,'f') then 1.0 else 0.0 end as opp_had_qualifier,
@@ -273,7 +273,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.opponent_id,m.year,m.tournament)=(qualifying_opp.player_id,qualifying_opp.year,qualifying_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
+        where (retirement is null or not retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.first_serve_attempted > 0'
