@@ -236,7 +236,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.55:
+        if odds < 0.3 or odds > 0.5:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -373,7 +373,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(50):
+            for i in range(30):
                 model = _model()
                 ratio = 0.67
                 X_train_sample = sample2d(X_train, seed + i, ratio)
@@ -593,7 +593,7 @@ if __name__ == '__main__':
     num_tests = 1
     bet_spread = True
     bet_ml = True
-    bet_totals = True
+    bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
