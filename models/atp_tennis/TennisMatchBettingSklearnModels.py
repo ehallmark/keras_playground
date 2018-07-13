@@ -593,7 +593,7 @@ if __name__ == '__main__':
     num_tests = 1
     bet_spread = True
     bet_ml = True
-    bet_totals = False
+    bet_totals = True
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
