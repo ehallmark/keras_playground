@@ -146,7 +146,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
 
-        lam_rat = 0.9
+        lam_rat = 0.8
         def lam(y, y_slam, slam):
             if slam > 0.5:
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
@@ -236,7 +236,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.5:
+        if odds < 0.25 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
