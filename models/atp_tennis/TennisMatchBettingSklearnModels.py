@@ -236,7 +236,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.50:
+        if odds < 0.35 or odds > 0.525:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -373,9 +373,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(30):
+            for i in range(50):
                 model = _model()
-                ratio = 0.67
+                ratio = 0.75
                 X_train_sample = sample2d(X_train, seed + i, ratio)
                 y_train_sample = sample2d(y_train, seed + i, ratio)
                 model.fit(X_train_sample, y_train_sample)
@@ -591,7 +591,7 @@ if __name__ == '__main__':
     historical_model_slam = load_outcome_model('Logistic1')
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
-    bet_spread = True
+    bet_spread = False
     bet_ml = True
     bet_totals = False
     for i in range(num_tests):
