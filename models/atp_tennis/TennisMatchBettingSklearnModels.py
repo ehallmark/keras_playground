@@ -25,14 +25,14 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
 betting_sites = list(totals_type_by_betting_site.keys())
 
 betting_input_attributes = [
-    'h2h_prior_win_percent',
-    'historical_avg_odds',
+    #'h2h_prior_win_percent',
+    #'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
     'underdog_wins',
     'opp_underdog_wins',
-    'fave_wins',
-    'opp_fave_wins',
+    #'fave_wins',
+    #'opp_fave_wins',
 ]
 
 betting_only_attributes = [
@@ -64,7 +64,6 @@ def sample2d(array, seed, sample_percent):
     np.random.seed(seed)
     np.random.shuffle(array)
     return array[0:int(array.shape[0]*sample_percent)]
-
 
 
 def load_betting_data(betting_sites, test_year=2018):
