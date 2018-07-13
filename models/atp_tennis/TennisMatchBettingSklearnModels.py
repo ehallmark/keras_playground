@@ -29,8 +29,8 @@ betting_input_attributes = [
     #'historical_avg_odds',
     'prev_odds',
     'opp_prev_odds',
-    'underdog_wins',
-    'opp_underdog_wins',
+    #'underdog_wins',
+    #'opp_underdog_wins',
     #'fave_wins',
     #'opp_fave_wins',
 ]
@@ -235,7 +235,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.35 or odds > 0.525:
+        if odds < 0.25 or odds > 0.525:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -479,8 +479,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         return bet
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
-        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 2) or \
-                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 4):
+        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 1) or \
+                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 2):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
@@ -591,7 +591,7 @@ if __name__ == '__main__':
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
     bet_spread = True
-    bet_ml = True
+    bet_ml = False
     bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
