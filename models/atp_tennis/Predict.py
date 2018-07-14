@@ -27,7 +27,7 @@ for tournament in tournaments:
     test_data = test_data[np.isfinite(test_data['y'])]
 
     print('Test data shape: ', test_data.shape)
-    print('Test data: ', test_data['y'])
+    # print('Test data: ', test_data['y'])
     n2 = n2 - test_data.shape[0]
     print('Num NaNs: ', n2)
 

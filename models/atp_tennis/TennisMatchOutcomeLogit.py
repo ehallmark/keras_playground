@@ -401,7 +401,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
