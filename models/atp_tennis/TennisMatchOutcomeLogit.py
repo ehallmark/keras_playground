@@ -276,7 +276,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         where (retirement is null or not retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
-        sql_str = sql_str + '        and m.first_serve_attempted > 0'
+        sql_str = sql_str + '        and m.retirement is not null '
     sql = pd.read_sql(sql_str, conn)
     sql = sql[attributes].astype(np.float64, errors='ignore')
     test_data = sql[sql.year == test_season]
