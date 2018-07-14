@@ -80,7 +80,7 @@ def load_betting_data(betting_sites, test_year=2018):
         s.spread2,
         s.odds1,
         s.odds2,
-        s.betting_date,
+        coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
         m.odds1 as ml_odds1,
         m.odds2 as ml_odds2,   
         (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
@@ -148,7 +148,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
 
-        lam_rat = 0.75
+        lam_rat = 0.9
         def lam(y, y_slam, slam):
             if slam > 0.5:
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
@@ -157,26 +157,6 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
 
         data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
         test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
-
-    if spread_model is not None and slam_spread_model is not None:
-        X_spread = np.array(data[tennis_model.input_attributes_spread].iloc[:, :])
-        X_test_spread = np.array(test_data[tennis_model.input_attributes_spread].iloc[:, :])
-        y_hat = spread_model.predict(X_spread)
-        y_hat_test = spread_model.predict(X_test_spread)
-        y_hat_slam = slam_spread_model.predict(X_spread)
-        y_hat_slam_test = slam_spread_model.predict(X_test_spread)
-
-        def lam(y, y_slam, slam):
-            if slam > 0.5:
-                return y_slam
-            else:
-                return y
-
-        data = data.assign(spread_predictions=pd.Series(
-            [lam(y_hat[i], y_hat_slam[i], data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
-        test_data = test_data.assign(spread_predictions=pd.Series(
-            [lam(y_hat_test[i], y_hat_slam_test[i], test_data['grand_slam'].iloc[i]) for i in
-             range(test_data.shape[0])]).values)
 
     return data, test_data
 
@@ -234,15 +214,15 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 2) or \
-                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 3):
+        if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 2)) or \
+                (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 3)):
             return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.55:
+        if odds < 0.25 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.

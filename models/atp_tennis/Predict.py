@@ -11,10 +11,10 @@ historical_spread_model = tennis_model.historical_spread_model
 historical_model_slam = tennis_model.historical_model_slam
 historical_spread_model_slam = tennis_model.historical_spread_model_slam
 
-future_matches_only = False
 test_year = 2018  # IMPORTANT!!
 tournaments = ['roland-garros', 'geneva', 'antalya', 'wimbledon']
 
+predict_for_real = True
 for tournament in tournaments:
     print("Tournament: ", tournament)
     data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=1, test_year=test_year,
@@ -22,7 +22,8 @@ for tournament in tournaments:
                                              slam_model=historical_model_slam, slam_spread_model=historical_spread_model_slam)
     # print('Test data: ', test_data[0:10])
     n2 = test_data.shape[0]
-    test_data = test_data[np.isfinite(test_data['y'])]
+    if not predict_for_real:
+        test_data = test_data[np.isfinite(test_data['y'])]
 
     print('Test data shape: ', test_data.shape)
     # print('Test data: ', test_data['y'])
@@ -36,10 +37,7 @@ for tournament in tournaments:
 
     def after_bet_func(conf, player1, player2, spread, price, amount, date, bookie):
         # print("MAKE BET: ", conf, player1, player2)
-        if date is None:
-            return
-        if not future_matches_only or date >= datetime.date.today():
-            bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
+        bets_to_make.append([player1, player2, conf, amount, spread, price, date, bookie])
 
     # run betting algo
     epsilon = 0.0
@@ -61,6 +59,7 @@ for tournament in tournaments:
                                                 shuffle=True, verbose=False)
 
     print('Num bets total: ', len(bets_to_make))
+    print('Num bets: ', num_bets)
     print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date, Book Name')
     bets_to_make.sort(key=lambda x: x[7])  # by book name
     bets_to_make.sort(key=lambda x: x[6])  # by date
