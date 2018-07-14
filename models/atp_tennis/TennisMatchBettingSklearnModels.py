@@ -599,7 +599,7 @@ if __name__ == '__main__':
     historical_model_slam = load_outcome_model('Logistic1')
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
-    bet_spread = False
+    bet_spread = True
     bet_ml = True
     bet_totals = False
     for i in range(num_tests):
