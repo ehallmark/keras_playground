@@ -595,11 +595,12 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
 
 
 start_year = 2011
+historical_model = load_outcome_model('Logistic0')
+historical_spread_model = load_spread_model('Linear0')
+historical_model_slam = load_outcome_model('Logistic1')
+historical_spread_model_slam = load_spread_model('Linear1')
+
 if __name__ == '__main__':
-    historical_model = load_outcome_model('Logistic0')
-    historical_spread_model = load_spread_model('Linear0')
-    historical_model_slam = load_outcome_model('Logistic1')
-    historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
     bet_spread = True
     bet_ml = True

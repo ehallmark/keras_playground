@@ -8,11 +8,11 @@ import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_spread_model, load_outcome_model
 from models.atp_tennis.TennisMatchOutcomeLogit import test_model,to_percentage
 
-historical_model = load_outcome_model('Logistic0')
-historical_spread_model = load_spread_model('Linear0')
+historical_model = tennis_model.historical_model
+historical_spread_model = tennis_model.historical_spread_model
 
-historical_model_slam = load_outcome_model('Logistic1')
-historical_spread_model_slam = load_spread_model('Linear1')
+historical_model_slam = tennis_model.historical_model_slam
+historical_spread_model_slam = tennis_model.historical_spread_model_slam
 
 future_matches_only = False
 test_year = 2018  # IMPORTANT!!

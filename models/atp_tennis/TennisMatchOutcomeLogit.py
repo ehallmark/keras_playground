@@ -421,7 +421,7 @@ if __name__ == '__main__':
     train_outcome_model = True
     train_total_sets_model = True
     train_total_games_model = False
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1996)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1990)
     sql_slam = sql[sql.grand_slam > 0.5]
     sql = sql[sql.grand_slam < 0.5]
     test_data_slam = test_data[test_data.grand_slam > 0.5]
