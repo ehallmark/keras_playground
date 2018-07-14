@@ -48,7 +48,7 @@ for attr in betting_only_attributes:
 
 
 all_attributes = list(betting_input_attributes)
-meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'ml_odds_avg']
 for meta in meta_attributes:
     all_attributes.append(meta)
 
@@ -242,7 +242,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.30 or odds > 0.525:
+        if odds < 0.30 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -273,7 +273,7 @@ def totals_bet_func(epsilon, bet_totals=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.46 or odds > 0.525:
+        if odds < 0.46 or odds > 0.540:
             return 0
 
         double_down_below = 0  # 0.35
@@ -319,7 +319,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.46 or odds > 0.525:
+        if odds < 0.45 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -599,8 +599,8 @@ if __name__ == '__main__':
     historical_model_slam = load_outcome_model('Logistic1')
     historical_spread_model_slam = load_spread_model('Linear1')
     num_tests = 1
-    bet_spread = True
-    bet_ml = False
+    bet_spread = False
+    bet_ml = True
     bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
