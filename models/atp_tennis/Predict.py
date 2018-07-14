@@ -14,7 +14,7 @@ historical_spread_model_slam = tennis_model.historical_spread_model_slam
 test_year = 2018  # IMPORTANT!!
 tournaments = ['roland-garros', 'geneva', 'antalya', 'wimbledon']
 
-predict_for_real = True
+predict_for_real = False
 for tournament in tournaments:
     print("Tournament: ", tournament)
     data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=1, test_year=test_year,
@@ -59,7 +59,7 @@ for tournament in tournaments:
                                                 shuffle=True, verbose=False)
 
     print('Num bets total: ', len(bets_to_make))
-    print('Num bets: ', num_bets)
+    print('Num bets:', num_bets, ' Test return:', test_return)
     print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date, Book Name')
     bets_to_make.sort(key=lambda x: x[7])  # by book name
     bets_to_make.sort(key=lambda x: x[6])  # by date
