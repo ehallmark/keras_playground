@@ -23,7 +23,13 @@ for tournament in tournaments:
                                              test_tournament=tournament, model=historical_model, spread_model=historical_spread_model,
                                              slam_model=historical_model_slam, slam_spread_model=historical_spread_model_slam)
     # print('Test data: ', test_data[0:10])
+    n2 = test_data.shape[0]
+    test_data = test_data[np.isfinite(test_data['y'])]
+
     print('Test data shape: ', test_data.shape)
+    print('Test data: ', test_data['y'])
+    n2 = n2 - test_data.shape[0]
+    print('Num NaNs: ', n2)
 
     predictions = np.array(tennis_model.predict(data, test_data, train=False)).flatten()
     print("predictions shape: ", predictions.shape)
