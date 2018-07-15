@@ -19,7 +19,7 @@ from models.simulation.Simulate import simulate_money_line
 totals_type_by_betting_site = {  # describes the totals type for each betting site
     'Bovada': 'Set',
     'BetOnline': 'Game',
-    #'5Dimes': 'Game',
+    '5Dimes': 'Game',
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())
