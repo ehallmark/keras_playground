@@ -17,7 +17,7 @@ historical_model_slam = tennis_model.historical_model_slam
 historical_spread_model_slam = tennis_model.historical_spread_model_slam
 
 test_year = 2018  # IMPORTANT!!
-predict_for_real = False
+predict_for_real = True
 
 if predict_for_real:
     tournaments = pd.read_sql('''
