@@ -10,157 +10,95 @@ np.random.seed(23952)
 def test_model(model, x, y):
     predictions = model.predict(x)
     avg_error = 0
-    avg_error += np.mean(np.abs(np.array(y[0]) - np.array(predictions[0])))
-    avg_error += np.mean(np.abs(np.array(y[1]) - np.array(predictions[1])))
-    avg_error /= 2
+    avg_error += np.mean(np.abs(np.array(y).flatten() - np.array(predictions).flatten()))
     return avg_error
 
 
 input_attributes = [
-    'prev_h2h2_wins_opponent',
-    'mean_return_points_made',
     'prev_year_avg_round',
     'tourney_hist_avg_round',
-    'mean_second_serve_points_made',
-    'mean_first_serve_points_made',
-    'mean_break_points_made',
-    'mean_break_points_saved',
-    #'clay',
-    #'grass',
-    'h2h_prior_win_percent',
-    'h2h_prior_encounters',
     'prev_year_prior_encounters',
     'tourney_hist_prior_win_percent',
     'tourney_hist_prior_encounters',
     'previous_tournament_round',
     'tiebreak_win_percent',
     'surface_experience',
-    'experience',
-    'age',
-    'lefty',
-    'weight',
+    #'experience',
+    #'age',
+    #'lefty',
+    #'weight',
     'height',
-    'grand_slam',
-    'round',
-    'mean_duration',
-    # Would lead to bad things like not being able to pre compute all match combinations
-    #'duration_prev_match',
+    #'best_year',
+    'prior_year_match_closeness',
+    'prior_quarter_games_per_set',
+    'prior_quarter_victories',
+    'prior_quarter_losses',
+    'major_encounters',
+    'previous_games_total',
     'elo_score'
 ]
 
 
-opp_input_attributes = [
-    'prev_h2h2_wins_opponent',
-    'mean_opp_return_points_made',
-    'opp_prev_year_avg_round',
-    'opp_tourney_hist_avg_round',
-    'mean_opp_second_serve_points_made',
-    'mean_opp_first_serve_points_made',
-    'mean_opp_break_points_made',
-    'mean_opp_break_points_saved',
+# opponent attrs
+opp_input_attributes = ['opp_'+attr for attr in input_attributes]
+input_attributes = input_attributes + opp_input_attributes
+
+additional_attributes = [
     #'clay',
     #'grass',
+    #'grand_slam',
+    #'round',
     'h2h_prior_win_percent',
-    'h2h_prior_encounters',
-    'opp_prev_year_prior_encounters',
-    'opp_tourney_hist_prior_win_percent',
-    'opp_tourney_hist_prior_encounters',
-    'opp_previous_tournament_round',
-    'opp_tiebreak_win_percent',
-    'opp_surface_experience',
-    'opp_experience',
-    'opp_age',
-    'opp_lefty',
-    'opp_weight',
-    'opp_height',
-    'grand_slam',
-    'round',
-    'mean_opp_duration',
-    # Would lead to bad things like not being able to pre compute all match combinations
-    #'opp_duration_prev_match',
-    'opp_elo_score'
 ]
+
+for attr in additional_attributes:
+    input_attributes.append(attr)
 
 all_attributes = list(input_attributes)
 all_attributes.append('y')
 all_attributes.append('spread')
-meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year']
+meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'clay']
 for meta in meta_attributes:
-    all_attributes.append(meta)
-for opp in opp_input_attributes:
-    if not opp in all_attributes:
-        all_attributes.append(opp)
-
-
-def get_all_data(test_season=2017, start_year=2003, tournament=None):
-    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
-    data, test_data = all_data
-    if tournament is not None:
-        data = data[(data.tournament==tournament)&(data.year==test_season)]
-        test_data = test_data[(test_data.tournament==tournament)&(test_data.year==test_season)]
-        #test_data = test_data.sample(frac=1.0, replace=False)
-        #print("TEST DATA: ", test_data)
-    # create inputs
-    test_meta_data = test_data[meta_attributes]
-    print("Data: ", data[input_attributes])
-    data = ([np.array(data[input_attributes]), np.array(data[opp_input_attributes])], [np.array(data['y']), np.array(data['spread'])])
-    test_data = ([np.array(test_data[input_attributes]), np.array(test_data[opp_input_attributes])], [np.array(test_data['y']), np.array(test_data['spread'])])
-    return data, test_data, test_meta_data
+    if meta not in all_attributes:
+        all_attributes.append(meta)
 
 
 if __name__ == '__main__':
-    data, test_data, _ = get_all_data(test_season=2016, start_year=2004)
+    data, test_data = load_data(all_attributes, test_season=2011, start_year=1980)
+    # data = data[data.clay<0.5]
+    # test_data = test_data[test_data.clay<0.5]
     X1 = Input((len(input_attributes),))
-    X2 = Input((len(opp_input_attributes),))
 
-    hidden_units = 128  # len(input_attributes)*2
-    num_cells = 1
-    batch_size = 256
+    data = (np.array(data[input_attributes]), np.array(data['y']))
+    test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
+
+    hidden_units = 1000  # len(input_attributes)*2
+    num_cells = 3
+    batch_size = 128
     dropout = 0.5
     load_previous = False
     if load_previous:
-        model = k.models.load_model('tennis_match_keras_nn_v4.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss='mean_squared_error', metrics=['accuracy'])
+        model = k.models.load_model('tennis_match_keras_nn_v5.h5')
+        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
     else:
-        def cell(x1, x2, n_units, dropout=0.5):
-            concat = Concatenate()
+        def cell(x1, n_units, dropout=0.5):
             batch_norm = BatchNormalization()
             dense = Dense(n_units, activation='tanh')
             dropout_layer = Dropout(dropout)
-            #norm1 = concat([x1, norm1])
-            norm1 = batch_norm(x1)
-            norm1 = dense(norm1)
+            norm1 = dense(x1)
+            norm1 = batch_norm(norm1)
             norm1 = dropout_layer(norm1)
-            #norm2 = concat([x2, norm2])
-            norm2 = batch_norm(x2)
-            norm2 = dense(norm2)
-            norm2 = dropout_layer(norm2)
-            return norm1, norm2
+            return norm1
 
         norm = BatchNormalization()
         model1 = norm(X1)
-        model2 = norm(X2)
         for i in range(num_cells):
-            model1, model2 = cell(model1, model2, hidden_units)
+            model1 = cell(model1, hidden_units)
 
-        model = Dense(hidden_units, activation='tanh')
-        model1 = Dropout(dropout)(model(model1))
-        model2 = Dropout(dropout)(model(model2))
-        model = Add()([model1, Lambda(lambda x: -x)(model2)])
-        model = BatchNormalization()(model)
-        model = Dense(hidden_units, activation='tanh')(model)
-        model = BatchNormalization()(model)
-        model = Dropout(dropout)(model)
-        out1 = Dense(32, activation='tanh')(model)
-        out1 = Dense(1, activation='sigmoid')(out1)
-        out2 = Dense(32, activation='tanh')(model)
-        out2 = Dense(1, activation='linear')(out2)
-        model = Model(inputs=[X1, X2], outputs=[out1, out2])
-        model.compile(optimizer=Adam(lr=0.01, decay=0.1), loss='mean_squared_error', metrics=['accuracy'])
-    #model_file = 'tennis_match_keras_nn.h5'
-    #model_file = 'tennis_match_keras_nn_v2.h5'
-    #model_file = 'tennis_match_keras_nn_v3.h5'
-    #model_file = 'tennis_match_keras_nn_v4.h5'
+        out1 = Dense(1, activation='sigmoid')(model1)
+        model = Model(inputs=X1, outputs=out1)
+        model.compile(optimizer=Adam(lr=0.001, decay=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+
     model_file = 'tennis_match_keras_nn_v5.h5'
     prev_error = None
     best_error = None

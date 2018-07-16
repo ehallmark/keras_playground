@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/home/ehallmark/repos/keras_playground/')
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
@@ -15,7 +17,7 @@ historical_model_slam = tennis_model.historical_model_slam
 historical_spread_model_slam = tennis_model.historical_spread_model_slam
 
 test_year = 2018  # IMPORTANT!!
-predict_for_real = True
+predict_for_real = False
 
 if predict_for_real:
     tournaments = pd.read_sql('''

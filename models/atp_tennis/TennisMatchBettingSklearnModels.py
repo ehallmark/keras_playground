@@ -14,7 +14,9 @@ import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_money_line
-
+import keras as k
+from keras.optimizers import Adam
+import models.atp_tennis.TennisMatchOutcomeNN as nn
 
 totals_type_by_betting_site = {  # describes the totals type for each betting site
     'Bovada': 'Set',
@@ -39,7 +41,7 @@ betting_input_attributes = [
 
 betting_only_attributes = [
     'ml_odds_avg',
-    'predictions',
+    'predictions', #'_nn',
     #'spread_predictions'
 ]
 
@@ -51,6 +53,13 @@ all_attributes = list(betting_input_attributes)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'ml_odds_avg']
 for meta in meta_attributes:
     all_attributes.append(meta)
+
+for attr in nn.input_attributes:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+
+model_nn = k.models.load_model('tennis_match_keras_nn_v5.h5')
+model_nn.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
 
 def predict_proba(model, X):
@@ -147,14 +156,17 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_test = predict_proba(model, X_test)
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
+        y_nn = model_nn.predict(np.array(data[nn.input_attributes].iloc[:, :])).flatten()
+        y_nn_test = model_nn.predict(np.array(test_data[nn.input_attributes].iloc[:, :])).flatten()
 
-        lam_rat = 0.9
+        lam_rat = 1.0
         def lam(y, y_slam, slam):
             if slam > 0.5:
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
             else:
                 return y * lam_rat + y_slam * (1.0 - lam_rat)
-
+        data = data.assign(predictions_nn=pd.Series([y_nn[i] for i in range(data.shape[0])]).values)
+        test_data = test_data.assign(predictions_nn=pd.Series([y_nn_test[i] for i in range(test_data.shape[0])]).values)
         data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
         test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
 
@@ -170,6 +182,9 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         attributes.append('totals')
 
     for attr in betting_input_attributes:
+        if attr not in betting_only_attributes and attr not in attributes:
+            attributes.append(attr)
+    for attr in all_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
@@ -214,8 +229,8 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 8)) or \
-                (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 3)):
+        if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 2)) or \
+                (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2)):
             return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
@@ -333,8 +348,7 @@ def spread_bet_func(epsilon, bet_spread=True):
 def predict(data, test_data, graph=False, train=True, prediction_function=None):
     all_predictions = []
     lr = lambda: LogisticRegression()
-    svm = lambda: LinearSVC()
-   # rf = lambda: RandomForestClassifier(n_estimators=300)
+    rf = lambda: RandomForestClassifier(n_estimators=300)
     nb = lambda: GaussianNB()
     plt.figure(figsize=(10, 10))
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
@@ -349,7 +363,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         (lr, 'Logit Regression'),
         # (svm, 'Support Vector'),
         (nb, 'Naive Bayes'),
-       # (rf, 'Random Forest'),
+        (rf, 'Random Forest'),
     ]:
         print('With betting model: ', name)
         model_predictions = []
@@ -361,7 +375,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(50):
+            for i in range(100):
                 model = _model()
                 ratio = 0.75
                 X_train_sample = sample2d(X_train, seed + i, ratio)
@@ -398,55 +412,38 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
     predictions = []
 
-    #train_params = [
-    #    [0.75, [0.5,0.525,0.55]],
-    #    [0.8, [0.55,0.575,0.6]],
-    #    [0.85, [0.55,0.575,0.6]]
-    #]
-
-    # production params DO NOT CHANGE!
-    #train_params = [
-    #    [0.9, [0.6, 0.625, 0.65]],
-    #    [0.925, [0.625, 0.65, 0.675]],
-    #    [0.95, [0.625, 0.65, 0.675]]
-    #]
-
-    # dev parameters
+    # parameters
     train_params = [
-        #[0.1, 0.5, [0.08, 0.1, 0.15]],
-        #[0.3, 0.5, [0.05, 0.10, 0.15]],
-        #[0.3, [0.0, 0.01, 0.02, 0.03, 0.05, 0.06, 0.07, 0.08]],
-        [0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        [0.5, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        [0.9, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        #[0.7, [0.1, 0.15, 0.20]],
-        #[0.9, [0.25, 0.3, 0.35]],
+        [0.33, 0.33, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
+        [0.1, 0.8, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
+        [0.8, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
+        [0.1, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
     ]
 
-    test_idx = 1
+    test_idx = 0
 
     if train:
         params = train_params
     else:
         test_params = [
-            [train_params[test_idx][0], [train_params[test_idx][1][0]]]
+            [train_params[test_idx][0], train_params[test_idx][1], [train_params[test_idx][2][0]]]
         ]
         params = test_params
         print("Test params: ", params)
 
-    for bayes_model_percent, epsilons in params:
+    for bayes_model_percent, logit_percent, epsilons in params:
         for epsilon in epsilons:
             if train:
                 variance = 0.0001
                 bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
                 epsilon = epsilon + float(np.random.randn(1) * variance)
-            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
-           # rf_model_percent = 1.0 - logit_percent - bayes_model_percent
-            logit_percent = 1.0 - bayes_model_percent
-            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) #+ rf_model_percent * len(all_predictions[2])
+            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Logit Percentage:', logit_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
+            rf_model_percent = 1.0 - logit_percent - bayes_model_percent
+           # logit_percent = 1.0 - bayes_model_percent
+            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) + rf_model_percent * len(all_predictions[2])
             avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                         np.vstack(all_predictions[1]) * bayes_model_percent
-                                      #   np.vstack(all_predictions[2]) * rf_model_percent
+                                         np.vstack(all_predictions[1]) * bayes_model_percent,
+                                         np.vstack(all_predictions[2]) * rf_model_percent
                                         ]).sum(0) / total
             predictions.append(avg_predictions)
             if prediction_function is not None:
@@ -470,8 +467,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
         if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 1) or \
                 (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 2) or \
-                bet_row['opp_prev_year_prior_encounters'] < 5 or \
-                bet_row['prev_year_prior_encounters'] < 5 or \
+                bet_row['opp_prev_year_prior_encounters'] < 3 or \
+                bet_row['prev_year_prior_encounters'] < 3 or \
                 (bet_row['court_surface']=='Clay' and bet_row['grand_slam']<0.5):
             return {
                 'ml_bet1': 0,
