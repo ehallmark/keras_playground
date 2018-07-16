@@ -465,8 +465,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         return bet
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
-        if (bet_row['grand_slam'] > 0.5 and bet_row['round_num'] < 1) or \
-                (bet_row['grand_slam'] < 0.5 and bet_row['round_num'] < 2) or \
+        if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
+                (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2 or bet_row['round_num']>5)) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 bet_row['prev_year_prior_encounters'] < 3 or \
                 (bet_row['court_surface']=='Clay' and bet_row['grand_slam']<0.5):
