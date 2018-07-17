@@ -40,19 +40,24 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    'ml_odds_avg',
+    'overall_odds_avg',
+    #'ml_odds_avg',
     'predictions', #'_nn',
-    #'spread_predictions'
+    #'spread_predictions',
 ]
 
 for attr in betting_only_attributes:
     betting_input_attributes.append(attr)
 
+betting_only_attributes.append('ml_odds_avg')
+betting_only_attributes.append('overall_odds_avg')
+
 
 all_attributes = list(betting_input_attributes)
 meta_attributes = ['player_id', 'opponent_id', 'tournament', 'year', 'ml_odds_avg']
 for meta in meta_attributes:
-    all_attributes.append(meta)
+    if meta not in all_attributes:
+        all_attributes.append(meta)
 
 for attr in nn.input_attributes:
     if attr not in all_attributes:
@@ -98,7 +103,8 @@ def load_betting_data(betting_sites, test_year=2018):
         t.price1 as totals_price1,
         t.price2 as totals_price2,
         t.over,
-        t.under  
+        t.under,
+        ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
         on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year)
@@ -106,6 +112,8 @@ def load_betting_data(betting_sites, test_year=2018):
         left outer join atp_tennis_betting_link_totals as t
         on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(t.team1,t.team2,t.tournament,t.book_name,t.year)
             and t.over=t.under)
+        left outer join atp_matches_money_line_average as ml_overall_avg
+            on ((m.team1,m.team2,m.year,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.year,ml_overall_avg.tournament))        
         where m.year<={{YEAR}} and m.book_name in ({{BOOK_NAMES}})
 
     '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
