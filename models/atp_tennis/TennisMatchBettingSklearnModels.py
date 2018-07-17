@@ -34,9 +34,9 @@ betting_input_attributes = [
     'underdog_wins',
     'opp_underdog_wins',
     #'fave_wins',
+    #'opp_fave_wins',
     #'elo_score',
     #'opp_elo_score',
-    #'opp_fave_wins',
 ]
 
 betting_only_attributes = [
