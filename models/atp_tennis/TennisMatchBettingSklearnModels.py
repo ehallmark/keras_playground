@@ -58,8 +58,8 @@ for attr in nn.input_attributes:
     if attr not in all_attributes:
         all_attributes.append(attr)
 
-model_nn = k.models.load_model('tennis_match_keras_nn_v5.h5')
-model_nn.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+# model_nn = k.models.load_model('tennis_match_keras_nn_v5.h5')
+# model_nn.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
 
 def predict_proba(model, X):
@@ -156,8 +156,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         y_hat_test = predict_proba(model, X_test)
         y_hat_slam = predict_proba(slam_model, X)
         y_hat_slam_test = predict_proba(slam_model, X_test)
-        y_nn = model_nn.predict(np.array(data[nn.input_attributes].iloc[:, :])).flatten()
-        y_nn_test = model_nn.predict(np.array(test_data[nn.input_attributes].iloc[:, :])).flatten()
+        # y_nn = model_nn.predict(np.array(data[nn.input_attributes].iloc[:, :])).flatten()
+        # y_nn_test = model_nn.predict(np.array(test_data[nn.input_attributes].iloc[:, :])).flatten()
 
         lam_rat = 1.0
         def lam(y, y_slam, slam):
@@ -165,8 +165,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 return y_slam * lam_rat + y * (1.0 - lam_rat)
             else:
                 return y * lam_rat + y_slam * (1.0 - lam_rat)
-        data = data.assign(predictions_nn=pd.Series([y_nn[i] for i in range(data.shape[0])]).values)
-        test_data = test_data.assign(predictions_nn=pd.Series([y_nn_test[i] for i in range(test_data.shape[0])]).values)
+        # data = data.assign(predictions_nn=pd.Series([y_nn[i] for i in range(data.shape[0])]).values)
+        # test_data = test_data.assign(predictions_nn=pd.Series([y_nn_test[i] for i in range(test_data.shape[0])]).values)
         data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
         test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
 
@@ -452,6 +452,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 
 def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
+    min_payout = 0.93
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
@@ -465,6 +466,10 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         return bet
 
     def decision_func_helper(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction):
+        ml_payout = ml_bet_option.payout
+        spread_payout = spread_bet_option.payout
+        totals_payout = totals_bet_option.payout
+
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2 or bet_row['round_num']>5)) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
@@ -478,6 +483,9 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 'over_bet': 0,
                 'under_bet': 0
             }
+
+        #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
+
         spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                        bet_row['court_surface'], win=True)
@@ -517,16 +525,30 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
                                                bet_row['court_surface'], win=False, under=False)
 
-        ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
-        ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
-        spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1, spread_prob_loss1,
-                                  prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
-        spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
-                                  1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
-        over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_over_win, totals_prob_over_loss,
-                               prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
-        under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
-                                1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
+        if ml_payout < min_payout:
+            ml_bet1 = 0
+            ml_bet2 = 0
+        else:
+            ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
+            ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
+
+        if spread_payout < min_payout:
+            spread_bet1 = 0
+            spread_bet2 = 0
+        else:
+            spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1, spread_prob_loss1,
+                                      prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+            spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
+                                      1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
+
+        if totals_payout < min_payout:
+            over_bet = 0
+            under_bet = 0
+        else:
+            over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_over_win, totals_prob_over_loss,
+                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+            under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
+                                    1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
         # check whether it's an amazing player in a grand slam
         #   basically, we don't want to bet against them...
