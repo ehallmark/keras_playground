@@ -326,8 +326,8 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        # if bet_row['clay'] > 0.5:
-        #    return 0
+        if bet_row['clay'] > 0.5:
+            return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
