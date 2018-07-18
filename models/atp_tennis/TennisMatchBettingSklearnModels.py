@@ -251,7 +251,7 @@ def bet_func(epsilon, bet_ml=True):
         if not bet_ml:
             return 0
         if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
-                (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 8)) or \
+                (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
                 (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
             return 0
 
@@ -326,8 +326,8 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        if bet_row['clay'] > 0.5:
-            return 0
+        #if bet_row['clay'] > 0.5:
+        #    return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
@@ -496,7 +496,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2 or bet_row['round_num']>5)) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 bet_row['prev_year_prior_encounters'] < 3 or \
-                (bet_row['court_surface']=='Clay' and bet_row['tournament_rank']<1000):
+                (bet_row['court_surface']=='Clay' and bet_row['tournament_rank']<=1000):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
