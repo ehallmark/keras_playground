@@ -250,7 +250,7 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
+        if bet_row['clay'] > 0.5 or (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
                 (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
                 (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
             return 0
