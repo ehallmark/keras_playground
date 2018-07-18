@@ -10,11 +10,7 @@ import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 
-historical_model = tennis_model.historical_model
-historical_spread_model = tennis_model.historical_spread_model
-
-historical_model_slam = tennis_model.historical_model_slam
-historical_spread_model_slam = tennis_model.historical_spread_model_slam
+models = tennis_model.models
 
 test_year = 2018  # IMPORTANT!!
 predict_for_real = True
@@ -30,8 +26,7 @@ else:
 for tournament in tournaments:
     print("Tournament: ", tournament)
     data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=1, test_year=test_year,
-                                             test_tournament=tournament, model=historical_model, spread_model=historical_spread_model,
-                                             slam_model=historical_model_slam, slam_spread_model=historical_spread_model_slam)
+                                             test_tournament=tournament, models=models, spread_models=None)
     # print('Test data: ', test_data[0:10])
     n2 = test_data.shape[0]
     if not predict_for_real:

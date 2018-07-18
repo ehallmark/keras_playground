@@ -3,6 +3,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.svm import LinearSVC
+import statsmodels.formula.api as smf
+
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 import numpy as np
@@ -29,11 +31,21 @@ def save_spread_model(model, model_name):
 
 
 if __name__ == '__main__':
-    data, data_test = load_data(all_attributes, test_season=2011, start_year=1990)
-    slam_data = data[data.grand_slam > 0.5]
-    data = data[data.grand_slam < 0.5]
-    slam_data_test = data_test[data_test.grand_slam > 0.5]
-    data_test = data_test[data_test.grand_slam < 0.5]
+    data, data_test = load_data(all_attributes, test_season=2011, start_year=1995)
+    #slam_data = data[data.grand_slam > 0.5]
+    #data = data[data.grand_slam < 0.5]
+    #slam_data_test = data_test[data_test.grand_slam > 0.5]
+    #data_test = data_test[data_test.grand_slam < 0.5]
+
+    datasets = [
+        (data, data_test, 'All'),
+        (data[data.tournament_rank < 1000], data_test[data_test.tournament_rank < 1000], '500'),
+        (data[data.tournament_rank == 1000], data_test[data_test.tournament_rank == 1000], '1000'),
+        (data[data.tournament_rank == 2000], data_test[data_test.tournament_rank == 2000], '2000'),
+        (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay'),
+        (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass'),
+        (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard'),
+    ]
 
     train_outcome_model = True
     train_spread_model = True
@@ -53,18 +65,23 @@ if __name__ == '__main__':
                             ]:
             y_str = 'y'
             i = 0
-            for sql, test_data in [(data, data_test), (slam_data, slam_data_test)]:
+            #for sql, test_data in [(data, data_test), (slam_data, slam_data_test)]:
+            for sql, test_data, dataset_name in datasets:
                 y = np.array(sql[y_str]).flatten()
                 y_test = np.array(test_data[y_str]).flatten()
                 attrs = input_attributes0
                 X = np.array(sql[attrs])
                 X_test = np.array(test_data[attrs])
                 model.fit(X, y)
-                print('Fit.')
-                save_outcome_model(model, name+str(i))
-                model = load_outcome_model(name+str(i))
+                print('Fit dataset '+str(i)+':', dataset_name, ' Shape:', sql.shape)
+                save_outcome_model(model, name+dataset_name)
+                model = load_outcome_model(name+dataset_name)
                 print('Saved and reloaded.')
                 binary_correct, n, binary_percent, avg_error = test_model(model, X_test, y_test)
+
+                if name == 'Logistic':
+                    results = smf.logit(y_str + ' ~ ' + '+'.join(attrs), data=sql).fit()
+                    print(results.summary())
 
                 print('Correctly predicted: '+str(binary_correct)+' out of '+str(n) +
                       ' ('+to_percentage(binary_percent)+')')

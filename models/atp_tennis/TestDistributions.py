@@ -20,9 +20,9 @@ def norm_test(x1, x2):
     g2 = (x2 - mean)/std
     return np.mean(np.abs(g2))
 
-outcome_model = tennis_model.load_outcome_model('Logistic')
-spread_model = tennis_model.load_spread_model('Linear')
-test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, model=outcome_model, test_tournament='wimbledon', spread_model=spread_model)
+
+models = tennis_model.models
+test_data, test_data_2018 = tennis_model.load_data(start_year=2011, test_year=2018, num_test_years=1, models=models, test_tournament='wimbledon', spread_models=None)
 
 print('Test:', test_data[0:10])
 print('2018: ', test_data_2018[0:10])

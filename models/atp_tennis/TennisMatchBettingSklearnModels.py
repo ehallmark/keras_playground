@@ -153,36 +153,49 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, spread_model=None, slam_model=None, slam_spread_model=None, test_year=2018, num_test_years=3, start_year=2005):
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=2018, num_test_years=3, start_year=2005):
     data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
     test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
-    if model is not None and slam_model is not None:
+    if models is not None:
         attrs = tennis_model.input_attributes0
         X = np.array(data[attrs].iloc[:, :])
         X_test = np.array(test_data[attrs].iloc[:, :])
-        y_hat = predict_proba(model, X)
-        y_hat_test = predict_proba(model, X_test)
-        y_hat_slam = predict_proba(slam_model, X)
-        y_hat_slam_test = predict_proba(slam_model, X_test)
-        # y_nn = model_nn.predict(np.array(data[nn.input_attributes].iloc[:, :])).flatten()
-        # y_nn_test = model_nn.predict(np.array(test_data[nn.input_attributes].iloc[:, :])).flatten()
+        predictions = {}
+        predictions_test = {}
+        for key, model in models.items():
+            y_hat = predict_proba(model, X)
+            y_hat_test = predict_proba(model, X_test)
+            predictions[key] = y_hat
+            predictions_test[key] = y_hat_test
 
-        lam_rat = 1.0
-        def lam(y, y_slam, slam):
-            if slam > 0.5:
-                return y_slam * lam_rat + y * (1.0 - lam_rat)
+        lam_rat = 0.5
+        def lam(i, row, predictions):
+            rank = row['tournament_rank']
+            if rank >= 2000:
+                y = predictions['2000']
+            elif rank == 1000:
+                y = predictions['1000']
             else:
-                return y * lam_rat + y_slam * (1.0 - lam_rat)
+                y = predictions['500']
+
+            if row['court_surface']=='Clay':
+                y2 = predictions['Clay']
+            elif row['court_surface']=='Grass':
+                y2 = predictions['Grass']
+            else:
+                y2 = predictions['Hard']
+
+            return float(lam_rat * y[i] + (1.0 - lam_rat) * y2[i])
+
         # data = data.assign(predictions_nn=pd.Series([y_nn[i] for i in range(data.shape[0])]).values)
         # test_data = test_data.assign(predictions_nn=pd.Series([y_nn_test[i] for i in range(test_data.shape[0])]).values)
-        data = data.assign(predictions=pd.Series([lam(y_hat[i],y_hat_slam[i],data['grand_slam'].iloc[i]) for i in range(data.shape[0])]).values)
-        test_data = test_data.assign(predictions=pd.Series([lam(y_hat_test[i],y_hat_slam_test[i],test_data['grand_slam'].iloc[i]) for i in range(test_data.shape[0])]).values)
+        data = data.assign(predictions=pd.Series([lam(i,data.iloc[i], predictions) for i in range(data.shape[0])]).values)
+        test_data = test_data.assign(predictions=pd.Series([lam(i,test_data.iloc[i], predictions_test) for i in range(test_data.shape[0])]).values)
 
     return data, test_data
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, slam_model=None,
-              spread_model=None, slam_spread_model=None):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_models=None):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
@@ -195,7 +208,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     for attr in all_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, slam_model=slam_model, spread_model=spread_model, slam_spread_model=slam_spread_model, test_year=test_year, num_test_years=num_test_years,
+    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, models=models, spread_models=spread_models, test_year=test_year, num_test_years=num_test_years,
                                                                start_year=start_year)
 
     betting_data = load_betting_data(betting_sites, test_year=test_year)
@@ -603,10 +616,20 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
 
 
 start_year = 2011
-historical_model = load_outcome_model('Logistic0')
-historical_spread_model = load_spread_model('Linear0')
-historical_model_slam = load_outcome_model('Logistic1')
-historical_spread_model_slam = load_spread_model('Linear1')
+
+model_names = [
+    'All',
+    '500',
+    '1000',
+    '2000',
+    'Clay',
+    'Grass',
+    'Hard'
+]
+
+models = {}
+for name in model_names:
+    models[name] = load_outcome_model('Logistic'+name)
 
 if __name__ == '__main__':
     num_tests = 1
@@ -616,10 +639,9 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2018, 2017]:
+            for test_year in [2018, 2017, 2016]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, model=historical_model, slam_model=historical_model_slam,
-                                            spread_model=historical_spread_model, slam_spread_model=historical_spread_model_slam)
+                                            test_year=test_year, models=models, spread_models=None)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)

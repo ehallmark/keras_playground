@@ -61,6 +61,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
+            case when m.court_surface = 'Hard' then 1.0 else 0.0 end as hard,
             m.court_surface as court_surface,
             m.year as year,
             r.round as round_num,
@@ -83,6 +84,16 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             coalesce(opp_majors.avg_games_per_set, 0) as opp_major_games_per_set,
             coalesce(majors.avg_match_closeness,0) as major_match_closeness,
             coalesce(opp_majors.avg_match_closeness, 0) as opp_major_match_closeness,
+            coalesce(masters.prior_encounters,0) as master_encounters,
+            coalesce(opp_masters.prior_encounters, 0) as opp_master_encounters,
+            coalesce(masters.prior_victories,0) as master_victories,
+            coalesce(opp_masters.prior_victories, 0) as opp_master_victories,
+            coalesce(masters.avg_round,0) as master_avg_round,
+            coalesce(opp_masters.avg_round, 0) as opp_master_avg_round,
+            coalesce(masters.avg_games_per_set,0) as master_games_per_set,
+            coalesce(opp_masters.avg_games_per_set, 0) as opp_master_games_per_set,
+            coalesce(masters.avg_match_closeness,0) as master_match_closeness,
+            coalesce(opp_masters.avg_match_closeness, 0) as opp_master_match_closeness,
             coalesce(h2h.prior_encounters,0) as h2h_prior_encounters,
             coalesce(h2h.prior_victories,0) as h2h_prior_victories,
             coalesce(h2h.prior_losses,0) as h2h_prior_losses,
@@ -187,8 +198,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
                 else m.year - pc.turned_pro end as experience,
             case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
                 else m.year - pc_opp.turned_pro end as opp_experience,
-        coalesce(elo.score1,0) as elo_score,
-        coalesce(elo.score2,0) as opp_elo_score,
+        coalesce(elo.score1,100) as elo_score,
+        coalesce(elo.score2,100) as opp_elo_score,
+        coalesce(elo.weighted_score1,100) as elo_score_weighted,
+        coalesce(elo.weighted_score2,100) as opp_elo_score_weighted,
         coalesce(h2h_ml.avg_odds, 0.5) as historical_avg_odds,
         coalesce(ml.avg_odds,0.5) as prev_odds,
         coalesce(ml_opp.avg_odds,0.5) as opp_prev_odds,
@@ -203,8 +216,12 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         m.year-coalesce(prior_best_year.best_year,m.year) as best_year,
         m.year-coalesce(prior_best_year_opp.best_year,m.year) as opp_best_year,
         m.year-coalesce(prior_worst_year.worst_year,m.year) as worst_year,
-        m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year
+        m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
+        coalesce(inj.num_injuries, 0) as injuries,
+        coalesce(inj_opp.num_injuries, 0) as opp_injuries,
+        coalesce(t.masters, 250) as tournament_rank
         from atp_matches_individual as m
+        join atp_tournament_dates as t on ((m.start_date,m.tournament)=(t.start_date,t.tournament))
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
         left outer join atp_matches_prior_quarter as prev_quarter
@@ -221,6 +238,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.tournament,m.year)=(majors.player_id,majors.tournament,majors.year))
         left outer join atp_matches_prior_majors as opp_majors
             on ((m.opponent_id,m.tournament,m.year)=(opp_majors.player_id,opp_majors.tournament,opp_majors.year))
+        left outer join atp_matches_prior_masters as masters
+            on ((m.player_id,m.tournament,m.year)=(masters.player_id,masters.tournament,masters.year))
+        left outer join atp_matches_prior_masters as opp_masters
+            on ((m.opponent_id,m.tournament,m.year)=(opp_masters.player_id,opp_masters.tournament,opp_masters.year))
         left outer join atp_matches_tournament_history as tourney_hist_opp
             on ((m.opponent_id,m.tournament,m.year)=(tourney_hist_opp.player_id,tourney_hist_opp.tournament,tourney_hist_opp.year))
         left outer join atp_matches_prior_year_avg as mean
@@ -271,6 +292,10 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.player_id,m.year,m.tournament)=(qualifying.player_id,qualifying.year,qualifying.tournament))
         left outer join atp_matches_qualifying as qualifying_opp
             on ((m.opponent_id,m.year,m.tournament)=(qualifying_opp.player_id,qualifying_opp.year,qualifying_opp.tournament))
+        left outer join atp_matches_injuries as inj
+            on ((m.player_id,m.year,m.tournament)=(inj.player_id,inj.year,inj.tournament))
+        left outer join atp_matches_injuries as inj_opp
+            on ((m.opponent_id,m.year,m.tournament)=(inj_opp.player_id,inj_opp.year,inj_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
         where (retirement is null or not retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
@@ -312,8 +337,8 @@ input_attributes0 = [
     # 'prior_quarter_match_closeness',
 
     # player qualities
-
-    'elo_score',
+    'elo_score_weighted',
+    #'elo_score',
     'age',
     'surface_experience',
     'height',
@@ -326,6 +351,9 @@ input_attributes0 = [
     #'mean_break_points_against',
     'tiebreak_win_percent',
     'major_encounters',
+    'master_encounters',
+    #'injuries',
+
 
     # previous match
     'previous_games_total',
@@ -401,7 +429,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
@@ -421,7 +449,7 @@ if __name__ == '__main__':
     train_outcome_model = True
     train_total_sets_model = True
     train_total_games_model = False
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1990)
+    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1995)
     sql_slam = sql[sql.grand_slam > 0.5]
     sql = sql[sql.grand_slam < 0.5]
     test_data_slam = test_data[test_data.grand_slam > 0.5]
