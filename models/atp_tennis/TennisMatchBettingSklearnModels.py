@@ -616,7 +616,7 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
     return prediction_func_helper
 
 
-start_year = 2011
+start_year = 2012
 
 model_names = [
     'All',

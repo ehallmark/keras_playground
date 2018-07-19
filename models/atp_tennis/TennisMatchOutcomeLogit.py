@@ -72,8 +72,14 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
             case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(m.num_sets-m.sets_won, m.sets_won)=3,'f')
                 then 1.0 else 0.0 end as grand_slam,
-            case when coalesce(qualifying.had_qualifier,'f') then 1.0 else 0.0 end as had_qualifier,
-            case when coalesce(qualifying_opp.had_qualifier,'f') then 1.0 else 0.0 end as opp_had_qualifier,
+            case when coalesce(m.seed,'')='Q' then 1.0 else 0.0 end as had_qualifier,
+            case when coalesce(m.seed,'')='WC' then 1.0 else 0.0 end as wild_card,
+            case when coalesce(m.seed,'')='PR' then 1.0 else 0.0 end as protected_ranking,
+            case when coalesce(m.seed,'asdgas') ~ '^[0-9]+$' and m.seed::integer <= 4 then 1.0 else 0.0 end as seeded,
+            case when coalesce(m_opp.seed,'')='Q' then 1.0 else 0.0 end as opp_had_qualifier,
+            case when coalesce(m_opp.seed,'')='WC' then 1.0 else 0.0 end as opp_wild_card,
+            case when coalesce(m_opp.seed,'')='PR' then 1.0 else 0.0 end as opp_protected_ranking,
+            case when coalesce(m_opp.seed,'asdga') ~ '^[0-9]+$' and m_opp.seed::integer <= 4 then 1.0 else 0.0 end as opp_seeded,
             coalesce(majors.prior_encounters,0) as major_encounters,
             coalesce(opp_majors.prior_encounters, 0) as opp_major_encounters,
             coalesce(majors.prior_victories,0) as major_victories,
@@ -221,6 +227,8 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
         coalesce(inj_opp.num_injuries, 0) as opp_injuries,
         coalesce(t.masters, 250) as tournament_rank
         from atp_matches_individual as m
+        join atp_matches_individual as m_opp
+        on ((m.opponent_id,m.player_id,m.tournament,m.year)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.year))
         join atp_tournament_dates as t on ((m.start_date,m.tournament)=(t.start_date,t.tournament))
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -298,7 +306,7 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.opponent_id,m.year,m.tournament)=(inj_opp.player_id,inj_opp.year,inj_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where (retirement is null or not retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
+        where (m.retirement is null or not m.retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
@@ -358,7 +366,10 @@ input_attributes0 = [
     # previous match
     'previous_games_total',
    # 'duration_prev_match',  DONT HAVE THE DATA FOR CURRENT
-   # 'had_qualifier'         DONT HAVE THE DATA FOR CURRENT
+    'had_qualifier',
+    'wild_card',
+    #'seeded',
+    #'protected_ranking',
 ]
 
 # opponent attrs
