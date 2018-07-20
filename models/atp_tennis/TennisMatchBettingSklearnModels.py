@@ -170,9 +170,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 y_hat_test = predict_proba(model, X_test)
                 predictions_test[key] = y_hat_test
 
-        c1 = 0.35
-        c2 = 0.35
-        c3 = 0.3
+        c1 = 0.4
+        c2 = 0.4
+        c3 = 0.2
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
