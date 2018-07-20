@@ -259,12 +259,8 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        #if bet_row['first_round'] > 0.5:
-        #    return 0
-        #if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
-        #        (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
-        #        (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
-        #    return 0
+        if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
+            return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
@@ -653,7 +649,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [datetime.date(2019, 1, 1), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1)]:
+            for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1)]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

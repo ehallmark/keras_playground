@@ -12,8 +12,11 @@ conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=passwo
 
 models = tennis_model.models
 
-test_year = datetime.date.today() + datetime.timedelta(30)  # IMPORTANT!!
 predict_for_real = True
+if predict_for_real:
+    test_year = datetime.date.today() + datetime.timedelta(300)
+else:
+    test_year = datetime.date(2019, 1, 1)
 
 if predict_for_real:
     tournaments = pd.read_sql('''
@@ -37,7 +40,7 @@ for tournament in tournaments:
     n2 = n2 - test_data.shape[0]
     #print('Num NaNs: ', n2)
 
-    if test_data.shape[0] <= 0:
+    if test_data.shape[0] <= 0 or data.shape[0] <= 0:
         print('No available data')
     else:
         predictions = np.array(tennis_model.predict(data, test_data, train=False)).flatten()

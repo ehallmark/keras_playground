@@ -51,8 +51,8 @@ if __name__ == '__main__':
         (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay'),
         (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass'),
         (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard'),
-        (data[data.first_round > 0.5], data_test[data_test.first_round > 0.5], 'FirstRound'),
-        (data[data.first_round < 0.5], data_test[data_test.first_round < 0.5], 'OtherRound'),
+        (data[((data.first_round > 0.5) & (data.clay < 0.5))], data_test[((data_test.first_round > 0.5) & (data_test.clay < 0.5))], 'FirstRound'),
+        (data[((data.first_round < 0.5) & (data.clay < 0.5))], data_test[((data_test.first_round < 0.5) & (data_test.clay < 0.5))], 'OtherRound'),
     ]
 
     train_outcome_model = True

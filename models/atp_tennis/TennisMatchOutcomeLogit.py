@@ -324,7 +324,7 @@ def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, sta
     data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False)
     test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None)
     if tournament is not None:
-        data = data[data.tournament==tournament]
+        #data = data[data.tournament==tournament]
         test_data = test_data[test_data.tournament==tournament]
         print('data size after tournament filter:', data.shape, test_data.shape)
     return data, test_data
