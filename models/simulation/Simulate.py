@@ -435,10 +435,9 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
                     else:
                         lost_both += 1
 
-        print('ML wins:', num_wins1, ' ML losses:', num_losses1)
-        print('Spread wins:', num_wins2, ' Spread losses:', num_losses2)
-        print('Totals wins:', num_wins3, ' Totals losses:', num_losses3)
-        print('won_both:', won_both, ' lost_both:', lost_both, ' won_spread_lost_ml:', won_spread_lost_ml, ' lost_spread_won_ml:', lost_spread_won_ml)
+        print('ML wins:', num_wins1, ' ML losses:', num_losses1, ' Spread wins:', num_wins2, ' Spread losses:', num_losses2)
+        #print('Totals wins:', num_wins3, ' Totals losses:', num_losses3)
+        #print('won_both:', won_both, ' lost_both:', lost_both, ' won_spread_lost_ml:', won_spread_lost_ml, ' lost_spread_won_ml:', lost_spread_won_ml)
         if verbose:
             print('Initial Capital: ', initial_capital)
             print('Final Capital: ', available_capital)

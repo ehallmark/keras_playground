@@ -21,7 +21,7 @@ if predict_for_real:
     ''', conn)['tournament']
     print('New Tournaments: ', tournaments)
 else:
-    tournaments = ['roland-garros', 'geneva', 'antalya', 'wimbledon']
+    tournaments = ['rotterdam', 'montpellier', 'new-york', 'dubai', 'acapulco', 'sofia', 'stuttgart', 'roland-garros', 'geneva', 'antalya', 'wimbledon', 'newport']
 
 for tournament in tournaments:
     print("Tournament: ", tournament)
@@ -35,13 +35,13 @@ for tournament in tournaments:
     print('Test data shape: ', test_data.shape)
     # print('Test data: ', test_data['y'])
     n2 = n2 - test_data.shape[0]
-    print('Num NaNs: ', n2)
+    #print('Num NaNs: ', n2)
 
     if test_data.shape[0] <= 0:
         print('No available data')
     else:
         predictions = np.array(tennis_model.predict(data, test_data, train=False)).flatten()
-        print("predictions shape: ", predictions.shape)
+    #    print("predictions shape: ", predictions.shape)
 
         bets_to_make = []
 
@@ -68,7 +68,7 @@ for tournament in tournaments:
                                                     initial_capital=10000000,
                                                     shuffle=True, verbose=False)
 
-        print('Num bets total: ', len(bets_to_make))
+        #print('Num bets total: ', len(bets_to_make))
         print('Num bets:', num_bets, ' Test return:', test_return)
         print('Bet On, Bet Against, Confidence, Amount to Invest, Current Spread, Current Price, Date, Book Name')
         bets_to_make.sort(key=lambda x: x[7])  # by book name

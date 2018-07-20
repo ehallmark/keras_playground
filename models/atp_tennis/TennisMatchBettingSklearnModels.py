@@ -168,7 +168,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             predictions[key] = y_hat
             predictions_test[key] = y_hat_test
 
-        lam_rat = 0.5
+        lam_rat = 0.25
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -250,7 +250,7 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if bet_row['clay'] > 0.5 or (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
+        if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
                 (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
                 (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
             return 0
@@ -387,7 +387,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
         (nb, 'Naive Bayes'),
         (rf, 'Random Forest'),
     ]:
-        print('With betting model: ', name)
+        #print('With betting model: ', name)
         model_predictions = []
         all_predictions.append(model_predictions)
         seed = int(np.random.randint(0, high=1000000, size=1)) * 2
@@ -451,7 +451,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             [train_params[test_idx][0], train_params[test_idx][1], [train_params[test_idx][2][0]]]
         ]
         params = test_params
-        print("Test params: ", params)
+        # print("Test params: ", params)
 
     for bayes_model_percent, logit_percent, epsilons in params:
         for epsilon in epsilons:
@@ -494,9 +494,9 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2 or bet_row['round_num']>5)) or \
-                bet_row['opp_prev_year_prior_encounters'] < 3 or \
-                bet_row['prev_year_prior_encounters'] < 3 or \
-                (bet_row['court_surface']=='Clay' and bet_row['tournament_rank']<=1000):
+                bet_row['opp_prev_year_prior_encounters'] < 5 or \
+                bet_row['prev_year_prior_encounters'] < 5 or \
+                (bet_row['court_surface']!='Clay'):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
