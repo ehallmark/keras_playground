@@ -14,6 +14,7 @@ import numpy as np
 from sqlalchemy import create_engine
 import pandas as pd
 from models.simulation.Simulate import simulate_money_line
+import datetime
 import keras as k
 from keras.optimizers import Adam
 import models.atp_tennis.TennisMatchOutcomeNN as nn
@@ -83,7 +84,7 @@ def sample2d(array, seed, sample_percent):
     return array[0:int(array.shape[0]*sample_percent)]
 
 
-def load_betting_data(betting_sites, test_year=2018):
+def load_betting_data(betting_sites, test_year=datetime.date.today()):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select m.year,m.tournament,m.team1,m.team2,
@@ -114,9 +115,9 @@ def load_betting_data(betting_sites, test_year=2018):
             and t.over=t.under)
         left outer join atp_matches_money_line_average as ml_overall_avg
             on ((m.team1,m.team2,m.year,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.year,ml_overall_avg.tournament))        
-        where m.year<={{YEAR}} and m.book_name in ({{BOOK_NAMES}})
+        where m.betting_date<='{{YEAR}}'::date + interval '30 days' and m.book_name in ({{BOOK_NAMES}})
 
-    '''.replace('{{YEAR}}', str(test_year)).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
+    '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
 
@@ -153,9 +154,8 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=2018, num_test_years=3, start_year=2005):
-    data, _ = tennis_model.get_all_data(attributes, test_season=test_year-num_test_years+1, start_year=start_year)
-    test_data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year+1, start_year=test_year+1-num_test_years)
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01'):
+    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year)
     if models is not None:
         attrs = tennis_model.input_attributes0
         X = np.array(data[attrs].iloc[:, :])
@@ -163,12 +163,14 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         predictions = {}
         predictions_test = {}
         for key, model in models.items():
-            y_hat = predict_proba(model, X)
-            y_hat_test = predict_proba(model, X_test)
-            predictions[key] = y_hat
-            predictions_test[key] = y_hat_test
+            if X.shape[0]>0:
+                y_hat = predict_proba(model, X)
+                predictions[key] = y_hat
+            if X_test.shape[0] > 0:
+                y_hat_test = predict_proba(model, X_test)
+                predictions_test[key] = y_hat_test
 
-        lam_rat = 0.25
+        lam_rat = 0.5
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -326,8 +328,8 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        #if bet_row['clay'] > 0.5:
-        #    return 0
+        if bet_row['clay'] > 0.5:
+            return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
@@ -496,7 +498,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 2 or bet_row['round_num']>5)) or \
                 bet_row['opp_prev_year_prior_encounters'] < 5 or \
                 bet_row['prev_year_prior_encounters'] < 5 or \
-                (bet_row['court_surface']!='Clay'):
+                (bet_row['court_surface']=='Clay'):
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
@@ -616,7 +618,7 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
     return prediction_func_helper
 
 
-start_year = 2012
+start_year = '2012-01-01'
 
 model_names = [
     'All',
@@ -640,7 +642,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [2018, 2017, 2016]:
+            for test_year in [datetime.date(2018,12,31), datetime.date(2018, 6, 31), datetime.date(2017, 12, 31)]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

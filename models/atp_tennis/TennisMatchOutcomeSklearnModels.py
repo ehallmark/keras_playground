@@ -31,7 +31,7 @@ def save_spread_model(model, model_name):
 
 
 if __name__ == '__main__':
-    data, data_test = load_data(all_attributes, test_season=2012, start_year=1995)
+    data, data_test = load_data(all_attributes, test_season='2012-12-31', start_year=1995)
     #slam_data = data[data.grand_slam > 0.5]
     #data = data[data.grand_slam < 0.5]
     #slam_data_test = data_test[data_test.grand_slam > 0.5]

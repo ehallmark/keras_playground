@@ -2,6 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 import statsmodels.formula.api as smf
 import numpy as np
+import datetime
 import matplotlib.pyplot as plt
 '''
 
@@ -52,7 +53,7 @@ case when ml.price1 > 0 then 100.0/(100.0 + ml.price1) else -1.0*(ml.price1/(-1.
 '''
 
 
-def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
+def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', keep_nulls=False):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 
@@ -306,22 +307,20 @@ def load_data(attributes, test_season=2017, start_year=1996, keep_nulls=False):
             on ((m.opponent_id,m.year,m.tournament)=(inj_opp.player_id,inj_opp.year,inj_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where (m.retirement is null or not m.retirement) and coalesce(r.round, 0) > 0 and m.year <= {{END_DATE}} and m.year >= {{START_DATE}} and not m.round like '%%Qualifying%%' 
+        where (m.retirement is null or not m.retirement) and coalesce(r.round, 0) > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
     sql = pd.read_sql(sql_str, conn)
     sql = sql[attributes].astype(np.float64, errors='ignore')
-    test_data = sql[sql.year == test_season]
-    sql = sql[sql.year != test_season]
     print('Data shape:', sql.shape)
-    print('Test shape:', test_data.shape)
-    return sql, test_data
+    return sql
 
 
-def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=None, include_spread=False):
-    all_data = load_data(all_attributes, test_season=test_season, start_year=start_year, keep_nulls=tournament is not None)
-    data, test_data = all_data
+def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None):
+    date = datetime.date(int(test_season[0:4])-num_test_years, int(test_season[5:7]), int(test_season[8:10])).strftime('%Y-%m-%d')
+    data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False)
+    test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None)
     if tournament is not None:
         data = data[data.tournament==tournament]
         test_data = test_data[test_data.tournament==tournament]
@@ -332,9 +331,9 @@ def get_all_data(all_attributes, test_season=2017, start_year=2003, tournament=N
 # previous year quality
 input_attributes0 = [
     'tourney_hist_avg_round',
-    #'prev_year_avg_round',
-    'prev_year_prior_encounters',
-    #'prev_year_prior_losses',
+    'prev_year_avg_round',
+    #'prev_year_prior_encounters',
+    'prev_year_prior_losses',
     'prior_year_match_closeness',
 
     # prior quarter
@@ -368,7 +367,7 @@ input_attributes0 = [
    # 'duration_prev_match',  DONT HAVE THE DATA FOR CURRENT
     'had_qualifier',
     'wild_card',
-    #'seeded',
+    'seeded',
     #'protected_ranking',
 ]
 
@@ -460,7 +459,7 @@ if __name__ == '__main__':
     train_outcome_model = True
     train_total_sets_model = True
     train_total_games_model = False
-    sql, test_data = load_data(all_attributes, test_season=2011, start_year=1995)
+    sql, test_data = load_data(all_attributes, test_season='2011-12-31', start_year=1995)
     sql_slam = sql[sql.grand_slam > 0.5]
     sql = sql[sql.grand_slam < 0.5]
     test_data_slam = test_data[test_data.grand_slam > 0.5]

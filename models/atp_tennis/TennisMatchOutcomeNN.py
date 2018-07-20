@@ -64,7 +64,7 @@ for meta in meta_attributes:
 
 
 if __name__ == '__main__':
-    data, test_data = load_data(all_attributes, test_season=2011, start_year=1980)
+    data, test_data = load_data(all_attributes, test_season='2012-12-31', start_year=1980)
     # data = data[data.clay<0.5]
     # test_data = test_data[test_data.clay<0.5]
     X1 = Input((len(input_attributes),))

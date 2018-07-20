@@ -7,12 +7,12 @@ import datetime
 from random import shuffle
 from models.simulation.Simulate import simulate_money_line
 import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
-
+import datetime
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 
 models = tennis_model.models
 
-test_year = 2018  # IMPORTANT!!
+test_year = datetime.date.today() + datetime.timedelta(30)  # IMPORTANT!!
 predict_for_real = True
 
 if predict_for_real:
@@ -21,7 +21,7 @@ if predict_for_real:
     ''', conn)['tournament']
     print('New Tournaments: ', tournaments)
 else:
-    tournaments = ['rotterdam', 'montpellier', 'new-york', 'dubai', 'acapulco', 'sofia', 'stuttgart', 'roland-garros', 'geneva', 'antalya', 'wimbledon', 'newport']
+    tournaments = ['rotterdam', 'montpellier', 'new-york', 'dubai', 'acapulco', 'sofia', 'stuttgart', 'roland-garros', 'geneva', 'eastbourne', 'antalya', 'wimbledon', 'newport']
 
 for tournament in tournaments:
     print("Tournament: ", tournament)
