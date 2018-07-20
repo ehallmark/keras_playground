@@ -170,7 +170,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 y_hat_test = predict_proba(model, X_test)
                 predictions_test[key] = y_hat_test
 
-        lam_rat = 0.5
+        c1 = 0.35
+        c2 = 0.35
+        c3 = 0.3
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -187,7 +189,12 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
             else:
                 y2 = predictions['Hard']
 
-            return float(lam_rat * y[i] + (1.0 - lam_rat) * y2[i])
+            if row['first_round'] > 0.5:
+                y3 = predictions['FirstRound']
+            else:
+                y3 = predictions['OtherRound']
+
+            return float(c1 * y[i] + c2 * y2[i] + c3 * y3[i])
 
         # data = data.assign(predictions_nn=pd.Series([y_nn[i] for i in range(data.shape[0])]).values)
         # test_data = test_data.assign(predictions_nn=pd.Series([y_nn_test[i] for i in range(test_data.shape[0])]).values)
@@ -252,10 +259,12 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
-                (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
-                (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
-            return 0
+        #if bet_row['first_round'] > 0.5:
+        #    return 0
+        #if (bet_row['tournament_rank'] >= 2000 and (bet_row['round_num'] < 2)) or \
+        #        (bet_row['tournament_rank'] == 1000 and (bet_row['round_num'] < 2)) or \
+        #        (bet_row['tournament_rank'] < 1000 and (bet_row['round_num'] < 2)):
+        #    return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
@@ -627,7 +636,9 @@ model_names = [
     '2000',
     'Clay',
     'Grass',
-    'Hard'
+    'Hard',
+    'FirstRound',
+    'OtherRound'
 ]
 
 models = {}
@@ -642,7 +653,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [datetime.date(2018,12,31), datetime.date(2018, 6, 31), datetime.date(2017, 12, 31)]:
+            for test_year in [datetime.date(2019, 1, 1), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1)]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,

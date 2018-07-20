@@ -30,8 +30,14 @@ def save_spread_model(model, model_name):
     joblib.dump(model, spread_model_file+model_name.lower().replace(' ','_'))
 
 
+start_year = '1995-01-01'
+end_year = '2011-12-31'
+test_season = '2012-12-31'
+
 if __name__ == '__main__':
-    data, data_test = load_data(all_attributes, test_season='2012-12-31', start_year=1995)
+    data = load_data(all_attributes, test_season=end_year, start_year=start_year, keep_nulls=False)
+    data_test = load_data(all_attributes, test_season=test_season, start_year=end_year, keep_nulls=False)
+
     #slam_data = data[data.grand_slam > 0.5]
     #data = data[data.grand_slam < 0.5]
     #slam_data_test = data_test[data_test.grand_slam > 0.5]
@@ -45,6 +51,8 @@ if __name__ == '__main__':
         (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay'),
         (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass'),
         (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard'),
+        (data[data.first_round > 0.5], data_test[data_test.first_round > 0.5], 'FirstRound'),
+        (data[data.first_round < 0.5], data_test[data_test.first_round < 0.5], 'OtherRound'),
     ]
 
     train_outcome_model = True

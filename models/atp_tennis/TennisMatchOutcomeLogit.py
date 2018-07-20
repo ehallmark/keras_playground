@@ -226,10 +226,12 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
         coalesce(inj.num_injuries, 0) as injuries,
         coalesce(inj_opp.num_injuries, 0) as opp_injuries,
-        coalesce(t.masters, 250) as tournament_rank
+        coalesce(t.masters, 250) as tournament_rank,
+        m.round=tournament_first_round.first_round as first_round
         from atp_matches_individual as m
         join atp_matches_individual as m_opp
         on ((m.opponent_id,m.player_id,m.tournament,m.year)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.year))
+        join atp_tournament_first_round as tournament_first_round on ((tournament_first_round.tournament,tournament_first_round.year)=(m.tournament,m.year))
         join atp_tournament_dates as t on ((m.start_date,m.tournament)=(t.start_date,t.tournament))
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.year)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.year))
@@ -439,7 +441,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
