@@ -147,6 +147,12 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(tourney_hist_opp.prior_losses,0) as opp_tourney_hist_prior_losses,
             coalesce(mean.duration,90.0) as mean_duration,
             coalesce(mean_opp.duration,90.0) as opp_mean_duration,
+            coalesce(mean.aces,0) as mean_aces,
+            coalesce(mean_opp.aces,0) as opp_mean_aces,
+            coalesce(mean.double_faults,0.5) as mean_faults,
+            coalesce(mean_opp.double_faults,0.5) as opp_mean_faults,
+            coalesce(mean.service_points_won,1) as mean_service_points_won,
+            coalesce(mean_opp.service_points_won,1) as opp_mean_service_points_won,
             coalesce(var.duration,1000.0) as var_duration,
             coalesce(var_opp.duration,1000.0) as var_opp_duration,
             coalesce(mean.first_serve_points_made, 0) as mean_first_serve_points_made,
@@ -309,7 +315,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.opponent_id,m.year,m.tournament)=(inj_opp.player_id,inj_opp.year,inj_opp.tournament))
         join atp_matches_round as r
             on ((m.player_id,m.opponent_id,m.year,m.tournament)=(r.player_id,r.opponent_id,r.year,r.tournament))
-        where (m.retirement is null or not m.retirement) and coalesce(r.round, 0) > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+        where (m.retirement is null or not m.retirement) and mean.service_points_won is not null and mean_opp.service_points_won is not null and coalesce(r.round, 0) > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
@@ -362,14 +368,17 @@ input_attributes0 = [
     'major_encounters',
     'master_encounters',
     #'injuries',
-
+    'mean_faults',
+    'mean_aces',
+    'mean_service_points_won',
+    'mean_return_points_made',
 
     # previous match
     'previous_games_total',
    # 'duration_prev_match',  DONT HAVE THE DATA FOR CURRENT
     'had_qualifier',
     'wild_card',
-    'seeded',
+    #'seeded',
     #'protected_ranking',
 ]
 
@@ -461,7 +470,8 @@ if __name__ == '__main__':
     train_outcome_model = True
     train_total_sets_model = True
     train_total_games_model = False
-    sql, test_data = load_data(all_attributes, test_season='2011-12-31', start_year=1995)
+    sql = load_data(all_attributes, test_season='2011-01-01', start_year='1995-01-01')
+    test_data = load_data(all_attributes, test_season='2012-01-01', start_year='2011-01-01')
     sql_slam = sql[sql.grand_slam > 0.5]
     sql = sql[sql.grand_slam < 0.5]
     test_data_slam = test_data[test_data.grand_slam > 0.5]
