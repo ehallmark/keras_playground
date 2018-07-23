@@ -12,7 +12,7 @@ conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=passwo
 
 models = tennis_model.models
 
-predict_for_real = False
+predict_for_real = True
 if predict_for_real:
 #    test_year = datetime.date.today() + datetime.timedelta(300)
     test_year = datetime.date(2019, 1, 1)
