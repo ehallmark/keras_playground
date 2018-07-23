@@ -45,14 +45,15 @@ if __name__ == '__main__':
 
     datasets = [
         (data, data_test, 'All'),
-        (data[data.tournament_rank < 1000], data_test[data_test.tournament_rank < 1000], '500'),
+        (data[data.tournament_rank == 100], data_test[data_test.tournament_rank == 100], '100'),
+        (data[((data.tournament_rank == 250) | (data.tournament_rank == 500))], data_test[((data_test.tournament_rank == 250) | (data_test.tournament_rank == 500))], '500'),
         (data[data.tournament_rank == 1000], data_test[data_test.tournament_rank == 1000], '1000'),
         (data[data.tournament_rank == 2000], data_test[data_test.tournament_rank == 2000], '2000'),
         (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay'),
         (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass'),
         (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard'),
-        (data[((data.first_round > 0.5) & (data.clay < 0.5))], data_test[((data_test.first_round > 0.5) & (data_test.clay < 0.5))], 'FirstRound'),
-        (data[((data.first_round < 0.5) & (data.clay < 0.5))], data_test[((data_test.first_round < 0.5) & (data_test.clay < 0.5))], 'OtherRound'),
+        (data[(data.first_round > 0.5)], data_test[(data_test.first_round > 0.5)], 'FirstRound'),
+        (data[(data.first_round < 0.5)], data_test[(data_test.first_round < 0.5)], 'OtherRound'),
     ]
 
     train_outcome_model = True

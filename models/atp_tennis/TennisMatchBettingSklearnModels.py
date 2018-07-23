@@ -87,7 +87,7 @@ def sample2d(array, seed, sample_percent):
 def load_betting_data(betting_sites, test_year=datetime.date.today()):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
-        select m.year,m.tournament,m.team1,m.team2,
+        select m.start_date,m.tournament,m.team1,m.team2,
         m.book_name,
         s.price1,
         s.price2,
@@ -108,13 +108,13 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(s.team1,s.team2,s.tournament,s.book_name,s.year)
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(s.team1,s.team2,s.tournament,s.book_name,s.start_date)
             and s.spread1=-s.spread2)
         left outer join atp_tennis_betting_link_totals as t
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.year)=(t.team1,t.team2,t.tournament,t.book_name,t.year)
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(t.team1,t.team2,t.tournament,t.book_name,t.start_date)
             and t.over=t.under)
         left outer join atp_matches_money_line_average as ml_overall_avg
-            on ((m.team1,m.team2,m.year,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.year,ml_overall_avg.tournament))        
+            on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
         where m.betting_date<='{{YEAR}}'::date + interval '30 days' and m.book_name in ({{BOOK_NAMES}})
 
     '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
@@ -179,6 +179,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 y = predictions['2000']
             elif rank == 1000:
                 y = predictions['1000']
+            elif rank == 100:
+                y = predictions['100']
             else:
                 y = predictions['500']
 
@@ -226,8 +228,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         test_data,
         betting_data,
         'inner',
-        left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['year', 'team1', 'team2', 'tournament'],
+        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+        right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
     #print('post headers: ', test_data.columns)
@@ -235,8 +237,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         data,
         betting_data,
         'inner',
-        left_on=['year', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['year', 'team1', 'team2', 'tournament'],
+        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+        right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
     #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
@@ -515,44 +517,51 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
         #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
 
-        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                        bet_row['court_surface'], win=True)
-        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
                                        spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                        bet_row['court_surface'], win=True)
-        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
                                         spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
-        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['year'],
+        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
                                         spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
                                         bet_row['court_surface'], win=False)
-        if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
-            totals_prob_under_win = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
-                                                 bet_row['court_surface'], under=True, win=True)
-            totals_prob_over_win = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
-                                                bet_row['court_surface'], under=False, win=True)
-            totals_prob_under_loss = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                 totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
-                                                 bet_row['court_surface'], under=True, win=False)
-            totals_prob_over_loss = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
-                                                bet_row['court_surface'], under=False, win=False)
+
+        if bet_totals:
+            if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
+                totals_prob_under_win = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
+                                                     totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                     bet_row['court_surface'], under=True, win=True)
+                totals_prob_over_win = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
+                                                    totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                    bet_row['court_surface'], under=False, win=True)
+                totals_prob_under_loss = total_games_prob(bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
+                                                     totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                     bet_row['court_surface'], under=True, win=False)
+                totals_prob_over_loss = total_games_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
+                                                    totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_game_totals,
+                                                    bet_row['court_surface'], under=False, win=False)
+            else:
+                totals_prob_under_win = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
+                                                    totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                    bet_row['court_surface'], win=True, under=True)
+                totals_prob_over_win = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
+                                                   totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                   bet_row['court_surface'], win=True, under=False)
+                totals_prob_under_loss = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
+                                                    totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                    bet_row['court_surface'], win=False, under=True)
+                totals_prob_over_loss = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
+                                                   totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
+                                                   bet_row['court_surface'], win=False, under=False)
         else:
-            totals_prob_under_win = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
-                                                bet_row['court_surface'], win=True, under=True)
-            totals_prob_over_win = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                               totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
-                                               bet_row['court_surface'], win=True, under=False)
-            totals_prob_under_loss = total_sets_prob(bet_row['player_id'], bet_row['tournament'], bet_row['year'],
-                                                totals_bet_option.under, bet_row['grand_slam'] > 0.5, priors_set_totals,
-                                                bet_row['court_surface'], win=False, under=True)
-            totals_prob_over_loss = total_sets_prob(bet_row['opponent_id'], bet_row['tournament'], bet_row['year'],
-                                               totals_bet_option.over, bet_row['grand_slam'] > 0.5, priors_set_totals,
-                                               bet_row['court_surface'], win=False, under=False)
+            totals_prob_under_win = 0
+            totals_prob_over_win = 0
+            totals_prob_under_loss = 0
+            totals_prob_over_loss = 0
 
         if ml_payout < min_payout:
             ml_bet1 = 0
@@ -625,21 +634,22 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
 
 start_year = '2012-01-01'
 
-model_names = [
-    'All',
-    '500',
-    '1000',
-    '2000',
-    'Clay',
-    'Grass',
-    'Hard',
-    'FirstRound',
-    'OtherRound'
-]
+model_names = {
+    'All': 'Logistic',
+    '100': 'Logistic',
+    '500': 'Logistic',
+    '1000': 'Logistic',
+    '2000': 'Logistic',
+    'Clay': 'Logistic',
+    'Grass': 'Logistic',
+    'Hard': 'Logistic',
+    'FirstRound': 'Logistic',
+    'OtherRound': 'Logistic'
+}
 
 models = {}
 for name in model_names:
-    models[name] = load_outcome_model('Logistic'+name)
+    models[name] = load_outcome_model(model_names[name]+name)
 
 if __name__ == '__main__':
     num_tests = 1
@@ -649,7 +659,7 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         for num_test_years in [1, ]:
-            for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1)]:
+            for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
