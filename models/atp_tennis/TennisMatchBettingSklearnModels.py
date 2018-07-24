@@ -502,7 +502,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 
 def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
-    min_payout = 0.94
+    min_payout = 0.93
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
@@ -510,7 +510,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_spread_challenger = abs_probabilities_per_surface_challenger
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-    bet_on_challengers = False
+    bet_on_challengers = True
     bet_on_pros = True
 
     def check_player_for_spread(bet, opponent):
