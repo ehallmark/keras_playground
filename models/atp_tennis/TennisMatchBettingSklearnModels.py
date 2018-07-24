@@ -6,8 +6,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, total_sets_prob, total_games_prob, abs_probabilities_per_surface, abs_game_total_probabilities_per_surface, abs_set_total_probabilities_per_surface
+from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, total_sets_prob, total_games_prob, abs_game_total_probabilities_per_surface, abs_set_total_probabilities_per_surface
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
+from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface, abs_probabilities_per_surface_challenger
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 import numpy as np
@@ -286,7 +287,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.15 or odds > 0.65:
+        if odds < 0.25 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -353,8 +354,8 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        # if bet_row['clay'] > 0.5:
-        #     return 0
+        if bet_row['clay'] > 0.5:
+            return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
@@ -363,7 +364,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.45 or odds > 0.525:
+        if odds < 0.425 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -501,11 +502,12 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 
 def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
-    min_payout = 0.93
+    min_payout = 0.94
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
     priors_spread = abs_probabilities_per_surface
+    priors_spread_challenger = abs_probabilities_per_surface_challenger
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
     bet_on_challengers = False
@@ -541,18 +543,22 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
         #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
         challenger = bool(bet_row['challenger'] > 0.5)
+        if challenger:
+            priors_to_use = priors_spread_challenger
+        else:
+            priors_to_use = priors_spread
 
         spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
-                                       spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
+                                       spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                        bet_row['court_surface'], win=True)
         spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'], challenger,
-                                       spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
+                                       spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                        bet_row['court_surface'], win=True)
         spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
-                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
+                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                         bet_row['court_surface'], win=False)
         spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'], challenger,
-                                        spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
+                                        spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                         bet_row['court_surface'], win=False)
 
         if bet_totals:
