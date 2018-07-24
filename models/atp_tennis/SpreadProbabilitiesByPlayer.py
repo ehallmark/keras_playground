@@ -13,10 +13,10 @@ slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_win
 slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
 wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
 losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
-slam_wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-slam_losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+slam_wins.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
+slam_losses.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
+wins.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
+losses.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
 
 #game_totals_slam = pd.read_sql('select * from atp_matches_total_probabilities_slam', conn)
 #game_totals = pd.read_sql('select * from atp_matches_total_probabilities', conn)
@@ -45,7 +45,7 @@ def build_cumulative_probabilities(probabilities):
     return probabilities_over
 
 
-def spread_prob(player, opponent, tournament, start_date, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
+def spread_prob(player, opponent, tournament, start_date, challenger, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
     if math.isnan(spread):
         return np.NaN
     if is_grand_slam:
@@ -70,8 +70,8 @@ def spread_prob(player, opponent, tournament, start_date, spread, is_grand_slam,
             opp_sql = wins
 
     try:
-        row = sql.loc[(player, tournament, start_date), :]
-        opp_row = opp_sql.loc[(opponent, tournament, start_date), :]
+        row = sql.loc[(player, tournament, start_date, challenger), :]
+        opp_row = opp_sql.loc[(opponent, tournament, start_date, challenger), :]
     except KeyError as e:
         row = np.array([])
         opp_row = np.array([])

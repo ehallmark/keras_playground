@@ -11,7 +11,7 @@ from models.atp_tennis.TennisMatchOutcomeLogit import test_model,to_percentage
 models = tennis_model.models
 
 future_matches_only = False
-test_year = 2018  # IMPORTANT!!
+test_year = datetime.date.today()  # IMPORTANT!!
 
 data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=1, test_year=test_year,
                                          models=models, spread_models=None)
