@@ -539,10 +539,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
             }
 
         #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
-        if bool(bet_row['challenger'] > 0.5):
-            challenger = 1
-        else:
-            challenger = 0
+        challenger = bool(bet_row['challenger'] > 0.5)
 
         spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
