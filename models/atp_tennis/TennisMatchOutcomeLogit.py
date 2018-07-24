@@ -241,10 +241,12 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(inj.num_injuries, 0) as injuries,
         coalesce(inj_opp.num_injuries, 0) as opp_injuries,
         coalesce(t.masters, 250) as tournament_rank,
-        m.round=tournament_first_round.first_round as first_round
+        r.round is not null and tournament_first_round.first_round is not null and r.round=tournament_first_round.first_round as first_round
         from atp_matches_individual as m
         join atp_matches_individual as m_opp
         on ((m.opponent_id,m.player_id,m.tournament,m.start_date,m.challenger)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.start_date,m_opp.challenger))
+        join atp_matches_round as r
+            on ((m.player_id,m.opponent_id,m.start_date,m.tournament,m.challenger)=(r.player_id,r.opponent_id,r.start_date,r.tournament, r.challenger))
         join atp_tournament_first_round as tournament_first_round on ((tournament_first_round.tournament,tournament_first_round.start_date,tournament_first_round.challenger)=(m.tournament,m.start_date,m.challenger))
         join atp_tournament_dates as t on ((m.start_date,m.tournament,m.challenger)=(t.start_date,t.tournament,t.challenger))
         left outer join atp_matches_prior_h2h as h2h 
@@ -284,7 +286,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         left outer join atp_matches_prior_year_tournament_round as prior_tourney
             on ((m.player_id,m.tournament,m.start_date,m.challenger)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.start_date,prior_tourney.challenger))
         left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
-            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.start_date,opp_prior_tourney.challenger)) 
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.start_date,prior_tourney_opp.challenger)) 
         left outer join atp_matches_prior_tiebreak_percentage as tb
             on ((m.player_id,m.tournament,m.start_date,m.challenger)=(tb.player_id,tb.tournament,tb.start_date,tb.challenger)) 
         left outer join atp_matches_prior_tiebreak_percentage as tb_opp
@@ -324,13 +326,11 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         left outer join atp_matches_qualifying as qualifying
             on ((m.player_id,m.start_date,m.tournament,m.challenger)=(qualifying.player_id,qualifying.start_date,qualifying.tournament,qualifying.challenger))
         left outer join atp_matches_qualifying as qualifying_opp
-            on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(qualifying_opp.player_id,qualifying_opp.start_date,qualifying_opp.tournament,qualyfing_opp..challenger))
+            on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(qualifying_opp.player_id,qualifying_opp.start_date,qualifying_opp.tournament,qualifying_opp.challenger))
         left outer join atp_matches_injuries as inj
             on ((m.player_id,m.start_date,m.tournament,m.challenger)=(inj.player_id,inj.start_date,inj.tournament,inj.challenger))
         left outer join atp_matches_injuries as inj_opp
             on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(inj_opp.player_id,inj_opp.start_date,inj_opp.tournament, inj_opp.challenger))
-        join atp_matches_round as r
-            on ((m.player_id,m.opponent_id,m.start_date,m.tournament,m.challenger)=(r.player_id,r.opponent_id,r.start_date,r.tournament, r.challenger))
         where (m.retirement is null or not m.retirement) and mean.service_points_attempted is not null and mean_opp.service_points_attempted is not null and coalesce(r.round, 0) > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:

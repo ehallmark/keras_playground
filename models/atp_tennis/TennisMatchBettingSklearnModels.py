@@ -493,6 +493,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_spread = abs_probabilities_per_surface
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
+    bet_on_challengers = True
+    bet_on_pros = True
 
     def check_player_for_spread(bet, opponent):
         if opponent in dont_bet_against_spread:
@@ -506,6 +508,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
+                (not bet_on_challengers and bet_row['challenger'] > 0.5) or \
+                (not bet_on_pros and bet_row['challengers'] < 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 5 or \
                 bet_row['prev_year_prior_encounters'] < 5:  # or \
                 # (bet_row['court_surface']!='Clay'): # or \
