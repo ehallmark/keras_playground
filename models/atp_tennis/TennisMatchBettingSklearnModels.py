@@ -277,8 +277,8 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        #if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
-        #    return 0
+        if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
+            return 0
         if bet_row['clay'] > 0.5:
             return 0
 
@@ -286,7 +286,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.55:
+        if odds < 0.15 or odds > 0.65:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -353,8 +353,8 @@ def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
             return 0
-        if bet_row['clay'] > 0.5:
-            return 0
+        # if bet_row['clay'] > 0.5:
+        #     return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
@@ -508,7 +508,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_spread = abs_probabilities_per_surface
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-    bet_on_challengers = True
+    bet_on_challengers = False
     bet_on_pros = True
 
     def check_player_for_spread(bet, opponent):

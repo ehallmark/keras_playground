@@ -369,7 +369,7 @@ input_attributes0 = [
     'surface_experience',
     #'age',
     #'height',
-    #'best_year',
+    'best_year',
 
     # match stats
     'tiebreak_win_percent',
