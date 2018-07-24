@@ -9,10 +9,10 @@ np.random.seed(1)
 
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins', conn)
-slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
-wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
-losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
+slam_wins = pd.read_sql('select *,case when challenger then 1 else 0 end as challenger from atp_matches_spread_probabilities_slam_wins', conn)
+slam_losses = pd.read_sql('select *,case when challenger then 1 else 0 end as challenger from atp_matches_spread_probabilities_slam_losses', conn)
+wins = pd.read_sql('select *,case when challenger then 1 else 0 end as challenger from atp_matches_spread_probabilities_win', conn)
+losses = pd.read_sql('select *,case when challenger then 1 else 0 end as challenger from atp_matches_spread_probabilities_losses', conn)
 slam_wins.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
 slam_losses.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
 wins.set_index(['player_id', 'tournament', 'start_date', 'challenger'], inplace=True)
@@ -70,8 +70,8 @@ def spread_prob(player, opponent, tournament, start_date, challenger, spread, is
             opp_sql = wins
 
     try:
-        row = sql.loc[(player, tournament, start_date, challenger), :]
-        opp_row = opp_sql.loc[(opponent, tournament, start_date, challenger), :]
+        row = sql.loc[(player, tournament, start_date, int(challenger)), :]
+        opp_row = opp_sql.loc[(opponent, tournament, start_date, int(challenger)), :]
     except KeyError as e:
         row = np.array([])
         opp_row = np.array([])

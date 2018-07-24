@@ -164,12 +164,27 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
         predictions = {}
         predictions_test = {}
         for key, model in models.items():
-            if X.shape[0]>0:
-                y_hat = predict_proba(model, X)
-                predictions[key] = y_hat
-            if X_test.shape[0] > 0:
-                y_hat_test = predict_proba(model, X_test)
-                predictions_test[key] = y_hat_test
+            if key == 'FirstRound':
+                first_round_attrs = list(attrs)
+                if 'previous_games_total2' in first_round_attrs:
+                    first_round_attrs.remove('previous_games_total2')
+                if 'opp_previous_games_total2' in first_round_attrs:
+                    first_round_attrs.remove('opp_previous_games_total2')
+                if X.shape[0] > 0:
+                    X_ = np.array(data[first_round_attrs].iloc[:, :])
+                    y_hat = predict_proba(model, X_)
+                    predictions[key] = y_hat
+                if X_test.shape[0] > 0:
+                    X_test_ = np.array(test_data[first_round_attrs].iloc[:, :])
+                    y_hat_test = predict_proba(model, X_test_)
+                    predictions_test[key] = y_hat_test
+            else:
+                if X.shape[0]>0:
+                    y_hat = predict_proba(model, X)
+                    predictions[key] = y_hat
+                if X_test.shape[0] > 0:
+                    y_hat_test = predict_proba(model, X_test)
+                    predictions_test[key] = y_hat_test
 
         c1 = 0.4
         c2 = 0.4
@@ -524,7 +539,10 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
             }
 
         #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
-        challenger = bet_row['challenger'] > 0.5
+        if bool(bet_row['challenger'] > 0.5):
+            challenger = 1
+        else:
+            challenger = 0
 
         spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_spread,
@@ -652,7 +670,7 @@ model_names = {
     'Clay': 'Logistic',
     'Grass': 'Logistic',
     'Hard': 'Logistic',
-    'FirstRound': 'Logistic',  # 'Naive Bayes',
+    'FirstRound': 'Naive Bayes',
     'OtherRound': 'Logistic'
 }
 

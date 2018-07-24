@@ -42,18 +42,25 @@ if __name__ == '__main__':
     #data = data[data.grand_slam < 0.5]
     #slam_data_test = data_test[data_test.grand_slam > 0.5]
     #data_test = data_test[data_test.grand_slam < 0.5]
+    main_attrs = list(input_attributes0)
+    first_round_attrs = list(input_attributes0)
+    if 'previous_games_total2' in first_round_attrs:
+        first_round_attrs.remove('previous_games_total2')
+    if 'opp_previous_games_total2' in first_round_attrs:
+        first_round_attrs.remove('opp_previous_games_total2')
+
 
     datasets = [
-        (data, data_test, 'All'),
-        (data[data.tournament_rank == 100], data_test[data_test.tournament_rank == 100], '100'),
-        (data[((data.tournament_rank == 250) | (data.tournament_rank == 500))], data_test[((data_test.tournament_rank == 250) | (data_test.tournament_rank == 500))], '500'),
-        (data[data.tournament_rank == 1000], data_test[data_test.tournament_rank == 1000], '1000'),
-        (data[data.tournament_rank == 2000], data_test[data_test.tournament_rank == 2000], '2000'),
-        (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay'),
-        (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass'),
-        (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard'),
-        (data[(data.first_round > 0.5)], data_test[(data_test.first_round > 0.5)], 'FirstRound'),
-        (data[(data.first_round < 0.5)], data_test[(data_test.first_round < 0.5)], 'OtherRound'),
+        (data, data_test, 'All', main_attrs),
+        (data[data.tournament_rank == 100], data_test[data_test.tournament_rank == 100], '100', main_attrs),
+        (data[((data.tournament_rank == 250) | (data.tournament_rank == 500))], data_test[((data_test.tournament_rank == 250) | (data_test.tournament_rank == 500))], '500', main_attrs),
+        (data[data.tournament_rank == 1000], data_test[data_test.tournament_rank == 1000], '1000', main_attrs),
+        (data[data.tournament_rank == 2000], data_test[data_test.tournament_rank == 2000], '2000', main_attrs),
+        (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay', main_attrs),
+        (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass', main_attrs),
+        (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard', main_attrs),
+        (data[(data.first_round > 0.5)], data_test[(data_test.first_round > 0.5)], 'FirstRound', first_round_attrs),
+        (data[(data.first_round < 0.5)], data_test[(data_test.first_round < 0.5)], 'OtherRound', main_attrs),
     ]
 
     train_outcome_model = True
@@ -75,10 +82,9 @@ if __name__ == '__main__':
             y_str = 'y'
             i = 0
             #for sql, test_data in [(data, data_test), (slam_data, slam_data_test)]:
-            for sql, test_data, dataset_name in datasets:
+            for sql, test_data, dataset_name, attrs in datasets:
                 y = np.array(sql[y_str]).flatten()
                 y_test = np.array(test_data[y_str]).flatten()
-                attrs = input_attributes0
                 X = np.array(sql[attrs])
                 X_test = np.array(test_data[attrs])
                 model.fit(X, y)
