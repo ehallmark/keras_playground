@@ -668,7 +668,7 @@ model_names = {
     'Clay': 'Logistic',
     'Grass': 'Logistic',
     'Hard': 'Logistic',
-    'FirstRound': 'Naive Bayes',
+    'FirstRound': 'Logistic',
     'OtherRound': 'Logistic'
 }
 

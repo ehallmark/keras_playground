@@ -212,13 +212,13 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(prior_matches.games_won, 6) + coalesce(prior_matches.games_against, 0) as previous_games_total2,
             coalesce(prior_matches_opp.games_won, 6) + coalesce(prior_matches_opp.games_against, 0) as opp_previous_games_total2,
             case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
-                else m.year - extract(year from pc.date_of_birth) end as age,
+                else extract(year from m.start_date) - extract(year from pc.date_of_birth) end as age,
             case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
-                else m.year - extract(year from pc_opp.date_of_birth) end as opp_age,
+                else extract(year from m.start_date) - extract(year from pc_opp.date_of_birth) end as opp_age,
             case when pc.turned_pro is null then (select avg_experience from avg_player_characteristics)
-                else m.year - pc.turned_pro end as experience,
+                else extract(year from m.start_date) - pc.turned_pro end as experience,
             case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
-                else m.year - pc_opp.turned_pro end as opp_experience,
+                else extract(year from m.start_date) - pc_opp.turned_pro end as opp_experience,
         coalesce(elo.score1,100) as elo_score,
         coalesce(elo.score2,100) as opp_elo_score,
         coalesce(elo.weighted_score1,100) as elo_score_weighted,
@@ -357,49 +357,36 @@ input_attributes0 = [
     'h2h_prior_win_percent',
     'tourney_hist_avg_round',
     'prev_year_avg_round',
-    #'prev_year_prior_encounters',
     'prev_year_prior_losses',
     'prior_year_match_closeness',
 
     # prior quarter
-
     'prior_quarter_games_per_set',
     'prior_quarter_victories',
-    # 'prior_quarter_losses',
-    # 'prior_quarter_match_closeness',
 
     # player qualities
     'elo_score_weighted',
-    #'elo_score',
-    'age',
     'surface_experience',
-    'height',
-    'best_year',
+    #'age',
+    #'height',
+    #'best_year',
 
     # match stats
-
-    #'mean_second_serve_points_made',
-    #'mean_break_points_made',
-    #'mean_break_points_against',
     'tiebreak_win_percent',
     'major_encounters',
     'master_encounters',
     'encounters_250',
     'challenger_encounters',
-    #'injuries',
     'mean_faults',
     'mean_aces',
     'mean_service_points_won',
     'mean_return_points_made',
 
     # previous match
-    #'previous_games_total',
     'previous_games_total2',
-   # 'duration_prev_match',  DONT HAVE THE DATA FOR CURRENT
     'had_qualifier',
     'wild_card',
     'seeded',
-    #'protected_ranking',
 ]
 
 # opponent attrs
