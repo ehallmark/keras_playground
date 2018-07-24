@@ -367,6 +367,7 @@ input_attributes0 = [
     # player qualities
     'elo_score_weighted',
     'surface_experience',
+    #'injuries',
     #'age',
     #'height',
     'best_year',
