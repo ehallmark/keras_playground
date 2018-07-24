@@ -521,6 +521,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         spread_payout = spread_bet_option.payout
         totals_payout = totals_bet_option.payout
 
+        #if bet_row['first_round'] > 0.5 or \
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (not bet_on_challengers and bet_row['challenger'] > 0.5) or \

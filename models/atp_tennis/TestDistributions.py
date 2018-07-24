@@ -24,7 +24,7 @@ def norm_test(x1, x2):
 
 
 models = tennis_model.models
-test_data, test_data_2018 = tennis_model.load_data(start_year=tennis_model.start_year, test_year=datetime.date.today(), num_test_years=1, models=models, test_tournament='wimbledon', spread_models=None)
+test_data, test_data_2018 = tennis_model.load_data(start_year=tennis_model.start_year, test_year=datetime.date.today(), num_test_years=1, models=models, test_tournament='binghamton', spread_models=None)
 
 print('Test:', test_data[0:10])
 print('2018: ', test_data_2018[0:10])
