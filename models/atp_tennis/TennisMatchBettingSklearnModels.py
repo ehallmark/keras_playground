@@ -287,7 +287,7 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.25 or odds > 0.55:
+        if odds < 0.20 or odds > 0.55:
             return 0
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -510,7 +510,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_spread_challenger = abs_probabilities_per_surface_challenger
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-    bet_on_challengers = True
+    bet_on_challengers = False
     bet_on_pros = True
 
     def check_player_for_spread(bet, opponent):
