@@ -239,6 +239,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(inj.num_injuries, 0) as injuries,
         coalesce(inj_opp.num_injuries, 0) as opp_injuries,
         coalesce(t.masters, 250) as tournament_rank,
+        (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
+        (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
         case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round
         from atp_matches_individual as m
         join atp_matches_individual as m_opp
@@ -329,6 +331,10 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.player_id,m.start_date,m.tournament,m.challenger)=(inj.player_id,inj.start_date,inj.tournament,inj.challenger))
         left outer join atp_matches_injuries as inj_opp
             on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(inj_opp.player_id,inj_opp.start_date,inj_opp.tournament, inj_opp.challenger))
+        left outer join atp_players_first_match as first_match
+            on (m.player_id=first_match.player_id)
+        left outer join atp_players_first_match as first_match_opp
+            on (m.opponent_id=first_match_opp.player_id)
         where tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
@@ -366,6 +372,7 @@ input_attributes0 = [
     'elo_score_weighted',
     'surface_experience',
     'injuries',
+    'first_match_date',
     #'age',
     #'height',
     'best_year',

@@ -36,8 +36,8 @@ betting_input_attributes = [
     'opp_prev_odds',
     'underdog_wins',
     'opp_underdog_wins',
-    #'fave_wins',
-    #'opp_fave_wins',
+    'fave_wins',
+    'opp_fave_wins',
     #'elo_score',
     #'opp_elo_score',
 ]
@@ -287,8 +287,14 @@ def bet_func(epsilon, bet_ml=True):
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
-        if odds < 0.20 or odds > 0.55:
-            return 0
+
+        if bet_row['challenger'] > 0.5:
+            if odds < 0.10 or odds > 0.49:
+                return 0
+        else:
+            if odds < 0.20 or odds > 0.55:
+                return 0
+
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
             expectation = prediction * price + (1. - prediction) * -100.
@@ -357,6 +363,9 @@ def spread_bet_func(epsilon, bet_spread=True):
         if bet_row['clay'] > 0.5:
             return 0
 
+        if bet_row['challenger'] > 0.5:
+            return 0
+
         prediction = prediction * alpha + (1.0 - alpha) * odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
 
@@ -364,7 +373,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.425 or odds > 0.525:
+        if odds < 0.45 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -655,8 +664,8 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
-
-        print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:',
+        return_per_bet =  to_percentage(test_return / (num_bets * 100))
+        print('Final test return:', test_return, ' Return per bet:', return_per_bet, ' Num bets:', num_bets, ' Avg Error:',
               to_percentage(avg_error),
               ' Test years:', num_test_years, ' Year:', test_year)
         print('---------------------------------------------------------')
