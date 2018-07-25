@@ -211,10 +211,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(prior_match_opp.games_won, 6) + coalesce(prior_match_opp.games_against, 6) as opp_previous_games_total,
             coalesce(prior_matches.games_won, 6) + coalesce(prior_matches.games_against, 0) as previous_games_total2,
             coalesce(prior_matches_opp.games_won, 6) + coalesce(prior_matches_opp.games_against, 0) as opp_previous_games_total2,
-            case when pc.date_of_birth is null then (select avg_age from avg_player_characteristics)
-                else extract(year from m.start_date) - extract(year from pc.date_of_birth) end as age,
-            case when pc_opp.date_of_birth is null then (select avg_age from avg_player_characteristics)
-                else extract(year from m.start_date) - extract(year from pc_opp.date_of_birth) end as opp_age,
+            extract(year from m.start_date) - extract(year from pc.date_of_birth) as age,
+            extract(year from m.start_date) - extract(year from pc_opp.date_of_birth) as opp_age,
             case when pc.turned_pro is null then (select avg_experience from avg_player_characteristics)
                 else extract(year from m.start_date) - pc.turned_pro end as experience,
             case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
@@ -241,7 +239,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(inj.num_injuries, 0) as injuries,
         coalesce(inj_opp.num_injuries, 0) as opp_injuries,
         coalesce(t.masters, 250) as tournament_rank,
-        r.round is not null and tournament_first_round.first_round is not null and r.round=tournament_first_round.first_round as first_round
+        case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round
         from atp_matches_individual as m
         join atp_matches_individual as m_opp
         on ((m.opponent_id,m.player_id,m.tournament,m.start_date,m.challenger)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.start_date,m_opp.challenger))
@@ -331,7 +329,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.player_id,m.start_date,m.tournament,m.challenger)=(inj.player_id,inj.start_date,inj.tournament,inj.challenger))
         left outer join atp_matches_injuries as inj_opp
             on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(inj_opp.player_id,inj_opp.start_date,inj_opp.tournament, inj_opp.challenger))
-        where (m.retirement is null or not m.retirement) and mean.service_points_attempted is not null and mean_opp.service_points_attempted is not null and coalesce(r.round, 0) > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+        where tournament_first_round.first_round is not null and pc.date_of_birth is not null and pc_opp.date_of_birth is not null and (m.retirement is null or not m.retirement) and mean.service_points_attempted is not null and mean_opp.service_points_attempted is not null and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
