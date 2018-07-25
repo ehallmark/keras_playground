@@ -1,0 +1,93 @@
+        select count(*)
+        from atp_matches_individual as m
+        join atp_matches_individual as m_opp
+        on ((m.opponent_id,m.player_id,m.tournament,m.start_date,m.challenger)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.start_date,m_opp.challenger))
+        join atp_matches_round as r
+            on ((m.player_id,m.opponent_id,m.start_date,m.tournament,m.challenger)=(r.player_id,r.opponent_id,r.start_date,r.tournament, r.challenger))
+        join atp_tournament_first_round as tournament_first_round on ((tournament_first_round.tournament,tournament_first_round.start_date,tournament_first_round.challenger)=(m.tournament,m.start_date,m.challenger))
+        join atp_tournament_dates as t on ((m.start_date,m.tournament,m.challenger)=(t.start_date,t.tournament,t.challenger))
+        left outer join atp_matches_prior_h2h as h2h
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date,m.challenger)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.start_date,h2h.challenger))
+        left outer join atp_matches_prior_quarter as prev_quarter
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(prev_quarter.player_id,prev_quarter.tournament,prev_quarter.start_date,prev_quarter.challenger))
+        left outer join atp_matches_prior_quarter as prev_quarter_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(prev_quarter_opp.player_id,prev_quarter_opp.tournament,prev_quarter_opp.start_date,prev_quarter_opp.challenger))
+        left outer join atp_matches_prior_year as prev_year
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(prev_year.player_id,prev_year.tournament,prev_year.start_date,prev_year.challenger))
+        left outer join atp_matches_tournament_history as tourney_hist
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(tourney_hist.player_id,tourney_hist.tournament,tourney_hist.start_date,tourney_hist.challenger))
+        left outer join atp_matches_prior_year as prev_year_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(prev_year_opp.player_id,prev_year_opp.tournament,prev_year_opp.start_date,prev_year_opp.challenger))
+        left outer join atp_matches_prior_majors as majors
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(majors.player_id,majors.tournament,majors.start_date,majors.challenger))
+        left outer join atp_matches_prior_majors as opp_majors
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(opp_majors.player_id,opp_majors.tournament,opp_majors.start_date,opp_majors.challenger))
+        left outer join atp_matches_prior_challenger as challengers
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(challengers.player_id,challengers.tournament,challengers.start_date,challengers.challenger))
+        left outer join atp_matches_prior_challenger as opp_challengers
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(opp_challengers.player_id,opp_challengers.tournament,opp_challengers.start_date,opp_challengers.challenger))
+        left outer join atp_matches_prior_masters as masters
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(masters.player_id,masters.tournament,masters.start_date,masters.challenger))
+        left outer join atp_matches_prior_masters as opp_masters
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(opp_masters.player_id,opp_masters.tournament,opp_masters.start_date,opp_masters.challenger))
+        left outer join atp_matches_prior_250 as matches_250
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(matches_250.player_id,matches_250.tournament,matches_250.start_date,matches_250.challenger))
+        left outer join atp_matches_prior_250 as opp_matches_250
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(opp_matches_250.player_id,opp_matches_250.tournament,opp_matches_250.start_date,opp_matches_250.challenger))
+        left outer join atp_matches_tournament_history as tourney_hist_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(tourney_hist_opp.player_id,tourney_hist_opp.tournament,tourney_hist_opp.start_date,tourney_hist_opp.challenger))
+        left outer join atp_matches_prior_year_avg as mean
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(mean.player_id,mean.tournament,mean.start_date,mean.challenger))
+        left outer join atp_matches_prior_year_avg as mean_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(mean_opp.player_id,mean_opp.tournament,mean_opp.start_date,mean_opp.challenger))
+        left outer join atp_matches_prior_year_tournament_round as prior_tourney
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.start_date,prior_tourney.challenger))
+        left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.start_date,prior_tourney_opp.challenger))
+        left outer join atp_matches_prior_tiebreak_percentage as tb
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(tb.player_id,tb.tournament,tb.start_date,tb.challenger))
+        left outer join atp_matches_prior_tiebreak_percentage as tb_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(tb_opp.player_id,tb_opp.tournament,tb_opp.start_date,tb_opp.challenger))
+        left outer join atp_matches_prior_surface_experience as se
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(se.player_id,se.tournament,se.start_date,se.challenger))
+        left outer join atp_matches_prior_surface_experience as se_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(se_opp.player_id,se_opp.tournament,se_opp.start_date,se_opp.challenger))
+        left outer join atp_player_characteristics as pc
+            on ((m.player_id,m.tournament,m.start_date)=(pc.player_id,pc.tournament,pc.start_date))
+        left outer join atp_player_characteristics as pc_opp
+            on ((m.opponent_id,m.tournament,m.start_date)=(pc_opp.player_id,pc_opp.tournament,pc_opp.start_date))
+        left outer join atp_matches_prior_match as prior_match
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date,m.challenger)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.start_date,prior_match.challenger))
+        left outer join atp_matches_prior_match as prior_match_opp
+            on ((m.opponent_id,m.player_id,m.tournament,m.start_date,m.challenger)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.start_date,prior_match_opp.challenger))
+        left outer join atp_matches_prior_matches as prior_matches
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date,m.challenger)=(prior_matches.player_id,prior_matches.opponent_id,prior_matches.tournament,prior_matches.start_date,prior_matches.challenger))
+        left outer join atp_matches_prior_matches as prior_matches_opp
+            on ((m.opponent_id,m.player_id,m.tournament,m.start_date,m.challenger)=(prior_matches_opp.player_id,prior_matches_opp.opponent_id,prior_matches_opp.tournament,prior_matches_opp.start_date,prior_matches_opp.challenger))
+        left outer join atp_player_opponent_score as elo
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date,m.challenger)=(elo.player_id,elo.opponent_id,elo.tournament,elo.start_date,elo.challenger))
+        left outer join atp_matches_prior_h2h_money_lines as h2h_ml
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date,m.challenger)=(h2h_ml.player_id,h2h_ml.opponent_id,h2h_ml.tournament,h2h_ml.start_date, h2h_ml.challenger))
+        left outer join atp_matches_prior_money_lines as ml
+            on ((m.player_id,m.tournament,m.start_date,m.challenger)=(ml.player_id,ml.tournament,ml.start_date,ml.challenger))
+        left outer join atp_matches_prior_money_lines as ml_opp
+            on ((m.opponent_id,m.tournament,m.start_date,m.challenger)=(ml_opp.player_id,ml_opp.tournament,ml_opp.start_date,ml_opp.challenger))
+        left outer join atp_matches_prior_best_year as prior_best_year
+            on ((m.player_id,m.start_date,m.challenger)=(prior_best_year.player_id,prior_best_year.start_date,prior_best_year.challenger))
+        left outer join atp_matches_prior_best_year as prior_best_year_opp
+            on ((m.opponent_id,m.start_date,m.challenger)=(prior_best_year_opp.player_id,prior_best_year_opp.start_date,prior_best_year_opp.challenger))
+        left outer join atp_matches_prior_worst_year as prior_worst_year
+            on ((m.player_id,m.start_date,m.challenger)=(prior_worst_year.player_id,prior_worst_year.start_date,prior_worst_year.challenger))
+        left outer join atp_matches_prior_worst_year as prior_worst_year_opp
+            on ((m.opponent_id,m.start_date,m.challenger)=(prior_worst_year_opp.player_id,prior_worst_year_opp.start_date,prior_worst_year_opp.challenger))
+        left outer join atp_matches_qualifying as qualifying
+            on ((m.player_id,m.start_date,m.tournament,m.challenger)=(qualifying.player_id,qualifying.start_date,qualifying.tournament,qualifying.challenger))
+        left outer join atp_matches_qualifying as qualifying_opp
+            on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(qualifying_opp.player_id,qualifying_opp.start_date,qualifying_opp.tournament,qualifying_opp.challenger))
+        left outer join atp_matches_injuries as inj
+            on ((m.player_id,m.start_date,m.tournament,m.challenger)=(inj.player_id,inj.start_date,inj.tournament,inj.challenger))
+        left outer join atp_matches_injuries as inj_opp
+            on ((m.opponent_id,m.start_date,m.tournament,m.challenger)=(inj_opp.player_id,inj_opp.start_date,inj_opp.tournament, inj_opp.challenger))
+            /* pc.date_of_birth is not null and pc_opp.date_of_birth is not null  and mean.service_points_attempted is not null and mean_opp.service_points_attempted is not null and r.round is not null and r.round > 0 and
+            not m.round like '%Qualifying%'  */
+         where not m.round like '%%Qualifying%' and (m.retirement is null or not m.retirement) and tournament_first_round.first_round is not null and r.round is not null and r.round > 0 and m.start_date < '2012-01-01'::date and m.start_date >= '1995-01-01'::date ;

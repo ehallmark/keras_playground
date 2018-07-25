@@ -37,7 +37,6 @@ test_season = '2012-12-31'
 if __name__ == '__main__':
     data = load_data(all_attributes, test_season=end_year, start_year=start_year, keep_nulls=False)
     data_test = load_data(all_attributes, test_season=test_season, start_year=end_year, keep_nulls=False)
-
     #slam_data = data[data.grand_slam > 0.5]
     #data = data[data.grand_slam < 0.5]
     #slam_data_test = data_test[data_test.grand_slam > 0.5]
@@ -59,8 +58,8 @@ if __name__ == '__main__':
         (data[data.clay > 0.5], data_test[data_test.clay > 0.5], 'Clay', main_attrs),
         (data[data.grass > 0.5], data_test[data_test.grass > 0.5], 'Grass', main_attrs),
         (data[data.hard > 0.5], data_test[data_test.hard > 0.5], 'Hard', main_attrs),
-        (data[(data.first_round > 0.5)], data_test[(data_test.first_round > 0.5)], 'FirstRound', first_round_attrs),
-        (data[(data.first_round < 0.5)], data_test[(data_test.first_round < 0.5)], 'OtherRound', main_attrs),
+        (data[data.first_round > 0.5], data_test[data_test.first_round > 0.5], 'FirstRound', first_round_attrs),
+        (data[data.first_round < 0.5], data_test[data_test.first_round < 0.5], 'OtherRound', main_attrs),
     ]
 
     train_outcome_model = True
