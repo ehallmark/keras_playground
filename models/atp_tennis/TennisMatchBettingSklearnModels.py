@@ -431,9 +431,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(150):
+            for i in range(100):
                 model = _model()
-                ratio = 0.5
+                ratio = 0.75
                 X_train_sample = sample2d(X_train, seed + i, ratio)
                 y_train_sample = sample2d(y_train, seed + i, ratio)
                 model.fit(X_train_sample, y_train_sample)
