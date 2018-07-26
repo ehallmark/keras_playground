@@ -187,9 +187,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                     y_hat_test = predict_proba(model, X_test)
                     predictions_test[key] = y_hat_test
 
-        c1 = 0.5
-        c2 = 0.25
-        c3 = 0.25
+        c1 = 0.4
+        c2 = 0.4
+        c3 = 0.2
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -289,7 +289,7 @@ def bet_func(epsilon, bet_ml=True):
             exit(1)
 
         if bet_row['challenger'] > 0.5:
-            if odds < 0.10 or odds > 0.49:
+            if odds < 0.40 or odds > 0.50:
                 return 0
         else:
             if odds < 0.20 or odds > 0.55:
@@ -361,9 +361,6 @@ def spread_bet_func(epsilon, bet_spread=True):
         if not bet_spread:
             return 0
         if bet_row['clay'] > 0.5:
-            return 0
-
-        if bet_row['challenger'] > 0.5:
             return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
@@ -537,8 +534,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (not bet_on_challengers and bet_row['challenger'] > 0.5) or \
                 (not bet_on_pros and bet_row['challengers'] < 0.5) or \
-                bet_row['opp_prev_year_prior_encounters'] < 5 or \
-                bet_row['prev_year_prior_encounters'] < 5:  # or \
+                bet_row['opp_prev_year_prior_encounters'] < 3 or \
+                bet_row['prev_year_prior_encounters'] < 3:  # or \
                 # (bet_row['court_surface']!='Clay'): # or \
                 # bet_row['tournament_rank']!=100  :
             return {
