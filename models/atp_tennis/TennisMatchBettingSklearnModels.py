@@ -24,7 +24,7 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
     'Bovada': 'Set',
     'BetOnline': 'Game',
     '5Dimes': 'Game',
-    # 'OddsPortal': 'Game'
+    'OddsPortal': 'Game'
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())

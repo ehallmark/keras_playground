@@ -135,6 +135,10 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(prev_quarter_opp.avg_round,0) as opp_prior_quarter_avg_round,
             coalesce(prev_year.avg_match_closeness,0) as prior_year_match_closeness,
             coalesce(prev_year_opp.avg_match_closeness,0) as opp_prior_year_match_closeness,
+            coalesce(prev_year.match_recovery,0) as prior_year_match_recovery,
+            coalesce(prev_year_opp.match_recovery,0) as opp_prior_year_match_recovery,
+            coalesce(prev_year.match_collapse,0) as prior_year_match_collapse,
+            coalesce(prev_year_opp.match_collapse,0) as opp_prior_year_match_collapse,
             coalesce(prev_quarter.avg_match_closeness,0) as prior_quarter_match_closeness,
             coalesce(prev_quarter_opp.avg_match_closeness,0) as opp_prior_quarter_match_closeness,
             coalesce(prev_quarter.avg_games_per_set,0) as prior_quarter_games_per_set,
@@ -335,7 +339,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on (m.player_id=first_match.player_id)
         left outer join atp_players_first_match as first_match_opp
             on (m.opponent_id=first_match_opp.player_id)
-        where tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+        where prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
@@ -362,6 +366,8 @@ input_attributes0 = [
     'tourney_hist_avg_round',
     'prev_year_avg_round',
     'prev_year_prior_losses',
+    'prior_year_match_collapse',
+    'prior_year_match_recovery',
     'prior_year_match_closeness',
 
     # prior quarter
@@ -373,8 +379,6 @@ input_attributes0 = [
     'surface_experience',
     'injuries',
     'first_match_date',
-    #'age',
-    #'height',
     'best_year',
 
     # match stats
