@@ -24,7 +24,7 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
     'Bovada': 'Set',
     'BetOnline': 'Game',
     '5Dimes': 'Game',
-    'OddsPortal': 'Game'
+    # 'OddsPortal': 'Game'
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())
@@ -187,9 +187,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                     y_hat_test = predict_proba(model, X_test)
                     predictions_test[key] = y_hat_test
 
-        c1 = 0.4
-        c2 = 0.4
-        c3 = 0.2
+        c1 = 0.5
+        c2 = 0.25
+        c3 = 0.25
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -373,7 +373,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.45 or odds > 0.525:
+        if odds < 0.425 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -434,9 +434,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(100):
+            for i in range(150):
                 model = _model()
-                ratio = 0.75
+                ratio = 0.5
                 X_train_sample = sample2d(X_train, seed + i, ratio)
                 y_train_sample = sample2d(y_train, seed + i, ratio)
                 model.fit(X_train_sample, y_train_sample)
