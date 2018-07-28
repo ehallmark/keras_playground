@@ -97,12 +97,7 @@ sql_str = '''
 sql_clay = sql_str + ' and court_surface=\'Clay\''
 sql_grass = sql_str + ' and court_surface=\'Grass\''
 sql_hard = sql_str + ' and court_surface=\'Hard\''
-sql_clay_challenger = sql_clay + ' and challenger'
-sql_grass_challenger = sql_grass + ' and challenger'
-sql_hard_challenger = sql_clay + ' and challenger'
-sql_clay = sql_clay + ' and not challenger'
-sql_grass = sql_grass + ' and not challenger'
-sql_hard = sql_hard + ' and not challenger'
+
 
 sql_game_total_str = '''
         select player_victory,games_won+games_against as total, case when greatest(num_sets-sets_won,sets_won)=3
@@ -120,11 +115,6 @@ abs_probabilities_per_surface = {
     'Hard': create_spread_probabilities_from_query(sql_hard)
 }
 
-abs_probabilities_per_surface_challenger = {
-    'Clay': create_spread_probabilities_from_query(sql_clay_challenger),
-    'Grass': create_spread_probabilities_from_query(sql_grass_challenger),
-    'Hard': create_spread_probabilities_from_query(sql_hard_challenger)
-}
 
 abs_game_total_probabilities_per_surface = \
     create_game_totals_probabilities_from_query(sql_game_total_str)

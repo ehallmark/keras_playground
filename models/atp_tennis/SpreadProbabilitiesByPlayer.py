@@ -9,14 +9,11 @@ np.random.seed(1)
 
 
 conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins where not challenger', conn)
-slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses where not challenger', conn)
-wins = pd.read_sql('select * from atp_matches_spread_probabilities_win where not challenger', conn)
-losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses where not challenger', conn)
-slam_wins_c = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins where challenger', conn)
-slam_losses_c = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses where challenger', conn)
-wins_c = pd.read_sql('select * from atp_matches_spread_probabilities_win where challenger', conn)
-losses_c = pd.read_sql('select * from atp_matches_spread_probabilities_losses where challenger', conn)
+slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins', conn)
+slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
+wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
+losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
+
 slam_wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 slam_losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
@@ -49,7 +46,7 @@ def build_cumulative_probabilities(probabilities):
     return probabilities_over
 
 
-def spread_prob(player, opponent, tournament, start_date, challenger, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
+def spread_prob(player, opponent, tournament, start_date, spread, is_grand_slam, priors_per_surface, surface='Hard', win=True, alpha=5.0):
     if math.isnan(spread):
         return np.NaN
     if is_grand_slam:
@@ -66,20 +63,12 @@ def spread_prob(player, opponent, tournament, start_date, challenger, spread, is
         r = range(-12, 13, 1)
         if win:
             prior = priors_per_surface[surface][0]
-            if challenger:
-                sql = wins_c
-                opp_sql = losses_c
-            else:
-                sql = wins
-                opp_sql = losses
+            sql = wins
+            opp_sql = losses
         else:
             prior = priors_per_surface[surface][1]
-            if challenger:
-                sql = losses_c
-                opp_sql = wins_c
-            else:
-                sql = losses
-                opp_sql = wins
+            sql = losses
+            opp_sql = wins
 
     try:
         row = sql.loc[(player, tournament, start_date), :]

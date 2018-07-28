@@ -8,7 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.SpreadProbabilitiesByPlayer import spread_prob, total_sets_prob, total_games_prob, abs_game_total_probabilities_per_surface, abs_set_total_probabilities_per_surface
 from models.atp_tennis.TennisMatchOutcomeSklearnModels import load_outcome_model, load_spread_model
-from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface, abs_probabilities_per_surface_challenger
+from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
 import numpy as np
@@ -90,7 +90,7 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select m.start_date,m.tournament,m.team1,m.team2,
-        m.book_name,m.challenger,
+        m.book_name,
         s.price1,
         s.price2,
         s.spread1,
@@ -110,13 +110,13 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date,m.challenger)=(s.team1,s.team2,s.tournament,s.book_name,s.start_date,s.challenger)
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(s.team1,s.team2,s.tournament,s.book_name,s.start_date)
             and s.spread1=-s.spread2)
         left outer join atp_tennis_betting_link_totals as t
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date,m.challenger)=(t.team1,t.team2,t.tournament,t.book_name,t.start_date,t.challenger)
+        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(t.team1,t.team2,t.tournament,t.book_name,t.start_date)
             and t.over=t.under)
         left outer join atp_matches_money_line_average as ml_overall_avg
-            on ((m.team1,m.team2,m.start_date,m.tournament,m.challenger)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament,ml_overall_avg.challenger))        
+            on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
         where m.betting_date<='{{YEAR}}'::date + interval '30 days' and m.book_name in ({{BOOK_NAMES}})
 
     '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
@@ -245,8 +245,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         test_data,
         betting_data,
         'inner',
-        left_on=['start_date', 'player_id', 'opponent_id', 'tournament', 'challenger'],
-        right_on=['start_date', 'team1', 'team2', 'tournament', 'challenger'],
+        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+        right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
     #print('post headers: ', test_data.columns)
@@ -254,8 +254,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         data,
         betting_data,
         'inner',
-        left_on=['start_date', 'player_id', 'opponent_id', 'tournament', 'challenger'],
-        right_on=['start_date', 'team1', 'team2', 'tournament', 'challenger'],
+        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+        right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
     #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
@@ -513,11 +513,11 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
     priors_spread = abs_probabilities_per_surface
-    priors_spread_challenger = abs_probabilities_per_surface_challenger
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-    bet_on_challengers = False
+    bet_on_challengers = True
     bet_on_pros = True
+    bet_on_itf = True
 
     def check_player_for_spread(bet, opponent):
         if opponent in dont_bet_against_spread:
@@ -533,7 +533,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (not bet_on_challengers and bet_row['challenger'] > 0.5) or \
-                (not bet_on_pros and bet_row['challengers'] < 0.5) or \
+                (not bet_on_pros and bet_row['challengers'] < 0.5 and bet_row['itf'] < 0.5) or \
+                (not bet_on_itf and bet_row['itf'] > 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 bet_row['prev_year_prior_encounters'] < 3:  # or \
                 # (bet_row['court_surface']!='Clay'): # or \
@@ -549,21 +550,18 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
 
         #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
         challenger = bool(bet_row['challenger'] > 0.5)
-        if challenger:
-            priors_to_use = priors_spread_challenger
-        else:
-            priors_to_use = priors_spread
+        priors_to_use = priors_spread
 
-        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
+        spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
                                        spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                        bet_row['court_surface'], win=True)
-        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'], challenger,
+        spread_prob_win2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
                                        spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                        bet_row['court_surface'], win=True)
-        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'], challenger,
+        spread_prob_loss1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
                                         spread_bet_option.spread1 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                         bet_row['court_surface'], win=False)
-        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'], challenger,
+        spread_prob_loss2 = spread_prob(bet_row['opponent_id'], bet_row['player_id'], bet_row['tournament'], bet_row['start_date'],
                                         spread_bet_option.spread2 - spread_cushion, bet_row['grand_slam'] > 0.5, priors_to_use,
                                         bet_row['court_surface'], win=False)
 
