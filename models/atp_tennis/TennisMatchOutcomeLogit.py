@@ -380,7 +380,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on (m.player_id=first_match.player_id)
         left outer join atp_players_first_match as first_match_opp
             on (m.opponent_id=first_match_opp.player_id)
-        where prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+        where m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
