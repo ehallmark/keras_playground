@@ -3,6 +3,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 import keras as k
 from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage
+import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 import numpy as np
 np.random.seed(23952)
 
@@ -15,53 +16,16 @@ def test_model(model, x, y):
 
 
 # previous year quality
-input_attributes0 = [
-    'h2h_prior_win_percent',
-    'tourney_hist_avg_round',
-    'prev_year_avg_round',
-    'prev_year_prior_losses',
-    'prior_year_match_closeness',
-
-    # prior quarter
-    'prior_quarter_games_per_set',
-    'prior_quarter_victories',
-
-    # player qualities
-    'elo_score_weighted',
-    #'age',
-    'surface_experience',
-    #'height',
-    'best_year',
-
-    # match stats
-    'tiebreak_win_percent',
-    'major_encounters',
-    'master_encounters',
-    'encounters_250',
-    'challenger_encounters',
-    'mean_faults',
-    'mean_aces',
-    'mean_service_points_won',
-    'mean_return_points_made',
-
-    # previous match
-    'previous_games_total2',
-    'had_qualifier',
-    'wild_card',
-    'seeded',
-]
-
-# opponent attrs
-opp_input_attributes0 = ['opp_'+attr for attr in input_attributes0]
-opp_input_attributes0.remove('opp_h2h_prior_win_percent')
-input_attributes = input_attributes0 + opp_input_attributes0
-
+input_attributes = list(tennis_model.input_attributes0)
 
 additional_attributes = [
     'clay',
     'grass',
     'tournament_rank',
     'first_round',
+    'itf',
+    'challenger',
+    'grand_slam',
 ]
 
 for attr in additional_attributes:
@@ -86,8 +50,8 @@ if __name__ == '__main__':
     data = (np.array(data[input_attributes]), np.array(data['y']))
     test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
 
-    hidden_units = 1000  # len(input_attributes)*2
-    num_cells = 3
+    hidden_units = 256  # len(input_attributes)*2
+    num_cells = 5
     batch_size = 128
     dropout = 0.5
     load_previous = False
@@ -111,9 +75,9 @@ if __name__ == '__main__':
 
         out1 = Dense(1, activation='sigmoid')(model1)
         model = Model(inputs=X1, outputs=out1)
-        model.compile(optimizer=Adam(lr=0.001, decay=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
-    model_file = 'tennis_match_keras_nn_v5.h6'
+    model_file = 'tennis_match_keras_nn_v5.h5'
     prev_error = None
     best_error = None
     for i in range(50):

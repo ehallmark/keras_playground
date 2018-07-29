@@ -280,8 +280,6 @@ def bet_func(epsilon, bet_ml=True):
             return 0
         if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
             return 0
-        if bet_row['clay'] > 0.5:
-            return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
         if 0 > prediction or prediction > 1:
@@ -359,8 +357,6 @@ def totals_bet_func(epsilon, bet_totals=True):
 def spread_bet_func(epsilon, bet_spread=True):
     def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
         if not bet_spread:
-            return 0
-        if bet_row['clay'] > 0.5:
             return 0
 
         prediction = prediction * alpha + (1.0 - alpha) * odds
@@ -516,8 +512,9 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
     bet_on_challengers = True
-    bet_on_pros = True
-    bet_on_itf = True
+    bet_on_pros = False
+    bet_on_clay = False
+    bet_on_itf = False
 
     def check_player_for_spread(bet, opponent):
         if opponent in dont_bet_against_spread:
@@ -536,6 +533,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 (not bet_on_pros and bet_row['challengers'] < 0.5 and bet_row['itf'] < 0.5) or \
                 (not bet_on_itf and bet_row['itf'] > 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
+                (not bet_on_clay and bet_row['clay'] > 0.5) or \
                 bet_row['prev_year_prior_encounters'] < 3:  # or \
                 # (bet_row['court_surface']!='Clay'): # or \
                 # bet_row['tournament_rank']!=100  :

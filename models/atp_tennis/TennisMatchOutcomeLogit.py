@@ -345,13 +345,13 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         left outer join atp_player_characteristics as pc_opp
             on ((m.opponent_id,m.tournament,m.start_date)=(pc_opp.player_id,pc_opp.tournament,pc_opp.start_date))
         left outer join atp_matches_prior_match as prior_match
-            on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.start_date,prior_match.challenger))
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(prior_match.player_id,prior_match.opponent_id,prior_match.tournament,prior_match.start_date))
         left outer join atp_matches_prior_match as prior_match_opp
-            on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.start_date,prior_match_opp.challenger))
+            on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(prior_match_opp.player_id,prior_match_opp.opponent_id,prior_match_opp.tournament,prior_match_opp.start_date))
         left outer join atp_matches_prior_matches as prior_matches
-            on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(prior_matches.player_id,prior_matches.opponent_id,prior_matches.tournament,prior_matches.start_date,prior_matches.challenger))
+            on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(prior_matches.player_id,prior_matches.opponent_id,prior_matches.tournament,prior_matches.start_date))
         left outer join atp_matches_prior_matches as prior_matches_opp
-            on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(prior_matches_opp.player_id,prior_matches_opp.opponent_id,prior_matches_opp.tournament,prior_matches_opp.start_date,prior_matches_opp.challenger))
+            on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(prior_matches_opp.player_id,prior_matches_opp.opponent_id,prior_matches_opp.tournament,prior_matches_opp.start_date))
         left outer join atp_player_opponent_score as elo
             on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(elo.player_id,elo.opponent_id,elo.tournament,elo.start_date))
         left outer join atp_matches_prior_h2h_money_lines as h2h_ml
@@ -428,16 +428,17 @@ input_attributes0 = [
     'master_encounters',
     'encounters_250',
     'challenger_encounters',
+    'itf_encounters',
     'tiebreak_win_percent',
-    'mean_faults',
-    'mean_aces',
-    'mean_service_points_won',
-    'mean_return_points_made',
+    #'mean_faults',
+    #'mean_aces',
+    #'mean_service_points_won',
+    #'mean_return_points_made',
 
     # previous match
     'previous_games_total2',
-    'had_qualifier',
-    'wild_card',
+    #'had_qualifier',
+    #'wild_card',
     'seeded',
 ]
 
@@ -510,7 +511,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['itf', 'challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)
@@ -532,10 +533,10 @@ if __name__ == '__main__':
     train_total_games_model = False
     sql = load_data(all_attributes, test_season='2011-01-01', start_year='1995-01-01')
     test_data = load_data(all_attributes, test_season='2012-01-01', start_year='2011-01-01')
-    sql_slam = sql[sql.grand_slam > 0.5]
-    sql = sql[sql.grand_slam < 0.5]
-    test_data_slam = test_data[test_data.grand_slam > 0.5]
-    test_data = test_data[test_data.grand_slam < 0.5]
+    sql_slam = sql[sql.itf < 0.5]
+    sql = sql[sql.itf > 0.5]
+    test_data_slam = test_data[test_data.itf < 0.5]
+    test_data = test_data[test_data.itf > 0.5]
     if train_outcome_model:
         model_file = 'tennis_match_outcome_logit.statmodel'
         # print('Attrs: ', sql[all_attributes][0:20])

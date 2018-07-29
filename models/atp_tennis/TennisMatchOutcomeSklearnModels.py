@@ -51,7 +51,8 @@ if __name__ == '__main__':
 
     datasets = [
         (data, data_test, 'All', main_attrs),
-       # (data[data.tournament_rank == 100], data_test[data_test.tournament_rank == 100], '100', main_attrs),
+        (data[data.tournament_rank == 25], data_test[data_test.tournament_rank == 25], '25', main_attrs),
+        (data[data.tournament_rank == 100], data_test[data_test.tournament_rank == 100], '100', main_attrs),
         (data[((data.tournament_rank == 250) | (data.tournament_rank == 500))], data_test[((data_test.tournament_rank == 250) | (data_test.tournament_rank == 500))], '500', main_attrs),
         (data[data.tournament_rank == 1000], data_test[data_test.tournament_rank == 1000], '1000', main_attrs),
         (data[data.tournament_rank == 2000], data_test[data_test.tournament_rank == 2000], '2000', main_attrs),
