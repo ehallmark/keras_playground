@@ -669,6 +669,7 @@ start_year = '2012-01-01'
 
 model_names = {
     'All': 'Logistic',
+    '25': 'Logistic',
     '100': 'Logistic',
     '500': 'Logistic',
     '1000': 'Logistic',
