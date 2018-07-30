@@ -444,7 +444,7 @@ input_attributes0 = [
     'percent_challenger',
     'percent_majors',
     'not_played',
-    'last_tournament_time',
+    #'last_tournament_time',
 
     # prior quarter
     #'prior_quarter_encounters',
@@ -457,6 +457,11 @@ input_attributes0 = [
     'injuries',
     'first_match_date',
     'best_year',
+    'atp_rank',
+    'played_doubles',
+    'last_itf_tournament_time',
+    'last_challenger_tournament_time',
+    'last_atp_tournament_time',
 
     # match stats
     'major_encounters',
