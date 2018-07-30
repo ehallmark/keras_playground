@@ -285,7 +285,7 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if bet_row['first_round'] > 0.5:  # and bet_row['tournament_rank'] > 1000:
+        if bet_row['first_round'] > 0.5 and bet_row['tournament_rank'] > 1000:
             return 0
 
         alpha_odds = bet_row['overall_odds_avg']
@@ -713,8 +713,8 @@ if __name__ == '__main__':
     for i in range(num_tests):
         print("TEST: ", i)
         num_test_years = 0
-        for num_test_months in [3, 6, 12]:
-            for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
+        for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
+            for num_test_months in [3, 6, 12]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
