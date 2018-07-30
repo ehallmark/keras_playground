@@ -258,6 +258,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(elo.score2,100) as opp_elo_score,
         coalesce(elo.weighted_score1,100) as elo_score_weighted,
         coalesce(elo.weighted_score2,100) as opp_elo_score_weighted,
+        coalesce(atp_rank.score,0) as atp_rank,
+        coalesce(atp_rank_opp.score,0) as opp_atp_rank,
         coalesce(h2h_ml.avg_odds, 0.5) as historical_avg_odds,
         coalesce(ml.avg_odds,0.5) as prev_odds,
         coalesce(ml_opp.avg_odds,0.5) as opp_prev_odds,
@@ -275,8 +277,14 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
         coalesce(se.num_injuries, 0) as injuries,
         coalesce(se_opp.num_injuries, 0) as opp_injuries,
-        coalesce(se.last_tournament_time, 0) as last_tournament_time,
-        coalesce(se_opp.last_tournament_time, 0) as opp_last_tournament_time,
+        ln(coalesce(se.last_tournament_time, 365.25*4)) as last_tournament_time,
+        ln(coalesce(se_opp.last_tournament_time, 365.25*4)) as opp_last_tournament_time,
+        ln(coalesce(se.last_itf_tournament_time, 365.25*4)) as last_itf_tournament_time,
+        ln(coalesce(se_opp.last_itf_tournament_time, 365.25*4)) as opp_last_itf_tournament_time,
+        ln(coalesce(se.last_challenger_tournament_time, 365.25*4)) as last_challenger_tournament_time,
+        ln(coalesce(se_opp.last_challenger_tournament_time, 365.25*4)) as opp_last_challenger_tournament_time,
+        ln(coalesce(se.last_atp_tournament_time, 365.25*4)) as last_atp_tournament_time,
+        ln(coalesce(se_opp.last_atp_tournament_time, 365.25*4)) as opp_last_atp_tournament_time,
         coalesce(se.months_not_played, 0) as not_played,
         coalesce(se_opp.months_not_played, 0) as opp_not_played,
         coalesce(se.percent_itf, 0) as percent_itf,
@@ -290,7 +298,9 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(t.masters, 250) as tournament_rank,
         (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
         (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
-        case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round
+        case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
+        case when coalesce(dubs.played_doubles, 'f') then 1.0 else 0.0 end as played_doubles,
+        case when coalesce(dubs_opp.played_doubles, 'f') then 1.0 else 0.0 end as opp_played_doubles
         from atp_matches_individual as m
         join atp_matches_individual as m_opp
         on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(m_opp.player_id,m_opp.opponent_id,m_opp.tournament,m_opp.start_date))
@@ -384,6 +394,14 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on (m.player_id=first_match.player_id)
         left outer join atp_players_first_match as first_match_opp
             on (m.opponent_id=first_match_opp.player_id)
+        left outer join atp_matches_played_doubles as dubs
+            on ((m.player_id,m.start_date,m.tournament)=(dubs.player_id,dubs.start_date,dubs.tournament))
+        left outer join atp_matches_played_doubles as dubs_opp
+            on ((m.opponent_id,m.start_date,m.tournament)=(dubs.player_id,dubs.start_date,dubs.tournament))
+        left outer join atp_player_atp_rank as atp_rank
+            on ((m.player_id,m.start_date,m.tournament)=(atp_rank.player_id,atp_rank.start_date,atp_rank.tournament))
+        left outer join atp_player_atp_rank as atp_rank_opp
+            on ((m.opponent_id,m.start_date,m.tournament)=(atp_rank_opp.player_id,atp_rank_opp.start_date,atp_rank_opp.tournament))
         where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
     '''.replace('{{MASTERS_MIN}}', str(masters_min)).replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
