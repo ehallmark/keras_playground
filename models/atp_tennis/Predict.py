@@ -12,7 +12,7 @@ conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=passwo
 
 models = tennis_model.models
 
-predict_for_real = False
+predict_for_real = True
 if predict_for_real:
     tournaments = pd.read_sql('''
         select distinct tournament from atp_matches_individual where player_victory is null
