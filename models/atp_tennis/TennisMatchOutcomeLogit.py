@@ -394,8 +394,15 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
     return sql
 
 
-def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101):
-    date = datetime.date(int(test_season[0:4])-num_test_years, int(test_season[5:7]), int(test_season[8:10])).strftime('%Y-%m-%d')
+def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101, num_test_months=0):
+    month = int(test_season[5:7])
+    year = int(test_season[0:4])
+    if num_test_months > 0:
+        month = month - num_test_months
+    while month <= 0:
+        year = year - 1
+        month = 12 + month
+    date = datetime.date(year-num_test_years, month, int(test_season[8:10])).strftime('%Y-%m-%d')
     data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False)
     test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None, masters_min=masters_min)
     if tournament is not None:

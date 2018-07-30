@@ -161,8 +161,8 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01', masters_min=101):
-    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year, masters_min=masters_min)
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01', masters_min=101, num_test_months=0):
+    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year, masters_min=masters_min, num_test_months=num_test_months)
     if models is not None:
         attrs = tennis_model.input_attributes0
         X = np.array(data[attrs].iloc[:, :])
@@ -230,7 +230,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
     return data, test_data
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_models=None, masters_min=101):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_models=None, masters_min=101, num_test_months=0):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
@@ -244,7 +244,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, models=models, spread_models=spread_models, test_year=test_year, num_test_years=num_test_years,
-                                                               start_year=start_year, masters_min=masters_min)
+                                                               start_year=start_year, masters_min=masters_min, num_test_months=num_test_months)
 
     betting_data = load_betting_data(betting_sites, test_year=test_year)
 
@@ -265,8 +265,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
-    data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
-    test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
+    #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
+    #test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
@@ -274,7 +274,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 0.90
+alpha = 1.0
 spread_cushion = 0.0
 dont_bet_against_spread = {
 
@@ -285,8 +285,8 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        #if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
-        #    return 0
+        if bet_row['first_round'] > 0.5:  # and bet_row['tournament_rank'] > 1000:
+            return 0
 
         alpha_odds = bet_row['overall_odds_avg']
         prediction = prediction * alpha + (1.0 - alpha) * alpha_odds
@@ -303,8 +303,8 @@ def bet_func(epsilon, bet_ml=True):
             max_odds = 0.525
             epsilon_real = epsilon
         else:
-            min_odds = 0.10
-            max_odds = 0.52
+            min_odds = 0.20
+            max_odds = 0.525
             epsilon_real = epsilon
 
         if odds < min_odds or odds > max_odds:
@@ -385,7 +385,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.425 or odds > 0.52:
+        if odds < 0.425 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -712,10 +712,11 @@ if __name__ == '__main__':
     bet_totals = False
     for i in range(num_tests):
         print("TEST: ", i)
-        for num_test_years in [1, ]:
+        num_test_years = 0
+        for num_test_months in [3, 6, 12]:
             for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=models, spread_models=None, masters_min=101)
+                                            test_year=test_year, models=models, spread_models=None, masters_min=101, num_test_months=num_test_months)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
