@@ -24,7 +24,7 @@ else:
 for tournament in tournaments:
     print("Tournament: ", tournament)
     date = pd.read_sql('''
-        select max(start_date)+interval '1 month' as date from atp_matches_individual where tournament={{TOURNAMENT}}
+        select max(start_date)+interval '1 month' as date from atp_matches_individual where tournament='{{TOURNAMENT}}'
     '''.replace("{{TOURNAMENT}}", tournament), conn)['date'].iloc[0]
     print("Date of tournament", tournament+';', date)
     data, test_data = tennis_model.load_data(start_year=tennis_model.start_year, num_test_years=0, num_test_months=2, test_year=date,
