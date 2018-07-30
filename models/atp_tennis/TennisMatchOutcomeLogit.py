@@ -397,7 +397,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         left outer join atp_matches_played_doubles as dubs
             on ((m.player_id,m.start_date,m.tournament)=(dubs.player_id,dubs.start_date,dubs.tournament))
         left outer join atp_matches_played_doubles as dubs_opp
-            on ((m.opponent_id,m.start_date,m.tournament)=(dubs.player_id,dubs.start_date,dubs.tournament))
+            on ((m.opponent_id,m.start_date,m.tournament)=(dubs_opp.player_id,dubs_opp.start_date,dubs_opp.tournament))
         left outer join atp_player_atp_rank as atp_rank
             on ((m.player_id,m.start_date,m.tournament)=(atp_rank.player_id,atp_rank.start_date,atp_rank.tournament))
         left outer join atp_player_atp_rank as atp_rank_opp
