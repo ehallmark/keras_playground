@@ -87,6 +87,9 @@ if __name__ == '__main__':
                 y_test = np.array(test_data[y_str]).flatten()
                 X = np.array(sql[attrs])
                 X_test = np.array(test_data[attrs])
+                if X.shape[0] == 0:
+                    print('Warning no data for: '+str(dataset_name))
+                    continue
                 model.fit(X, y)
                 print('Fit dataset '+str(i)+':', dataset_name, ' Shape:', sql.shape)
                 save_outcome_model(model, name+dataset_name)

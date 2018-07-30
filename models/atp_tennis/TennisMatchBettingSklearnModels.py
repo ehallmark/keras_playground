@@ -24,7 +24,7 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
     'Bovada': 'Set',
     'BetOnline': 'Game',
     '5Dimes': 'Game',
-    'OddsPortal': 'Game'
+    #'OddsPortal': 'Game'
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())
@@ -43,7 +43,7 @@ betting_input_attributes = [
 ]
 
 betting_only_attributes = [
-    'overall_odds_avg',
+    #'overall_odds_avg',
     #'ml_odds_avg',
     'predictions', #'_nn',
     #'spread_predictions',
@@ -54,6 +54,7 @@ for attr in betting_only_attributes:
 
 betting_only_attributes.append('ml_odds_avg')
 betting_only_attributes.append('overall_odds_avg')
+betting_only_attributes.append('spread_odds_avg')
 
 
 all_attributes = list(betting_input_attributes)
@@ -97,6 +98,7 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         s.spread2,
         s.odds1,
         s.odds2,
+        (s.odds1+(1.0-s.odds2))/2.0 as spread_odds_avg,        
         coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
         m.odds1 as ml_odds1,
         m.odds2 as ml_odds2,   
@@ -129,35 +131,38 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     for i in range(len(spreads)):
         spread = spreads[i]
         spread_actual = spread_actuals[i]
-        if spread >= 0:
-            if spread == -spread_actual:
-                if np.random.rand(1) > 0.5:
-                    r = 1.0
-                else:
-                    r = 0.0
-                ties += 1
-            elif spread > -spread_actual:
-                r = 1.0
-            else:
-                r = 0.0
+        if np.isnan(spread_actual) or np.isnan(spread):
+            r = np.nan
         else:
-            if -spread == spread_actual:
-                if np.random.rand(1) > 0.5:
+            if spread >= 0:
+                if spread == -spread_actual:
+                    if np.random.rand(1) > 0.5:
+                        r = 1.0
+                    else:
+                        r = 0.0
+                    ties += 1
+                elif spread > -spread_actual:
                     r = 1.0
                 else:
                     r = 0.0
-                ties += 1
-            elif -spread < spread_actual:
-                r = 1.0
             else:
-                r = 0.0
+                if -spread == spread_actual:
+                    if np.random.rand(1) > 0.5:
+                        r = 1.0
+                    else:
+                        r = 0.0
+                    ties += 1
+                elif -spread < spread_actual:
+                    r = 1.0
+                else:
+                    r = 0.0
         res.append(r)
     #print('Num ties: ', ties, 'out of', len(res))
     return res
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01'):
-    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year)
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, models=None, spread_models=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01', masters_min=101):
+    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year, masters_min=masters_min)
     if models is not None:
         attrs = tennis_model.input_attributes0
         X = np.array(data[attrs].iloc[:, :])
@@ -187,9 +192,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                     y_hat_test = predict_proba(model, X_test)
                     predictions_test[key] = y_hat_test
 
-        c1 = 0.4
-        c2 = 0.4
-        c3 = 0.2
+        c1 = 0.60
+        c2 = 0.20
+        c3 = 0.20
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -198,6 +203,8 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                 y = predictions['1000']
             elif rank == 100:
                 y = predictions['100']
+            elif rank == 25:
+                y = predictions['25']
             else:
                 y = predictions['500']
 
@@ -223,7 +230,7 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
     return data, test_data
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_models=None):
+def load_data(start_year, test_year, num_test_years, test_tournament=None, models=None, spread_models=None, masters_min=101):
     attributes = list(tennis_model.all_attributes)
     if 'spread' not in attributes:
         attributes.append('spread')
@@ -237,7 +244,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
     data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, models=models, spread_models=spread_models, test_year=test_year, num_test_years=num_test_years,
-                                                               start_year=start_year)
+                                                               start_year=start_year, masters_min=masters_min)
 
     betting_data = load_betting_data(betting_sites, test_year=test_year)
 
@@ -258,8 +265,8 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
         right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
     )
-    #data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
-    #test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
+    data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
+    test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
@@ -267,7 +274,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     return data, test_data
 
 
-alpha = 1.0
+alpha = 0.90
 spread_cushion = 0.0
 dont_bet_against_spread = {
 
@@ -278,20 +285,30 @@ def bet_func(epsilon, bet_ml=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
             return 0
-        if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
-            return 0
+        #if bet_row['first_round'] > 0.5 and (bet_row['tournament_rank'] > 1000):
+        #    return 0
 
-        prediction = prediction * alpha + (1.0 - alpha) * odds
+        alpha_odds = bet_row['overall_odds_avg']
+        prediction = prediction * alpha + (1.0 - alpha) * alpha_odds
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if bet_row['challenger'] > 0.5:
-            if odds < 0.40 or odds > 0.50:
-                return 0
+        if bet_row['itf'] > 0.5:
+            min_odds = 0.20
+            max_odds = 0.525
+            epsilon_real = epsilon
+        elif bet_row['challenger'] > 0.5:
+            min_odds = 0.20
+            max_odds = 0.525
+            epsilon_real = epsilon
         else:
-            if odds < 0.20 or odds > 0.55:
-                return 0
+            min_odds = 0.10
+            max_odds = 0.52
+            epsilon_real = epsilon
+
+        if odds < min_odds or odds > max_odds:
+            return 0
 
         if price > 0:
             expectation_implied = odds * price + (1. - odds) * -100.
@@ -303,7 +320,7 @@ def bet_func(epsilon, bet_ml=True):
             expectation = prediction * 100. + (1. - prediction) * price
             expectation /= -price
             expectation_implied /= -price
-        if expectation > epsilon:
+        if expectation > epsilon_real:
             return 1. + expectation
         else:
             return 0
@@ -311,11 +328,12 @@ def bet_func(epsilon, bet_ml=True):
 
 
 def totals_bet_func(epsilon, bet_totals=True):
-    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, row, ml_bet_player,
+    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player,
                         ml_bet_opp, ml_opp_odds):
         if not bet_totals:
             return 0
-        prediction = prediction * alpha + (1.0 - alpha) * odds
+        alpha_odds = bet_row['overall_odds_avg']
+        prediction = prediction * alpha + (1.0 - alpha) * alpha_odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0 - prediction)
 
         if 0 > prediction or prediction > 1:
@@ -359,14 +377,15 @@ def spread_bet_func(epsilon, bet_spread=True):
         if not bet_spread:
             return 0
 
-        prediction = prediction * alpha + (1.0 - alpha) * odds
+        alpha_odds = bet_row['overall_odds_avg']
+        prediction = prediction * alpha + (1.0 - alpha) * alpha_odds
         prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
 
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.425 or odds > 0.525:
+        if odds < 0.425 or odds > 0.52:
             return 0
 
         double_down_below = 0  # 0.35
@@ -427,7 +446,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
             prob_pos = predict_proba(model, X_test)
             model_predictions.append(prob_pos)
         else:
-            for i in range(100):
+            for i in range(150):
                 model = _model()
                 ratio = 0.75
                 X_train_sample = sample2d(X_train, seed + i, ratio)
@@ -504,17 +523,19 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 
 def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
-    min_payout = 0.93
+    min_payout = 0.92
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
     priors_spread = abs_probabilities_per_surface
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-    bet_on_challengers = True
-    bet_on_pros = False
-    bet_on_clay = False
+
+    bet_on_challengers = False
+    bet_on_pros = True
     bet_on_itf = False
+
+    bet_on_clay = False
 
     def check_player_for_spread(bet, opponent):
         if opponent in dont_bet_against_spread:
@@ -530,13 +551,11 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
         if (bet_row['grand_slam'] > 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (bet_row['grand_slam'] < 0.5 and (bet_row['round_num'] < 1 or bet_row['round_num']>5)) or \
                 (not bet_on_challengers and bet_row['challenger'] > 0.5) or \
-                (not bet_on_pros and bet_row['challengers'] < 0.5 and bet_row['itf'] < 0.5) or \
+                (not bet_on_pros and bet_row['challenger'] < 0.5 and bet_row['itf'] < 0.5) or \
                 (not bet_on_itf and bet_row['itf'] > 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 (not bet_on_clay and bet_row['clay'] > 0.5) or \
-                bet_row['prev_year_prior_encounters'] < 3:  # or \
-                # (bet_row['court_surface']!='Clay'): # or \
-                # bet_row['tournament_rank']!=100  :
+                bet_row['prev_year_prior_encounters'] < 3:
             return {
                 'ml_bet1': 0,
                 'ml_bet2': 0,
@@ -546,8 +565,6 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 'under_bet': 0
             }
 
-        #print('PAYOUT ML:', ml_payout, ' PAYOUT SPREAD:', spread_payout)
-        challenger = bool(bet_row['challenger'] > 0.5)
         priors_to_use = priors_spread
 
         spread_prob_win1 = spread_prob(bet_row['player_id'], bet_row['opponent_id'], bet_row['tournament'], bet_row['start_date'],
@@ -657,7 +674,10 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
-        return_per_bet =  to_percentage(test_return / (num_bets * 100))
+        if num_bets > 0:
+            return_per_bet = to_percentage(test_return / (num_bets * 100))
+        else:
+            return_per_bet = 0
         print('Final test return:', test_return, ' Return per bet:', return_per_bet, ' Num bets:', num_bets, ' Avg Error:',
               to_percentage(avg_error),
               ' Test years:', num_test_years, ' Year:', test_year)
@@ -697,5 +717,5 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=models, spread_models=None)
+                                            test_year=test_year, models=models, spread_models=None, masters_min=101)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)

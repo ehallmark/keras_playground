@@ -23,9 +23,7 @@ additional_attributes = [
     'grass',
     'tournament_rank',
     'first_round',
-    'itf',
-    'challenger',
-    'grand_slam',
+    'challenger'
 ]
 
 for attr in additional_attributes:
@@ -41,8 +39,10 @@ for meta in meta_attributes:
 
 
 if __name__ == '__main__':
-    data = load_data(all_attributes, test_season='2012-01-01', start_year='1995-01-01')
-    test_data = load_data(all_attributes, test_season='2012-12-31', start_year='2012-01-01')
+    data = load_data(all_attributes, test_season='2012-01-01', start_year='1995-01-01', masters_min=0)
+    test_data = load_data(all_attributes, test_season='2012-12-31', start_year='2012-01-01', masters_min=0)
+    data = data[data.tournament_rank < 101]
+    test_data = test_data[test_data.tournament_rank < 101]
     # data = data[data.clay<0.5]
     # test_data = test_data[test_data.clay<0.5]
     X1 = Input((len(input_attributes),))
@@ -50,28 +50,32 @@ if __name__ == '__main__':
     data = (np.array(data[input_attributes]), np.array(data['y']))
     test_data = (np.array(test_data[input_attributes]), np.array(test_data['y']))
 
-    hidden_units = 256  # len(input_attributes)*2
-    num_cells = 5
+    hidden_units = 128  # len(input_attributes)*2
+    num_cells = 12
     batch_size = 128
-    dropout = 0.5
+    dropout = 0.25
     load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_keras_nn_v5.h5')
         model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
     else:
-        def cell(x1, n_units, dropout=0.5):
+        def cell(x1, x2, n_units, dropout=0.5):
             batch_norm = BatchNormalization()
             dense = Dense(n_units, activation='tanh')
+            concat = Concatenate()
             dropout_layer = Dropout(dropout)
-            norm1 = dense(x1)
+            norm1 = concat([x1, x2])
+            norm1 = dense(norm1)
             norm1 = batch_norm(norm1)
             norm1 = dropout_layer(norm1)
-            return norm1
+            return x2, norm1
+
 
         norm = BatchNormalization()
         model1 = norm(X1)
+        model2 = Dense(hidden_units, activation='tanh')(model1)
         for i in range(num_cells):
-            model1 = cell(model1, hidden_units)
+            model1, model2 = cell(model1, model2, hidden_units)
 
         out1 = Dense(1, activation='sigmoid')(model1)
         model = Model(inputs=X1, outputs=out1)

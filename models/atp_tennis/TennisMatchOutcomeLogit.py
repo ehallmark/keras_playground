@@ -53,7 +53,7 @@ case when ml.price1 > 0 then 100.0/(100.0 + ml.price1) else -1.0*(ml.price1/(-1.
 '''
 
 
-def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', keep_nulls=False):
+def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', keep_nulls=False, masters_min=101):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 
@@ -76,11 +76,11 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
             case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(m.num_sets-m.sets_won, m.sets_won)=3,'f')
                 then 1.0 else 0.0 end as grand_slam,
-            case when coalesce(m.seed,'')='Q' then 1.0 else 0.0 end as had_qualifier,
+            case when coalesce(m.seed,'')='Q' or qualifying.had_qualifier then 1.0 else 0.0 end as had_qualifier,
             case when coalesce(m.seed,'')='WC' then 1.0 else 0.0 end as wild_card,
             case when coalesce(m.seed,'')='PR' then 1.0 else 0.0 end as protected_ranking,
             case when coalesce(m.seed,'asdgas') ~ '^[0-9]+$' and m.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as seeded,
-            case when coalesce(m_opp.seed,'')='Q' then 1.0 else 0.0 end as opp_had_qualifier,
+            case when coalesce(m_opp.seed,'')='Q' or qualifying_opp.had_qualifier then 1.0 else 0.0 end as opp_had_qualifier,
             case when coalesce(m_opp.seed,'')='WC' then 1.0 else 0.0 end as opp_wild_card,
             case when coalesce(m_opp.seed,'')='PR' then 1.0 else 0.0 end as opp_protected_ranking,
             case when coalesce(m_opp.seed,'asdgas') ~ '^[0-9]+$' and m_opp.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as opp_seeded,
@@ -228,8 +228,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(mean_opp.break_points_made, 0) as opp_mean_break_points_made,
             coalesce(prior_tourney.round, 0) as previous_tournament_round,
             coalesce(prior_tourney_opp.round, 0) as opp_previous_tournament_round,
-            coalesce(tb.tiebreaks_won,0)::float/(1+coalesce(tb.tiebreaks_total,0)) as tiebreak_win_percent,
-            coalesce(tb_opp.tiebreaks_won,0)::float/(1+coalesce(tb_opp.tiebreaks_total,0)) as opp_tiebreak_win_percent,
+            coalesce(se.tiebreaks_won,0)::float/(1+coalesce(se.tiebreaks_total,0)) as tiebreak_win_percent,
+            coalesce(se_opp.tiebreaks_won,0)::float/(1+coalesce(se_opp.tiebreaks_total,0)) as opp_tiebreak_win_percent,
             case when m.court_surface='Clay' then coalesce(se.clay,0)::float/(1+coalesce(se.total_matches))
             else case when m.court_surface='Grass' then coalesce(se.grass,0)::float/(1+coalesce(se.total_matches))
             else coalesce(se.hard,0)::float/(1+coalesce(se.total_matches)) end end as surface_experience,
@@ -273,8 +273,20 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         m.year-coalesce(prior_best_year_opp.best_year,m.year) as opp_best_year,
         m.year-coalesce(prior_worst_year.worst_year,m.year) as worst_year,
         m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
-        coalesce(inj.num_injuries, 0) as injuries,
-        coalesce(inj_opp.num_injuries, 0) as opp_injuries,
+        coalesce(se.num_injuries, 0) as injuries,
+        coalesce(se_opp.num_injuries, 0) as opp_injuries,
+        coalesce(se.last_tournament_time, 0) as last_tournament_time,
+        coalesce(se_opp.last_tournament_time, 0) as opp_last_tournament_time,
+        coalesce(se.months_not_played, 0) as not_played,
+        coalesce(se_opp.months_not_played, 0) as opp_not_played,
+        coalesce(se.percent_itf, 0) as percent_itf,
+        coalesce(se_opp.percent_itf, 0) as opp_percent_itf,
+        coalesce(se.percent_challenger, 0) as percent_challenger,
+        coalesce(se_opp.percent_challenger, 0) as opp_percent_challenger,
+        coalesce(se.percent_majors, 0) as percent_majors,
+        coalesce(se_opp.percent_majors, 0) as opp_percent_majors,                                
+        coalesce(se.tournaments_per_year, 0) as tournaments_per_year,
+        coalesce(se_opp.tournaments_per_year, 0) as opp_tournaments_per_year,     
         coalesce(t.masters, 250) as tournament_rank,
         (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
         (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
@@ -332,13 +344,9 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.player_id,m.tournament,m.start_date)=(prior_tourney.player_id,prior_tourney.tournament,prior_tourney.start_date))
         left outer join atp_matches_prior_year_tournament_round as prior_tourney_opp
             on ((m.opponent_id,m.tournament,m.start_date)=(prior_tourney_opp.player_id,prior_tourney_opp.tournament,prior_tourney_opp.start_date)) 
-        left outer join atp_matches_prior_tiebreak_percentage as tb
-            on ((m.player_id,m.tournament,m.start_date)=(tb.player_id,tb.tournament,tb.start_date)) 
-        left outer join atp_matches_prior_tiebreak_percentage as tb_opp
-            on ((m.opponent_id,m.tournament,m.start_date)=(tb_opp.player_id,tb_opp.tournament,tb_opp.start_date)) 
-        left outer join atp_matches_prior_surface_experience as se 
+        left outer join atp_matches_prior_experience as se 
             on ((m.player_id,m.tournament,m.start_date)=(se.player_id,se.tournament,se.start_date))
-        left outer join atp_matches_prior_surface_experience as se_opp
+        left outer join atp_matches_prior_experience as se_opp
             on ((m.opponent_id,m.tournament,m.start_date)=(se_opp.player_id,se_opp.tournament,se_opp.start_date))
         left outer join atp_player_characteristics as pc
             on ((m.player_id,m.tournament,m.start_date)=(pc.player_id,pc.tournament,pc.start_date))
@@ -372,16 +380,12 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.player_id,m.start_date,m.tournament)=(qualifying.player_id,qualifying.start_date,qualifying.tournament))
         left outer join atp_matches_qualifying as qualifying_opp
             on ((m.opponent_id,m.start_date,m.tournament)=(qualifying_opp.player_id,qualifying_opp.start_date,qualifying_opp.tournament))
-        left outer join atp_matches_injuries as inj
-            on ((m.player_id,m.start_date,m.tournament)=(inj.player_id,inj.start_date,inj.tournament))
-        left outer join atp_matches_injuries as inj_opp
-            on ((m.opponent_id,m.start_date,m.tournament)=(inj_opp.player_id,inj_opp.start_date,inj_opp.tournament))
         left outer join atp_players_first_match as first_match
             on (m.player_id=first_match.player_id)
         left outer join atp_players_first_match as first_match_opp
             on (m.opponent_id=first_match_opp.player_id)
-        where m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
-    '''.replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
+        where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+    '''.replace('{{MASTERS_MIN}}', str(masters_min)).replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
     if not keep_nulls:
         sql_str = sql_str + '        and m.retirement is not null '
     sql = pd.read_sql(sql_str, conn)
@@ -390,10 +394,10 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
     return sql
 
 
-def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None):
+def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101):
     date = datetime.date(int(test_season[0:4])-num_test_years, int(test_season[5:7]), int(test_season[8:10])).strftime('%Y-%m-%d')
     data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False)
-    test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None)
+    test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None, masters_min=masters_min)
     if tournament is not None:
         #data = data[data.tournament==tournament]
         test_data = test_data[test_data.tournament==tournament]
@@ -410,6 +414,12 @@ input_attributes0 = [
     'prev_2year_win_percent',
     'prev_year_victory_closeness',
     'prev_year_loss_closeness',
+    'tournaments_per_year',
+    'percent_itf',
+    'percent_challenger',
+    'percent_majors',
+    'not_played',
+    'last_tournament_time',
 
     # prior quarter
     #'prior_quarter_encounters',
@@ -437,7 +447,7 @@ input_attributes0 = [
 
     # previous match
     'previous_games_total2',
-    #'had_qualifier',
+    'had_qualifier',
     #'wild_card',
     'seeded',
 ]
