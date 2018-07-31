@@ -59,7 +59,7 @@ for tournament in tournaments:
                                                     lambda j: test_data['y'].iloc[j],
                                                     lambda j: test_data['spread'].iloc[j],
                                                     lambda j: 0,
-                                                    tennis_model.decision_func(epsilon, bet_ml=True, bet_totals=False),
+                                                    tennis_model.decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=False),
                                                     test_data,
                                                     'max_price',
                                                     'price',

@@ -24,7 +24,7 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
     'Bovada': 'Set',
     'BetOnline': 'Game',
     '5Dimes': 'Game',
-    #'OddsPortal': 'Game'
+    'OddsPortal': 'Game'
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())
@@ -522,7 +522,9 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
     return predictions
 
 
-def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
+def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
+                  bet_on_challengers=False, bet_on_pros=True, bet_on_itf=False,
+                  bet_on_clay = False, bet_first_round=True):
     min_payout = 0.92
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
@@ -530,12 +532,6 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     priors_spread = abs_probabilities_per_surface
     priors_set_totals = abs_set_total_probabilities_per_surface
     priors_game_totals = abs_game_total_probabilities_per_surface
-
-    bet_on_challengers = False
-    bet_on_pros = True
-    bet_on_itf = False
-
-    bet_on_clay = False
 
     def check_player_for_spread(bet, opponent):
         if opponent in dont_bet_against_spread:
@@ -555,6 +551,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
                 (not bet_on_itf and bet_row['itf'] > 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 (not bet_on_clay and bet_row['clay'] > 0.5) or \
+                (not bet_first_round and bet_row['first_row']>0.5) or \
                 bet_row['prev_year_prior_encounters'] < 3:
             return {
                 'ml_bet1': 0,
@@ -655,7 +652,9 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True):
     return decision_func_helper
 
 
-def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
+def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
+                  bet_on_challengers=False, bet_on_pros=True, bet_on_itf=False,
+                  bet_on_clay = False, bet_first_round=True):
     def prediction_func_helper(avg_predictions, epsilon):
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
 
@@ -670,7 +669,9 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True):
                                                     lambda j: test_data['spread'].iloc[j],
                                                     lambda j: game_or_set_totals_func(j),
                                                     decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread,
-                                                                  bet_totals=bet_totals),
+                                                                  bet_totals=bet_totals, bet_on_challengers=bet_on_challengers,
+                                                                  bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
+                                                                  bet_on_clay=bet_on_clay, bet_first_round=bet_first_round),
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
@@ -689,8 +690,8 @@ start_year = '2012-01-01'
 
 model_names = {
     'All': 'Logistic',
-    '25': 'Logistic',
-    '100': 'Logistic',
+    #'25': 'Logistic',
+    #'100': 'Logistic',
     '500': 'Logistic',
     '1000': 'Logistic',
     '2000': 'Logistic',
@@ -710,6 +711,11 @@ if __name__ == '__main__':
     bet_spread = True
     bet_ml = True
     bet_totals = False
+    bet_on_challengers = True
+    bet_on_pros = False
+    bet_on_itf = False,
+    bet_on_clay = False
+    bet_first_round = True
     for i in range(num_tests):
         print("TEST: ", i)
         num_test_years = 0
