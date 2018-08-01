@@ -35,8 +35,8 @@ end_year = '2011-12-31'
 test_season = '2012-12-31'
 
 if __name__ == '__main__':
-    data = load_data(all_attributes, test_season=end_year, start_year=start_year, keep_nulls=False)
-    data_test = load_data(all_attributes, test_season=test_season, start_year=end_year, keep_nulls=False)
+    data = load_data(all_attributes, test_season=end_year, start_year=start_year, keep_nulls=False, masters_min=24)
+    data_test = load_data(all_attributes, test_season=test_season, start_year=end_year, keep_nulls=False, masters_min=24)
     #slam_data = data[data.grand_slam > 0.5]
     #data = data[data.grand_slam < 0.5]
     #slam_data_test = data_test[data_test.grand_slam > 0.5]

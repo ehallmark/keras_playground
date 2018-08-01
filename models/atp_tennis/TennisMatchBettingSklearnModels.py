@@ -192,9 +192,9 @@ def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model
                     y_hat_test = predict_proba(model, X_test)
                     predictions_test[key] = y_hat_test
 
-        c1 = 0.60
+        c1 = 0.70
         c2 = 0.20
-        c3 = 0.20
+        c3 = 0.10
         def lam(i, row, predictions):
             rank = row['tournament_rank']
             if rank >= 2000:
@@ -690,8 +690,8 @@ start_year = '2012-01-01'
 
 model_names = {
     'All': 'Logistic',
-    #'25': 'Logistic',
-    #'100': 'Logistic',
+    '25': 'Logistic',
+    '100': 'Logistic',
     '500': 'Logistic',
     '1000': 'Logistic',
     '2000': 'Logistic',
@@ -711,9 +711,9 @@ if __name__ == '__main__':
     bet_spread = True
     bet_ml = True
     bet_totals = False
-    bet_on_challengers = True
+    bet_on_challengers = False
     bet_on_pros = False
-    bet_on_itf = False,
+    bet_on_itf = True
     bet_on_clay = False
     bet_first_round = True
     for i in range(num_tests):
@@ -724,5 +724,5 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=models, spread_models=None, masters_min=101, num_test_months=num_test_months)
-                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
+                                            test_year=test_year, models=models, spread_models=None, masters_min=24, num_test_months=num_test_months)
+                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf, bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
