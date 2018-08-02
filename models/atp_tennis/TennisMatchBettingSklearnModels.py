@@ -712,7 +712,7 @@ if __name__ == '__main__':
     bet_ml = True
     bet_totals = False
     bet_on_challengers = False
-    bet_on_pros = False
+    bet_on_pros = True
     bet_on_itf = True
     bet_on_clay = False
     bet_first_round = True
@@ -724,5 +724,5 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=models, spread_models=None, masters_min=24, num_test_months=num_test_months)
+                                            test_year=test_year, models=models, spread_models=None, masters_min=111, num_test_months=num_test_months)
                 avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf, bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
