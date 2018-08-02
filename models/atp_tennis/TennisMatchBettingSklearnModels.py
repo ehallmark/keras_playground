@@ -112,10 +112,10 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(s.team1,s.team2,s.tournament,s.book_name,s.start_date)
+        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(s.team1,s.team2,s.tournament,s.book_id,s.start_date)
             and s.spread1=-s.spread2)
         left outer join atp_tennis_betting_link_totals as t
-        on ((m.team1,m.team2,m.tournament,m.book_name,m.start_date)=(t.team1,t.team2,t.tournament,t.book_name,t.start_date)
+        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(t.team1,t.team2,t.tournament,t.book_id,t.start_date)
             and t.over=t.under)
         left outer join atp_matches_money_line_average as ml_overall_avg
             on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
@@ -674,6 +674,8 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
+        if num_bets is None:
+            num_bets = 0
         if num_bets > 0:
             return_per_bet = to_percentage(test_return / (num_bets * 100))
         else:
