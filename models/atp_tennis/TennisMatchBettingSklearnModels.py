@@ -524,8 +524,7 @@ def predict(data, test_data, graph=False, train=True, prediction_function=None):
 
 def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
                   bet_on_challengers=False, bet_on_pros=True, bet_on_itf=False,
-                  bet_on_clay = False, bet_first_round=True):
-    min_payout = 0.92
+                  bet_on_clay = False, bet_first_round=True, min_payout=0.92):
     ml_func = bet_func(epsilon, bet_ml=bet_ml)
     spread_func = spread_bet_func(epsilon, bet_spread=bet_spread)
     totals_func = totals_bet_func(epsilon, bet_totals=bet_totals)
@@ -654,7 +653,7 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
 
 def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
                   bet_on_challengers=False, bet_on_pros=True, bet_on_itf=False,
-                  bet_on_clay = False, bet_first_round=True):
+                  bet_on_clay = False, bet_first_round=True, min_payout=0.92):
     def prediction_func_helper(avg_predictions, epsilon):
         _, _, _, avg_error = tennis_model.score_predictions(avg_predictions, test_data['spread'].iloc[:])
 
@@ -671,7 +670,7 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
                                                     decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread,
                                                                   bet_totals=bet_totals, bet_on_challengers=bet_on_challengers,
                                                                   bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
-                                                                  bet_on_clay=bet_on_clay, bet_first_round=bet_first_round),
+                                                                  bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, min_payout=min_payout),
                                                     test_data,
                                                     'max_price', 'price', 'totals_price', 1, sampling=0,
                                                     shuffle=True, verbose=False)
@@ -713,9 +712,16 @@ if __name__ == '__main__':
     bet_totals = False
     bet_on_challengers = False
     bet_on_pros = True
-    bet_on_itf = True
+    bet_on_itf = False
     bet_on_clay = False
     bet_first_round = True
+    min_payout = 0.92
+    if bet_on_itf:
+        masters = 0.24
+    elif bet_on_challengers:
+        masters = 99
+    else:
+        masters = 101
     for i in range(num_tests):
         print("TEST: ", i)
         num_test_years = 0
@@ -724,5 +730,5 @@ if __name__ == '__main__':
                 graph = False
                 all_predictions = []
                 data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, models=models, spread_models=None, masters_min=111, num_test_months=num_test_months)
-                avg_predictions = predict(data, test_data, prediction_function=prediction_func(bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf, bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
+                                            test_year=test_year, models=models, spread_models=None, masters_min=masters, num_test_months=num_test_months)
+                avg_predictions = predict(data, test_data, prediction_function=prediction_func(min_payout=min_payout, bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf, bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals), graph=False, train=True)
