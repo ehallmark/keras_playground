@@ -304,7 +304,7 @@ def bet_func(epsilon, bet_ml=True):
             epsilon_real = epsilon
         else:
             min_odds = 0.20
-            max_odds = 0.525
+            max_odds = 0.5
             epsilon_real = epsilon
 
         if odds < min_odds or odds > max_odds:
@@ -340,7 +340,7 @@ def totals_bet_func(epsilon, bet_totals=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.46 or odds > 0.540:
+        if odds < 0.40 or odds > 0.5:
             return 0
 
         double_down_below = 0  # 0.35
@@ -385,7 +385,8 @@ def spread_bet_func(epsilon, bet_spread=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.425 or odds > 0.525:
+        #if odds < 0.425 or odds > 0.525:
+        if odds < 0.40 or odds > 0.5:
             return 0
 
         double_down_below = 0  # 0.35

@@ -26,6 +26,21 @@ additional_attributes = [
     'grass',
     'tournament_rank',
     'round_num',
+    #'current_aces',
+    #'opp_current_aces',
+    #'current_double_faults',
+    #'opp_current_double_faults',
+    #'current_break_points_made',
+    #'opp_current_break_points_made',
+    #'current_return_points_won',
+    #'opp_current_return_points_won',
+    # 'current_return_points_attempted',
+    # 'opp_current_return_points_attempted',
+    #'current_first_serve_points_made',
+    #'opp_current_first_serve_points_made',
+    #'current_first_serve_points_attempted',
+    #'opp_current_first_serve_points_attempted',
+    #'year',
 ]
 
 for attr in additional_attributes:
@@ -44,13 +59,13 @@ for meta in meta_attributes:
 
 
 if __name__ == '__main__':
-    data = load_data(all_attributes, test_season='2012-01-01', start_year='1995-01-01', masters_min=111)
-    test_data = load_data(all_attributes, test_season='2012-12-31', start_year='2012-01-01', masters_min=111)
+    data = load_data(all_attributes, test_season='2016-01-01', start_year='1990-01-01', masters_min=99)
+    test_data = load_data(all_attributes, test_season='2017-12-31', start_year='2016-01-01', masters_min=99)
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
-    max_len = 32
-    samples = 10000
-    test_samples = 1000
+    max_len = 64
+    samples = 100000
+    test_samples = 15000
 
     all_players = list(set(data['player_id']))
     test_players = list(set(test_data['player_id']))
@@ -101,11 +116,11 @@ if __name__ == '__main__':
                 i = indices[0]
                 indices = indices[1:]
                 for j in range(l):
-                    if test:
-                        x_test[i, :, j] = np.array(sample.iloc[start_idx + j][input_attributes])
-                    else:
-                        x[i, :, j] = np.array(sample.iloc[start_idx + j][input_attributes])
                     last_idx = start_idx + j
+                    if test:
+                        x_test[i, :, j] = np.array(sample.iloc[last_idx][input_attributes])
+                    else:
+                        x[i, :, j] = np.array(sample.iloc[last_idx][input_attributes])
 
                 if test:
                     y_test.append(float(sample['y'].iloc[last_idx+1]))
@@ -122,10 +137,9 @@ if __name__ == '__main__':
     data = (x, y)
     test_data = (x_test, y_test)
 
-    hidden_units = 128
-    num_cells = 2
+    hidden_units = 256
+    num_cells = 1
     batch_size = 128
-    dropout = 0.25
     load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
@@ -139,7 +153,7 @@ if __name__ == '__main__':
 
         model = Dense(1, activation='sigmoid')(model)
         model = Model(inputs=X1, outputs=model)
-        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
     model_file = 'tennis_match_rnn.h5'
     prev_error = None
