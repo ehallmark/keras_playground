@@ -62,30 +62,32 @@ for meta in meta_attributes:
 if __name__ == '__main__':
     test_date = datetime.date(2016, 1, 1)
     end_date = datetime.date(2017, 1, 1)
-    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=99)
+    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=101)
 
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
 
     max_len = 64
-    samples = 100000
-    test_samples = 15000
+    samples = 10000
+    test_samples = 1000
 
     all_players = list(set(data['player_id']))
 
     data.sort_values(by=['player_id', 'start_date', 'tournament', 'round_num'],
                      inplace=True, ascending=True, kind='mergesort')
 
-    data.set_index(['player_id'], inplace=True)
     all_matches = data[['player_id', 'opponent_id', 'tournament', 'start_date']].iloc[:]
+
+    data.set_index(['player_id'], inplace=True)
+
     data_grouped = data.groupby(by=['player_id'], sort=True)
 
     x = np.zeros((samples, len(input_attributes), max_len))
     x2 = np.zeros((samples, len(input_attributes), max_len))
     x_test = np.zeros((test_samples, len(input_attributes), max_len))
     x2_test = np.zeros((test_samples, len(input_attributes), max_len))
-    y = []
-    y_test = []
+    y = np.zeros((samples,))
+    y_test = np.zeros((test_samples,))
     cnt = 0
     indices = list(range(samples))
     test_indices = list(range(test_samples))
@@ -95,14 +97,12 @@ if __name__ == '__main__':
         sample = None
         while sample is None or sample.shape[0] < 2:
             match_row = all_matches.iloc[np.random.randint(0,all_matches.shape[0])]
-            player = all_matches['player_id']
+            player = match_row['player_id']
             sample = data_grouped.get_group(player)
 
         n = max(1,sample.shape[0]-1-max_len)
         for rowIdx in range(n):
             rowIdx = n - 1 - rowIdx
-            if len(indices)==0:
-                break
             if cnt % 1000 == 999:
                 print('Sample', cnt, 'out of', samples)
             cnt = cnt + 1
@@ -114,36 +114,49 @@ if __name__ == '__main__':
             test = row['start_date'] >= test_date
             if test:
                 if len(test_indices)==0:
-                    break
+                    continue
                 i = test_indices.pop()
             else:
+                if len(indices) == 0:
+                    continue
                 i = indices.pop()
 
             for j in range(max_len):
                 last_idx = rowIdx - j
                 opp_index = opp_sample.shape[0]-1-j
                 if test:
-                    x_test[i, :, max_len - 1 - j] = np.array(sample.iloc[last_idx][input_attributes])
-                    x2_test[i, :, max_len - 1 - j] = np.array(opp_sample.iloc[opp_index][input_attributes])
+                    if last_idx >= 0:
+                        x_test[i, :, max_len - 1 - j] = np.array(sample.iloc[last_idx][input_attributes])
+                    else:
+                        x_test[i, :, max_len - 1 - j] = np.array([0.0] * len(input_attributes))
+
+                    if opp_index >= 0:
+                        x2_test[i, :, max_len - 1 - j] = np.array(opp_sample.iloc[opp_index][input_attributes])
+                    else:
+                        x2_test[i, :, max_len - 1 - j] = np.array([0.0] * len(input_attributes))
                 else:
-                    x[i, :, max_len - 1 - j] = np.array(sample.iloc[last_idx][input_attributes])
-                    x2[i, :, max_len - 1 - j] = np.array(opp_sample.iloc[opp_index][input_attributes])
+                    if last_idx >= 0:
+                        x[i, :, max_len - 1 - j] = np.array(sample.iloc[last_idx][input_attributes])
+                    else:
+                        x[i, :, max_len - 1 - j] = np.array([0.0] * len(input_attributes))
+
+                    if opp_index >= 0:
+                        x2[i, :, max_len - 1 - j] = np.array(opp_sample.iloc[opp_index][input_attributes])
+                    else:
+                        x2[i, :, max_len - 1 - j] = np.array([0.0] * len(input_attributes))
 
             if test:
-                y_test.append(float(sample['y'].iloc[rowIdx+1]))
+                y_test[i] = float(sample['y'].iloc[rowIdx+1])
             else:
-                y.append(float(sample['y'].iloc[rowIdx+1]))
-
-    y = np.array(y)
-    y_test = np.array(y_test)
+                y[i] = float(sample['y'].iloc[rowIdx+1])
 
     # data = data[data.clay<0.5]
     # test_data = test_data[test_data.clay<0.5]
     X1 = Input((len(input_attributes), max_len))
     X2 = Input((len(input_attributes), max_len))
 
-    data = ((x, x2), y)
-    test_data = ((x_test, x2_test), y_test)
+    data = ([x, x2], y)
+    test_data = ([x_test, x2_test], y_test)
 
     hidden_units = 256
     num_cells = 1
