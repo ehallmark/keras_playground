@@ -100,8 +100,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             case when coalesce(m_opp.seed,'')='WC' then 1.0 else 0.0 end as opp_wild_card,
             case when coalesce(m_opp.seed,'')='PR' then 1.0 else 0.0 end as opp_protected_ranking,
             case when coalesce(m_opp.seed,'asdgas') ~ '^[0-9]+$' and m_opp.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as opp_seeded,
-            case when coalesce(nation.nationality, pc.country) is null then 0.0 else coalesce(nation.nationality,pc.country)=t.location then 1.0 else 0.0 end end as local_player,
-            case when coalesce(nation_opp.nationality,pc_opp.country) is null then 0.0 else coalesce(nation_opp.nationality,pc_opp.country)=t.location then 1.0 else 0.0 end end as opp_local_player,
+            case when coalesce(nation.nationality, pc.country) is null then 0.0 else case when coalesce(nation.nationality,pc.country)=t.location then 1.0 else 0.0 end end as local_player,
+            case when coalesce(nation_opp.nationality,pc_opp.country) is null then 0.0 else case when coalesce(nation_opp.nationality,pc_opp.country)=t.location then 1.0 else 0.0 end end as opp_local_player,
             coalesce(majors.prior_encounters,0) as major_encounters,
             coalesce(opp_majors.prior_encounters, 0) as opp_major_encounters,
             coalesce(majors.prior_victories,0) as major_victories,
@@ -513,7 +513,7 @@ input_attributes0 = [
     #'wild_card',
     'seeded',
 
-    #'local_player'
+    'local_player'
 ]
 
 # opponent attrs
