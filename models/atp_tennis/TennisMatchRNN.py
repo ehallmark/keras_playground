@@ -62,14 +62,14 @@ for meta in meta_attributes:
 if __name__ == '__main__':
     test_date = datetime.date(2016, 1, 1)
     end_date = datetime.date(2017, 1, 1)
-    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=101)
+    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=99)
 
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
 
-    max_len = 64
-    samples = 10000
-    test_samples = 1000
+    max_len = 32
+    samples = 2000
+    test_samples = 200
 
     all_players = list(set(data['player_id']))
 
@@ -96,18 +96,17 @@ if __name__ == '__main__':
     while len(indices) > 0:
         sample = None
         while sample is None or sample.shape[0] < 2:
-            match_row = all_matches.iloc[np.random.randint(0,all_matches.shape[0])]
-            player = match_row['player_id']
+            player = all_players[np.random.randint(0,len(all_players))]
             sample = data_grouped.get_group(player)
-
         n = max(1,sample.shape[0]-1-max_len)
         for rowIdx in range(n):
             rowIdx = n - 1 - rowIdx
+            yIdx = rowIdx + 1
             if cnt % 1000 == 999:
                 print('Sample', cnt, 'out of', samples)
             cnt = cnt + 1
             last_idx = 0
-            row = sample.iloc[rowIdx]
+            row = sample.iloc[yIdx]
             opponent = row['opponent_id']
             opp_sample = data_grouped.get_group(opponent)
             opp_sample = opp_sample[((opp_sample.start_date<row['start_date'])|((opp_sample.start_date==row['start_date'])&(opp_sample.tournament==row['tournament'])&(opp_sample.round_num<row['round_num'])))]
@@ -146,9 +145,9 @@ if __name__ == '__main__':
                         x2[i, :, max_len - 1 - j] = np.array([0.0] * len(input_attributes))
 
             if test:
-                y_test[i] = float(sample['y'].iloc[rowIdx+1])
+                y_test[i] = float(sample['y'].iloc[yIdx])
             else:
-                y[i] = float(sample['y'].iloc[rowIdx+1])
+                y[i] = float(sample['y'].iloc[yIdx])
 
     # data = data[data.clay<0.5]
     # test_data = test_data[test_data.clay<0.5]
@@ -159,22 +158,34 @@ if __name__ == '__main__':
     test_data = ([x_test, x2_test], y_test)
 
     hidden_units = 256
-    num_cells = 1
+    num_rnn_cells = 1
+    num_ff_cells = 1
     batch_size = 128
+    dropout = 0.25
     load_previous = False
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
         model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
     else:
         norm = BatchNormalization()
-        model = Concatenate(axis=1)([norm(X1), norm(X2)])
-
-        for i in range(num_cells):
-            model = LSTM(hidden_units, return_sequences=i != num_cells-1)(model)
-
+        model1 = norm(X1)
+        model2 = norm(X2)
+        for i in range(num_rnn_cells):
+            lstm = LSTM(hidden_units, return_sequences=i != num_rnn_cells-1)
+            model1 = lstm(model1)
+            model2 = lstm(model2)
+            if dropout > 0:
+                dropout_layer = Dropout(dropout)
+                model1 = dropout_layer(model1)
+                model2 = dropout_layer(model2)
+        model = Concatenate()([model1, model2])
+        for l in range(num_ff_cells):
+            model = Dense(hidden_units*2, activation='tanh')(model)
+        if dropout > 0:
+            dropout = Dropout(dropout)(model)
         model = Dense(1, activation='sigmoid')(model)
         model = Model(inputs=[X1, X2], outputs=model)
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
     model_file = 'tennis_match_rnn.h5'
     prev_error = None
