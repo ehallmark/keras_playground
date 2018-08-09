@@ -18,31 +18,52 @@ def test_model(model, x, y):
 
 
 # previous year quality
-input_attributes = list(tennis_model.input_attributes0)
+input_attributes = [] #list(tennis_model.input_attributes0)
 
 additional_attributes = [
     'y',
-    'spread',
+    'totals_percent',
+    'spread_percent',
     'clay',
     'grass',
-    'tournament_rank',
-    'round_num',
-    #'current_aces',
-    #'opp_current_aces',
-    #'current_double_faults',
-    #'opp_current_double_faults',
-    #'current_break_points_made',
-    #'opp_current_break_points_made',
-    #'current_return_points_won',
-    #'opp_current_return_points_won',
-    # 'current_return_points_attempted',
-    # 'opp_current_return_points_attempted',
-    #'current_first_serve_points_made',
-    #'opp_current_first_serve_points_made',
-    #'current_first_serve_points_attempted',
-    #'opp_current_first_serve_points_attempted',
-    #'year',
+    'tournament_rank_percent',
+    'round_num_percent',
+    'seeded',
+    'opp_seeded',
+    'had_qualifier',
+    'opp_had_qualifier',
+    'local_player',
+    'opp_local_player',
+    'last_tournament_time',
+    'opp_last_tournament_time',
 ]
+
+match_day_attributes = [
+    'clay',
+    'grass',
+    'tournament_rank_percent',
+    'round_num_percent',
+    'seeded',
+    'opp_seeded',
+    'had_qualifier',
+    'opp_had_qualifier',
+    'local_player',
+    'opp_local_player',
+    'last_tournament_time',
+    'opp_last_tournament_time',
+    'tiebreak_win_percent',
+    'opp_tiebreak_win_percent',
+    'played_doubles',
+    'opp_played_doubles',
+    'not_played',
+    'opp_not_played',
+    'surface_experience',
+    'opp_surface_experience',
+    'h2h_prior_win_percent',
+    'prev_2year_avg_round',
+    'opp_prev_2year_avg_round',
+]
+
 
 for attr in additional_attributes:
     input_attributes.append(attr)
@@ -58,20 +79,25 @@ for meta in meta_attributes:
     if meta not in all_attributes:
         all_attributes.append(meta)
 
+for attr in match_day_attributes:
+    if attr not in all_attributes:
+        all_attributes.append(attr)
+
 
 if __name__ == '__main__':
-    test_date = datetime.date(2016, 1, 1)
+    test_date = datetime.date(2015, 1, 1)
     end_date = datetime.date(2017, 1, 1)
-    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=99)
+    min_train_date = datetime.date(1995, 1, 1)
+    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1990-01-01', masters_min=24)
 
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
 
-    max_len = 32
-    samples = 2000
-    test_samples = 200
+    max_len = 128
+    samples = 1000000
+    test_samples = 50000
 
-    all_players = list(set(data['player_id']))
+    all_players = list(set((data[data.start_date > min_train_date])['player_id']))
 
     data.sort_values(by=['player_id', 'start_date', 'tournament', 'round_num'],
                      inplace=True, ascending=True, kind='mergesort')
@@ -86,6 +112,8 @@ if __name__ == '__main__':
     x2 = np.zeros((samples, len(input_attributes), max_len))
     x_test = np.zeros((test_samples, len(input_attributes), max_len))
     x2_test = np.zeros((test_samples, len(input_attributes), max_len))
+    x3 = np.zeros((samples, len(match_day_attributes)))
+    x3_test = np.zeros((test_samples, len(match_day_attributes)))
     y = np.zeros((samples,))
     y_test = np.zeros((test_samples,))
     cnt = 0
@@ -98,8 +126,9 @@ if __name__ == '__main__':
         while sample is None or sample.shape[0] < 2:
             player = all_players[np.random.randint(0,len(all_players))]
             sample = data_grouped.get_group(player)
-        n = max(1,sample.shape[0]-1-max_len)
-        for rowIdx in range(n):
+        start = sample[sample.start_date>min_train_date].shape[0]
+        n = max(0,sample.shape[0]-1-max_len)
+        for rowIdx in range(start, n):
             rowIdx = n - 1 - rowIdx
             yIdx = rowIdx + 1
             if cnt % 1000 == 999:
@@ -109,10 +138,13 @@ if __name__ == '__main__':
             row = sample.iloc[yIdx]
             opponent = row['opponent_id']
             opp_sample = data_grouped.get_group(opponent)
-            opp_sample = opp_sample[((opp_sample.start_date<row['start_date'])|((opp_sample.start_date==row['start_date'])&(opp_sample.tournament==row['tournament'])&(opp_sample.round_num<row['round_num'])))]
+            opp_sample = opp_sample[((opp_sample.start_date < row['start_date']) |
+                                     ((opp_sample.start_date == row['start_date']) &
+                                      (opp_sample.tournament == row['tournament']) &
+                                      (opp_sample.round_num<row['round_num'])))]
             test = row['start_date'] >= test_date
             if test:
-                if len(test_indices)==0:
+                if len(test_indices) == 0:
                     continue
                 i = test_indices.pop()
             else:
@@ -146,30 +178,40 @@ if __name__ == '__main__':
 
             if test:
                 y_test[i] = float(sample['y'].iloc[yIdx])
+                x3_test[i, :] = np.array(sample.iloc[yIdx][match_day_attributes])
             else:
                 y[i] = float(sample['y'].iloc[yIdx])
+                x3[i, :] = np.array(sample.iloc[yIdx][match_day_attributes])
 
     # data = data[data.clay<0.5]
     # test_data = test_data[test_data.clay<0.5]
     X1 = Input((len(input_attributes), max_len))
     X2 = Input((len(input_attributes), max_len))
+    X3 = Input((len(match_day_attributes),))
 
-    data = ([x, x2], y)
-    test_data = ([x_test, x2_test], y_test)
+    data = ([x, x2, x3], y)
+    test_data = ([x_test, x2_test, x3_test], y_test)
 
-    hidden_units = 256
-    num_rnn_cells = 1
-    num_ff_cells = 1
+    hidden_units = 128
+    num_rnn_cells = 2
+    num_ff_cells = 4
     batch_size = 128
-    dropout = 0.25
+    dropout = 0
     load_previous = False
+    use_batch_norm = False
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
         model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
     else:
-        norm = BatchNormalization()
-        model1 = norm(X1)
-        model2 = norm(X2)
+        if use_batch_norm:
+            norm = BatchNormalization()
+            model1 = norm(X1)
+            model2 = norm(X2)
+            model3 = BatchNormalization()(X3)
+        else:
+            model1 = X1
+            model2 = X2
+            model3 = X3
         for i in range(num_rnn_cells):
             lstm = LSTM(hidden_units, return_sequences=i != num_rnn_cells-1)
             model1 = lstm(model1)
@@ -178,14 +220,15 @@ if __name__ == '__main__':
                 dropout_layer = Dropout(dropout)
                 model1 = dropout_layer(model1)
                 model2 = dropout_layer(model2)
-        model = Concatenate()([model1, model2])
+        model = Concatenate()([model1, model2, model3])
         for l in range(num_ff_cells):
             model = Dense(hidden_units*2, activation='tanh')(model)
+            model = BatchNormalization()(model)
         if dropout > 0:
             dropout = Dropout(dropout)(model)
         model = Dense(1, activation='sigmoid')(model)
-        model = Model(inputs=[X1, X2], outputs=model)
-        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model = Model(inputs=[X1, X2, X3], outputs=model)
+        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
 
     model_file = 'tennis_match_rnn.h5'
     prev_error = None

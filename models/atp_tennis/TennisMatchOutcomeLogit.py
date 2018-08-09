@@ -58,7 +58,9 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
     sql_str = '''
         select 
             (m.games_won+m.games_against)::double precision as totals,
+            (m.games_won+m.games_against)::double precision/18.0 as totals_percent,
             (m.games_won-m.games_against)::double precision as spread,
+            (m.games_won-m.games_against)::double precision/6.0 as spread_percent,
             case when m.player_victory is null then null else case when m.player_victory then 1.0 else 0.0 end end as y, 
             case when m.court_surface = 'Clay' then 1.0 else 0.0 end as clay,
             case when m.court_surface = 'Grass' then 1.0 else 0.0 end as grass,
@@ -83,6 +85,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             m.year as year,
             m.start_date as start_date,
             r.round as round_num,
+            r.round::float/7.0 as round_num_percent,
             m.player_id as player_id,
             m.opponent_id as opponent_id,
             m.tournament as tournament,
@@ -146,7 +149,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(opp_matches_250.prior_encounters, 0) as opp_encounters_250,
             coalesce(matches_250.prior_victories,0) as victories_250,
             coalesce(opp_matches_250.prior_victories, 0) as opp_victories_250,
-            coalesce(matches_250.avg_round,0) as master_avg_round_250,
+            coalesce(matches_250.avg_round,0) as avg_round_250,
             coalesce(opp_matches_250.avg_round, 0) as opp_avg_round_250,
             coalesce(matches_250.avg_games_per_set,0) as games_per_set_250,
             coalesce(opp_matches_250.avg_games_per_set, 0) as opp_games_per_set_250,
@@ -170,6 +173,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(prev_year_opp.loss_closeness,0) as opp_prev_year_loss_closeness,
             coalesce(prev_year.match_recovery::float/greatest(prev_year.prior_encounters,1),0) as prior_year_match_recovery,
             coalesce(prev_year_opp.match_recovery::float/greatest(prev_year_opp.prior_encounters,1),0) as opp_prior_year_match_recovery,
+            coalesce(prev_quarter.match_recovery::float/greatest(prev_year.prior_encounters,1),0) as prior_quarter_match_recovery,
+            coalesce(prev_quarter_opp.match_recovery::float/greatest(prev_year_opp.prior_encounters,1),0) as opp_prior_quarter_match_recovery,
             coalesce(prev_year.match_collapse,0) as prior_year_match_collapse,
             coalesce(prev_year_opp.match_collapse,0) as opp_prior_year_match_collapse,
             coalesce(prev_2year.avg_match_closeness,0) as prior_2year_match_closeness,
@@ -295,14 +300,14 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
         coalesce(se.num_injuries, 0) as injuries,
         coalesce(se_opp.num_injuries, 0) as opp_injuries,
-        coalesce(se.last_tournament_time, 365.25*4) as last_tournament_time,
-        coalesce(se_opp.last_tournament_time, 365.25*4) as opp_last_tournament_time,
-        coalesce(se.last_itf_tournament_time, 365.25*4) as last_itf_tournament_time,
-        coalesce(se_opp.last_itf_tournament_time, 365.25*4) as opp_last_itf_tournament_time,
-        coalesce(se.last_challenger_tournament_time, 365.25*4) as last_challenger_tournament_time,
-        coalesce(se_opp.last_challenger_tournament_time, 365.25*4) as opp_last_challenger_tournament_time,
-        coalesce(se.last_atp_tournament_time, 365.25*4) as last_atp_tournament_time,
-        coalesce(se_opp.last_atp_tournament_time, 365.25*4) as opp_last_atp_tournament_time,
+        coalesce(se.last_tournament_time, 365.25*4)::float/(365.25*4) as last_tournament_time,
+        coalesce(se_opp.last_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_tournament_time,
+        coalesce(se.last_itf_tournament_time, 365.25*4)::float/(365.25*4) as last_itf_tournament_time,
+        coalesce(se_opp.last_itf_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_itf_tournament_time,
+        coalesce(se.last_challenger_tournament_time, 365.25*4)::float/(365.25*4) as last_challenger_tournament_time,
+        coalesce(se_opp.last_challenger_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_challenger_tournament_time,
+        coalesce(se.last_atp_tournament_time, 365.25*4)::float/(365.25*4) as last_atp_tournament_time,
+        coalesce(se_opp.last_atp_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_atp_tournament_time,
         coalesce(se.months_not_played, 0) as not_played,
         coalesce(se_opp.months_not_played, 0) as opp_not_played,
         coalesce(se.percent_itf, 0) as percent_itf,
@@ -314,6 +319,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
         coalesce(se.tournaments_per_year, 0) as tournaments_per_year,
         coalesce(se_opp.tournaments_per_year, 0) as opp_tournaments_per_year,     
         coalesce(t.masters, 250) as tournament_rank,
+        coalesce(t.masters, 250)::double precision/2000 as tournament_rank_percent,
         (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
         (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
         case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
@@ -466,11 +472,7 @@ def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, sta
 input_attributes0 = [
     'h2h_prior_win_percent',
     'tourney_hist_avg_round',
-    'prev_2year_avg_round',
-    'prior_2year_match_recovery',
-    'prev_2year_win_percent',
-    'prev_year_victory_closeness',
-    'prev_year_loss_closeness',
+
     'tournaments_per_year',
     'percent_itf',
     'percent_challenger',
@@ -479,9 +481,29 @@ input_attributes0 = [
     #'last_tournament_time',
 
     # prior quarter
-    #'prior_quarter_encounters',
     'prior_quarter_victories',
     'prior_quarter_losses',
+    'prior_quarter_avg_round',
+    'prior_quarter_match_recovery',
+    'prior_quarter_win_percent',
+    #'prior_quarter_victory_closeness',
+    #'prior_quarter_loss_closeness',
+
+    # prior year
+    'prev_year_prior_victories',
+    'prev_year_prior_losses',
+    'prev_year_avg_round',
+    'prior_year_match_recovery',
+    'prev_year_victory_closeness',
+    'prev_year_loss_closeness',
+
+    # prior 2 years
+    'prior_2year_victories',
+    'prior_2year_losses',
+    'prev_2year_avg_round',
+    'prior_2year_match_recovery',
+    #'prev_2year_victory_closeness',
+    #'prev_2year_loss_closeness',
 
     # player qualities
     'elo_score_weighted',
@@ -495,25 +517,44 @@ input_attributes0 = [
     'last_challenger_tournament_time',
     'last_atp_tournament_time',
 
-    # match stats
+    # majors
+    'major_victories',
     'major_encounters',
-    'master_encounters',
-    'encounters_250',
-    'challenger_encounters',
-    'itf_encounters',
-    'tiebreak_win_percent',
-    #'mean_faults',
-    #'mean_aces',
-    #'mean_service_points_won',
-    #'mean_return_points_made',
+    'major_games_per_set',
+    'major_avg_round',
 
-    # previous match
+    # masters
+    'master_victories',
+    'master_encounters',
+    'master_games_per_set',
+    'master_avg_round',
+
+    # 250 level
+    'encounters_250',
+    'victories_250',
+    'games_per_set_250',
+    'avg_round_250',
+
+    # challenger
+    'challenger_encounters',
+    'challenger_victories',
+    'challenger_games_per_set',
+    'challenger_avg_round',
+
+    # itf
+    'itf_encounters',
+    'itf_victories',
+    'itf_games_per_set',
+    'itf_avg_round',
+
+    'tiebreak_win_percent',
+
+    # current tournament
     'previous_games_total2',
     'had_qualifier',
-    #'wild_card',
     'seeded',
-
-    'local_player'
+    'local_player',
+    # 'wild_card',
 ]
 
 # opponent attrs
