@@ -96,9 +96,9 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         s.price2 as price2,
         s.spread1 as spread1,
         s.spread2 as spread2,
-        s.odds1 as odds1,
-        s.odds2 as odds2,
-        (s.odds1+(1.0-s.odds2))/2.0 as spread_odds_avg,        
+        coalesce(s.odds1,0.5) as odds1,
+        coalesce(s.odds2,0.5) as odds2,
+        coalesce( (s.odds1+(1.0-s.odds2))/2.0, 0.5) as spread_odds_avg,        
         coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
         m.odds1 as ml_odds1,
         m.odds2 as ml_odds2,   
@@ -112,7 +112,8 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(s.team1,s.team2,s.tournament,s.book_id,s.start_date)
+        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date)
+            and (s.book_id=m.book_id or (s.book_id < 0 and m.book_id < 0))
             and s.spread1=-s.spread2)
         left outer join atp_tennis_betting_link_totals as t
         on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(t.team1,t.team2,t.tournament,t.book_id,t.start_date)
@@ -127,9 +128,9 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         s.price1 as price2,
         s.spread2 as spread1,
         s.spread1 as spread2,
-        s.odds2 as odds1,
-        s.odds1 as odds2,
-        (s.odds2+(1.0-s.odds1))/2.0 as spread_odds_avg,        
+        coalesce(s.odds2, 0.5) as odds1,
+        coalesce(s.odds1, 0.5) as odds2,
+        coalesce( (s.odds2+(1.0-s.odds1))/2.0, 0.5) as spread_odds_avg,        
         coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
         m.odds2 as ml_odds1,   
         m.odds1 as ml_odds2,
@@ -143,7 +144,8 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         1.0 - ml_overall_avg.avg_odds as overall_odds_avg  
         from atp_tennis_betting_link as m 
         left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(s.team1,s.team2,s.tournament,s.book_id,s.start_date)
+        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date)
+            and (s.book_id=m.book_id or (s.book_id < 0 and m.book_id < 0))
             and s.spread1=-s.spread2)
         left outer join atp_tennis_betting_link_totals as t
         on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(t.team1,t.team2,t.tournament,t.book_id,t.start_date)
@@ -162,7 +164,7 @@ def extract_beat_spread_binary(spreads, spread_actuals):
         spread = spreads[i]
         spread_actual = spread_actuals[i]
         if np.isnan(spread_actual) or np.isnan(spread):
-            r = np.nan
+            r = 0.
         else:
             if spread >= 0:
                 if spread == -spread_actual:
@@ -296,6 +298,14 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     )
     data = data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=data['spread1'].iloc[:], spread_actuals=data['spread'].iloc[:])).values)
     test_data = test_data.assign(beat_spread=pd.Series(extract_beat_spread_binary(spreads=test_data['spread1'].iloc[:], spread_actuals=test_data['spread'].iloc[:])).values)
+    def mask_func(x):
+        if np.isnan(x):
+            return 0.
+        else:
+            return 1.
+
+    data = data.assign(spread_mask=pd.Series([mask_func(x) for x in data['spread1'].iloc[:]]).values)
+    test_data = test_data.assign(spread_mask=pd.Series([mask_func(x) for x in test_data['spread1'].iloc[:]]).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)

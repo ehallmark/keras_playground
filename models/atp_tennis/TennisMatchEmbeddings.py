@@ -14,81 +14,54 @@ import datetime
 np.random.seed(23952)
 
 
-def bet_loss(epsilon=0):
-    def helper(y, y_bin):
-        y_bin = K.flatten(y_bin)
-        y_odds = K.flatten(y[:, 1])
-        y = K.flatten(y[:, 0])
-        y_correct = y_bin * y
-        y_wrong = y_bin * (1.0 - y)
-        y_correct = y_correct / (y_correct + K.epsilon())
-        y_wrong = y_wrong / (y_wrong + K.epsilon())
-        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
-        print('Profit', profit)
-        return - K.mean(profit, axis=-1)
-    return helper
-
-
-def bet_loss2(epsilon=0):
-    def helper(y, y_bin):
-        y_bin = K.flatten(y_bin)
-        y_odds = K.flatten(y[:, 1])
-        y = K.flatten(y[:, 0])
-        y_correct = y_bin * y
-        y_wrong = y_bin * (1.0 - y)
-        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
-        print('Profit', profit)
-        return - K.mean(profit, axis=-1)
-    return helper
-
-
-def bet_loss3(epsilon=0):
-    def helper(y, y_bin):
-        y_bin = K.flatten(y_bin)
-        y_odds = K.flatten(y[:, 1])
-        y_bin = K.maximum(y_bin - 0.5, 0.)
-        y = K.flatten(y[:, 0])
-        y_correct = y_bin * y
-        y_wrong = y_bin * (1.0 - y)
-        y_correct = y_correct / (y_correct + K.epsilon())
-        y_wrong = y_wrong / (y_wrong + K.epsilon())
-        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
-        print('Profit', profit)
-        return - K.mean(profit, axis=-1)
-    return helper
-
-
-def bet_loss4(epsilon=0):
-    def helper(y, y_bin):
-        y_bet = K.flatten(y_bin[:, 1])
-        y_bin = K.flatten(y_bin[:, 0])
-        y_odds = K.flatten(y[:, 1])
-        y = K.flatten(y[:, 0])
-        # y_bin = np.maximum(y_bin - y_odds, 0.)
-        # y_bin = y_bin / (y_bin + 1e-08)
-        y_correct = y_bin * y
-        y_wrong = y_bin * (1.0 - y)
-        profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
-        invested = y_bet * y_bin
-        print('Profit', profit)
-        return - K.sum(profit, axis=-1) / (K.sum(invested, axis=-1) + K.epsilon())
-    return helper
-
-
-def test_model(model, x, y, epsilon=0):
-    y_bin = model.predict(x)
-    y_bet = np.maximum(y_bin[:, 1].flatten(), 0.)
-    y_bin = y_bin[:, 0].flatten()
-    y_odds = y[:, 1].flatten()
-    y = y[:, 0].flatten()
-    #y_bin = np.maximum(y_bin - y_odds, 0.)
-    #y_bin = y_bin / (y_bin + 1e-08)
+def bet_loss4(y, y_bin):
+    y_bet = K.maximum(K.flatten(y_bin[:, 1]), 0.)
+    y_bin = K.flatten(y_bin[:, 0])
+    y_odds = K.flatten(y[:, 1])
+    y = K.flatten(y[:, 0])
     y_correct = y_bin * y
     y_wrong = y_bin * (1.0 - y)
     profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
     invested = y_bet * y_bin
     print('Profit', profit)
-    return - np.sum(profit, axis=-1) / (np.sum(invested, axis=-1) + 1e-08)
+    return - K.sum(profit, axis=-1) / (K.sum(invested, axis=-1) + K.epsilon())
+
+
+def bet_loss4_masked(y, y_bin):
+    y_bet = K.maximum(K.flatten(y_bin[:, 1]), 0.)
+    y_mask = K.flatten(y[:, 2])   # mask
+    y_bin = K.flatten(y_bin[:, 0]) * y_mask
+    y_odds = K.flatten(y[:, 1])
+    y = K.flatten(y[:, 0])
+    y_correct = y_bin * y
+    y_wrong = y_bin * (1.0 - y)
+    profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
+    invested = y_bet * y_bin
+    print('Profit', profit)
+    return - K.sum(profit, axis=-1) / (K.sum(invested, axis=-1) + K.epsilon())
+
+
+def test_model(model, x, y_list):
+    y_pred = model.predict(x)
+    losses = []
+    for i in range(len(y_pred)):
+        y_bin = y_pred[i].astype(dtype=np.float32)
+        y = y_list[i].astype(dtype=np.float32)
+        y_bet = np.maximum(y_bin[:, 1].flatten(), 0.).astype(dtype=np.float32)
+        y_bin = y_bin[:, 0].flatten().astype(dtype=np.float32)
+        if y.shape[1] == 3:
+            y_mask = y[:, 2].flatten().astype(dtype=np.float32)
+            y_bin = y_bin * y_mask
+        y_odds = y[:, 1].flatten().astype(dtype=np.float32)
+        y = y[:, 0].flatten().astype(dtype=np.float32)
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y).astype(dtype=np.float32)
+        profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
+        invested = y_bet * y_bin
+        print('Profit', profit)
+        loss = - np.sum(profit.astype(dtype=np.float32), axis=-1).astype(dtype=np.float32) / (np.sum(invested.astype(dtype=np.float32), axis=-1) + K.epsilon()).astype(dtype=np.float32)
+        losses.append(loss)
+    return sum(losses)
 
 
 # previous year quality
@@ -111,6 +84,10 @@ betting_attributes = [
     'fave_wins',
     'opp_fave_wins',
     'overall_odds_avg',
+    'ml_odds1',
+    'spread1',
+    'odds1',
+    'odds2',
 ]
 
 
@@ -133,6 +110,9 @@ for attr in betting_attributes:
         input_attributes.append(attr)
 
 if __name__ == '__main__':
+    K.set_epsilon(10e-8)
+    #K.set_floatx('float64')
+
     num_test_years = 1
     test_date = datetime.date(2017, 1, 1)
     end_date = datetime.date(test_date.year+num_test_years, 1, 1)
@@ -147,12 +127,16 @@ if __name__ == '__main__':
     # test_samples = data[data.start_date>=test_date].shape[0]
     # samples = data.shape[0] - test_samples
 
+    # avoid null exceptions
+    data['spread1'].fillna(0., inplace=True)
+    test_data['spread1'].fillna(0., inplace=True)
+
     x = np.array(data[input_attributes])  # np.zeros((samples, len(input_attributes)))
     x_test = np.array(test_data[input_attributes])  # np.zeros((test_samples, len(input_attributes)))
-    y = np.array(data[['y', 'ml_odds1']])  # np.zeros((samples,))
-    y_test = np.array(test_data[['y', 'ml_odds1']])  # np.zeros((test_samples,))
-    spread = np.array(data[['beat_spread', 'odds1']])
-    spread_test = np.array(test_data[['beat_spread', 'odds1']])
+    y = np.hstack([np.array(data[['y', 'ml_odds1']]), np.ones((data.shape[0], 1))])  # np.zeros((samples,))
+    y_test = np.hstack([np.array(test_data[['y', 'ml_odds1']]), np.ones((test_data.shape[0], 1))])  # np.zeros((test_samples,))
+    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
+    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
     '''
         cnt = 0
         indices = list(range(samples))
@@ -187,23 +171,22 @@ if __name__ == '__main__':
     '''
 
     X = Input((len(input_attributes),))
-    data = (x, y)
-    test_data = (x_test, y_test)
+    data = (x, [y, spread])
+    test_data = (x_test, [y_test, spread_test])
 
-    hidden_units = 2048
-    num_ff_cells = 8
+    hidden_units = 1024
+    num_ff_cells = 6
     batch_size = 128
-    dropout = 0.1
+    dropout = 0.20
     load_previous = False
     use_batch_norm = True
 
-    losses = bet_loss4(0)  # [bet_loss(0), bet_loss2(0), bet_loss3(0), bet_loss4(0)]
+    losses = bet_loss4_masked  # [bet_loss(0), bet_loss2(0), bet_loss3(0), bet_loss4(0)]
 
     if load_previous:
         model = k.models.load_model('tennis_match_embedding.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss=losses, metrics=[losses])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss=losses, metrics=[bet_loss4_masked])
     else:
-
         model = X
         if use_batch_norm:
             model = BatchNormalization()(model)
@@ -215,11 +198,30 @@ if __name__ == '__main__':
             if dropout > 0:
                 model = Dropout(dropout)(model)
 
-        bet = Dense(1, activation=lambda x: relu(x, alpha=0., max_value=None))(model)
+        bet = Dense(hidden_units, activation='tanh')(model)
+        bet_spread = Dense(hidden_units, activation='tanh')(model)
+        model_spread = Dense(hidden_units, activation='tanh')(model)
+        model = Dense(hidden_units, activation='tanh')(model)
+        if use_batch_norm:
+            model = BatchNormalization()(model)
+            bet = BatchNormalization()(bet)
+            bet_spread = BatchNormalization()(bet_spread)
+            model_spread = BatchNormalization()(model_spread)
+        if dropout > 0:
+            model = Dropout(dropout)(model)
+            bet = Dropout(dropout)(bet)
+            bet_spread = Dropout(dropout)(bet_spread)
+            model_spread = Dropout(dropout)(model_spread)
+
+        bet_activation = 'tanh'   # lambda x: relu(x, alpha=0., max_value=10.)
+        bet = Dense(1, activation=bet_activation)(bet)
+        bet_spread = Dense(1, activation=bet_activation)(bet_spread)
         model = Dense(1, activation='sigmoid')(model)
-        model = Concatenate()([model, bet])
-        model = Model(inputs=X, outputs=model)
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=[losses])
+        model_spread = Dense(1, activation='sigmoid')(model_spread)
+        model = Concatenate(name='y_output')([model, bet])
+        model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
+        model = Model(inputs=X, outputs=[model, model_spread])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=[bet_loss4])
 
     model_file = 'tennis_match_embedding.h5'
     prev_error = None

@@ -480,7 +480,7 @@ input_attributes0 = [
     'percent_majors',
 
     'not_played',
-    #'last_tournament_time',
+    'last_tournament_time',
 
     # prior quarter
     'prior_quarter_victories',
@@ -514,18 +514,23 @@ input_attributes0 = [
 
     # majors
     'major_avg_round',
+    'major_encounters',
 
     # masters
     'master_avg_round',
+    'master_victories',
 
     # 250 level
     'avg_round_250',
+    'encounters_250',
 
     # challenger
     'challenger_avg_round',
+    'challenger_encounters',
 
     # itf
     'itf_avg_round',
+    'itf_encounters',
 
     'tiebreak_win_percent',
 
@@ -534,7 +539,7 @@ input_attributes0 = [
     'had_qualifier',
     'seeded',
     'local_player',
-    # 'wild_card',
+    'wild_card',
 ]
 
 # opponent attrs
