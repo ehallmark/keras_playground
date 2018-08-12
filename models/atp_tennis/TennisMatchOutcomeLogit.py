@@ -474,26 +474,22 @@ input_attributes0 = [
     'tourney_hist_avg_round',
 
     'tournaments_per_year',
+
     'percent_itf',
     'percent_challenger',
     'percent_majors',
+
     'not_played',
     #'last_tournament_time',
 
     # prior quarter
     'prior_quarter_victories',
     'prior_quarter_losses',
-    'prior_quarter_avg_round',
-    'prior_quarter_match_recovery',
-    'prior_quarter_win_percent',
-    #'prior_quarter_victory_closeness',
-    #'prior_quarter_loss_closeness',
 
     # prior year
     'prev_year_prior_victories',
     'prev_year_prior_losses',
     'prev_year_avg_round',
-    'prior_year_match_recovery',
     'prev_year_victory_closeness',
     'prev_year_loss_closeness',
 
@@ -502,8 +498,6 @@ input_attributes0 = [
     'prior_2year_losses',
     'prev_2year_avg_round',
     'prior_2year_match_recovery',
-    #'prev_2year_victory_closeness',
-    #'prev_2year_loss_closeness',
 
     # player qualities
     'elo_score_weighted',
@@ -513,38 +507,24 @@ input_attributes0 = [
     'best_year',
     'atp_rank',
     'played_doubles',
+
     'last_itf_tournament_time',
     'last_challenger_tournament_time',
     'last_atp_tournament_time',
 
     # majors
-    'major_victories',
-    'major_encounters',
-    'major_games_per_set',
     'major_avg_round',
 
     # masters
-    'master_victories',
-    'master_encounters',
-    'master_games_per_set',
     'master_avg_round',
 
     # 250 level
-    'encounters_250',
-    'victories_250',
-    'games_per_set_250',
     'avg_round_250',
 
     # challenger
-    'challenger_encounters',
-    'challenger_victories',
-    'challenger_games_per_set',
     'challenger_avg_round',
 
     # itf
-    'itf_encounters',
-    'itf_victories',
-    'itf_games_per_set',
     'itf_avg_round',
 
     'tiebreak_win_percent',

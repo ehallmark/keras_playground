@@ -2,9 +2,11 @@ from keras.layers import Dense, Reshape, Add, Multiply, Recurrent, Concatenate, 
     Embedding, BatchNormalization, Dropout
 from keras.models import Model
 from keras.optimizers import Adam
+from keras.activations import relu
 from keras.initializers import RandomUniform
 import keras as k
-from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage
+import keras.backend as K
+from models.atp_tennis.TennisMatchBettingSklearnModels import load_data
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 import numpy as np
 import pandas as pd
@@ -12,11 +14,81 @@ import datetime
 np.random.seed(23952)
 
 
-def test_model(model, x, y):
-    predictions = model.predict(x)
-    avg_error = 0
-    avg_error += np.mean(np.abs(np.array(y).flatten() - np.array(predictions).flatten()))
-    return avg_error
+def bet_loss(epsilon=0):
+    def helper(y, y_bin):
+        y_bin = K.flatten(y_bin)
+        y_odds = K.flatten(y[:, 1])
+        y = K.flatten(y[:, 0])
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y)
+        y_correct = y_correct / (y_correct + K.epsilon())
+        y_wrong = y_wrong / (y_wrong + K.epsilon())
+        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
+        print('Profit', profit)
+        return - K.mean(profit, axis=-1)
+    return helper
+
+
+def bet_loss2(epsilon=0):
+    def helper(y, y_bin):
+        y_bin = K.flatten(y_bin)
+        y_odds = K.flatten(y[:, 1])
+        y = K.flatten(y[:, 0])
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y)
+        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
+        print('Profit', profit)
+        return - K.mean(profit, axis=-1)
+    return helper
+
+
+def bet_loss3(epsilon=0):
+    def helper(y, y_bin):
+        y_bin = K.flatten(y_bin)
+        y_odds = K.flatten(y[:, 1])
+        y_bin = K.maximum(y_bin - 0.5, 0.)
+        y = K.flatten(y[:, 0])
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y)
+        y_correct = y_correct / (y_correct + K.epsilon())
+        y_wrong = y_wrong / (y_wrong + K.epsilon())
+        profit = y_correct / y_odds - y_wrong / (1.0 - y_odds)
+        print('Profit', profit)
+        return - K.mean(profit, axis=-1)
+    return helper
+
+
+def bet_loss4(epsilon=0):
+    def helper(y, y_bin):
+        y_bet = K.flatten(y_bin[:, 1])
+        y_bin = K.flatten(y_bin[:, 0])
+        y_odds = K.flatten(y[:, 1])
+        y = K.flatten(y[:, 0])
+        # y_bin = np.maximum(y_bin - y_odds, 0.)
+        # y_bin = y_bin / (y_bin + 1e-08)
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y)
+        profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
+        invested = y_bet * y_bin
+        print('Profit', profit)
+        return - K.sum(profit, axis=-1) / (K.sum(invested, axis=-1) + K.epsilon())
+    return helper
+
+
+def test_model(model, x, y, epsilon=0):
+    y_bin = model.predict(x)
+    y_bet = np.maximum(y_bin[:, 1].flatten(), 0.)
+    y_bin = y_bin[:, 0].flatten()
+    y_odds = y[:, 1].flatten()
+    y = y[:, 0].flatten()
+    #y_bin = np.maximum(y_bin - y_odds, 0.)
+    #y_bin = y_bin / (y_bin + 1e-08)
+    y_correct = y_bin * y
+    y_wrong = y_bin * (1.0 - y)
+    profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
+    invested = y_bet * y_bin
+    print('Profit', profit)
+    return - np.sum(profit, axis=-1) / (np.sum(invested, axis=-1) + 1e-08)
 
 
 # previous year quality
@@ -25,8 +97,20 @@ input_attributes = list(tennis_model.input_attributes0)
 additional_attributes = [
     'clay',
     'grass',
+    #'hard',
     'tournament_rank_percent',
     'round_num_percent',
+    'first_round',
+]
+
+betting_attributes = [
+    'prev_odds',
+    'opp_prev_odds',
+    'underdog_wins',
+    'opp_underdog_wins',
+    'fave_wins',
+    'opp_fave_wins',
+    'overall_odds_avg',
 ]
 
 
@@ -44,12 +128,17 @@ for meta in meta_attributes:
     if meta not in all_attributes:
         all_attributes.append(meta)
 
+for attr in betting_attributes:
+    if attr not in input_attributes:
+        input_attributes.append(attr)
 
 if __name__ == '__main__':
-    test_date = datetime.date(2016, 1, 1)
-    end_date = datetime.date(2018, 1, 1)
-    #min_train_date = datetime.date(1995, 1, 1)
-    data = load_data(all_attributes, test_season=end_date.strftime('%Y-%m-%d'), start_year='1995-01-01', masters_min=111)
+    num_test_years = 1
+    test_date = datetime.date(2017, 1, 1)
+    end_date = datetime.date(test_date.year+num_test_years, 1, 1)
+
+    data, test_data = load_data(start_year='2010-01-01', num_test_years=num_test_years, num_test_months=0, test_year=end_date,
+                                              models=None, spread_models=None, masters_min=24, attributes=all_attributes)
 
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
@@ -58,13 +147,12 @@ if __name__ == '__main__':
     # test_samples = data[data.start_date>=test_date].shape[0]
     # samples = data.shape[0] - test_samples
 
-    test_data = data[data.start_date >= test_date]
-    data = data[data.start_date < test_date]
-
     x = np.array(data[input_attributes])  # np.zeros((samples, len(input_attributes)))
     x_test = np.array(test_data[input_attributes])  # np.zeros((test_samples, len(input_attributes)))
-    y = np.array(data['y'])  # np.zeros((samples,))
-    y_test = np.array(test_data['y'])  # np.zeros((test_samples,))
+    y = np.array(data[['y', 'ml_odds1']])  # np.zeros((samples,))
+    y_test = np.array(test_data[['y', 'ml_odds1']])  # np.zeros((test_samples,))
+    spread = np.array(data[['beat_spread', 'odds1']])
+    spread_test = np.array(test_data[['beat_spread', 'odds1']])
     '''
         cnt = 0
         indices = list(range(samples))
@@ -99,19 +187,21 @@ if __name__ == '__main__':
     '''
 
     X = Input((len(input_attributes),))
-
     data = (x, y)
     test_data = (x_test, y_test)
 
-    hidden_units = 256
+    hidden_units = 2048
     num_ff_cells = 8
     batch_size = 128
-    dropout = 0.5
+    dropout = 0.1
     load_previous = False
     use_batch_norm = True
+
+    losses = bet_loss4(0)  # [bet_loss(0), bet_loss2(0), bet_loss3(0), bet_loss4(0)]
+
     if load_previous:
         model = k.models.load_model('tennis_match_embedding.h5')
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss=losses, metrics=[losses])
     else:
 
         model = X
@@ -119,13 +209,17 @@ if __name__ == '__main__':
             model = BatchNormalization()(model)
         for l in range(num_ff_cells):
             model = Dense(hidden_units, activation='tanh')(model)
+
             if use_batch_norm:
                 model = BatchNormalization()(model)
             if dropout > 0:
                 model = Dropout(dropout)(model)
+
+        bet = Dense(1, activation=lambda x: relu(x, alpha=0., max_value=None))(model)
         model = Dense(1, activation='sigmoid')(model)
+        model = Concatenate()([model, bet])
         model = Model(inputs=X, outputs=model)
-        model.compile(optimizer=Adam(lr=0.0005 , decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=[losses])
 
     model_file = 'tennis_match_embedding.h5'
     prev_error = None
@@ -135,7 +229,7 @@ if __name__ == '__main__':
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data,
                   shuffle=True)
         avg_error = test_model(model, test_data[0], test_data[1])
-        print('Average error: ', to_percentage(avg_error))
+        print('Average error: ', avg_error)
         if best_error is None or best_error > avg_error:
             best_error = avg_error
             # save
