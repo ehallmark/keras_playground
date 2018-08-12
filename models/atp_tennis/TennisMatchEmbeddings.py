@@ -118,7 +118,7 @@ if __name__ == '__main__':
     end_date = datetime.date(test_date.year+num_test_years, 1, 1)
 
     data, test_data = load_data(start_year='2010-01-01', num_test_years=num_test_years, num_test_months=0, test_year=end_date,
-                                              models=None, spread_models=None, masters_min=24, attributes=all_attributes)
+                                              models=None, spread_models=None, masters_min=26, attributes=all_attributes)
 
     # data = data[data.tournament_rank < 101]
     # test_data = test_data[test_data.tournament_rank < 101]
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     data = (x, [y, spread])
     test_data = (x_test, [y_test, spread_test])
 
-    hidden_units = 1024
+    hidden_units = 2048
     num_ff_cells = 6
     batch_size = 128
     dropout = 0.20
@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
     if load_previous:
         model = k.models.load_model('tennis_match_embedding.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss=losses, metrics=[bet_loss4_masked])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.01), loss=losses, metrics=[losses])
     else:
         model = X
         if use_batch_norm:
@@ -221,7 +221,7 @@ if __name__ == '__main__':
         model = Concatenate(name='y_output')([model, bet])
         model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
         model = Model(inputs=X, outputs=[model, model_spread])
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=[bet_loss4])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=[losses])
 
     model_file = 'tennis_match_embedding.h5'
     prev_error = None
