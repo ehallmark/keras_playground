@@ -177,7 +177,7 @@ if __name__ == '__main__':
     hidden_units = 2048
     num_ff_cells = 6
     batch_size = 128
-    dropout = 0.20
+    dropout = 0.4
     load_previous = False
     use_batch_norm = True
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
             bet_spread = Dropout(dropout)(bet_spread)
             model_spread = Dropout(dropout)(model_spread)
 
-        bet_activation = 'tanh'   # lambda x: relu(x, alpha=0., max_value=10.)
+        bet_activation =  lambda x: relu(x, alpha=0., max_value=None)
         bet = Dense(1, activation=bet_activation)(bet)
         bet_spread = Dense(1, activation=bet_activation)(bet_spread)
         model = Dense(1, activation='sigmoid')(model)
