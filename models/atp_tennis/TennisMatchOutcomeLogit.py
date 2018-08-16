@@ -103,8 +103,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             case when coalesce(m_opp.seed,'')='WC' then 1.0 else 0.0 end as opp_wild_card,
             case when coalesce(m_opp.seed,'')='PR' then 1.0 else 0.0 end as opp_protected_ranking,
             case when coalesce(m_opp.seed,'asdgas') ~ '^[0-9]+$' and m_opp.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as opp_seeded,
-            case when coalesce(nation.nationality, pc.country) is null then 0.0 else case when coalesce(nation.nationality,pc.country)=t.location then 1.0 else 0.0 end end as local_player,
-            case when coalesce(nation_opp.nationality,pc_opp.country) is null then 0.0 else case when coalesce(nation_opp.nationality,pc_opp.country)=t.location then 1.0 else 0.0 end end as opp_local_player,
+            case when pc.country is null then 0.0 else case when pc.country = coalesce(country.code,t.location) then 1.0 else 0.0 end end as local_player,
+            case when pc_opp.country is null then 0.0 else case when pc_opp.country = coalesce(country.code,t.location) then 1.0 else 0.0 end end as opp_local_player,
             coalesce(majors.prior_encounters,0) as major_encounters,
             coalesce(opp_majors.prior_encounters, 0) as opp_major_encounters,
             coalesce(majors.prior_victories,0) as major_victories,
@@ -332,12 +332,9 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             on ((m.player_id,m.opponent_id,m.start_date,m.tournament)=(r.player_id,r.opponent_id,r.start_date,r.tournament))
         join atp_tournament_first_round as tournament_first_round on ((tournament_first_round.tournament,tournament_first_round.start_date)=(m.tournament,m.start_date))
         join atp_tournament_dates as t on ((m.start_date,m.tournament)=(t.start_date,t.tournament))
+        left outer join atp_countries as country on ((m.location=country.name))
         left outer join atp_matches_prior_h2h as h2h 
             on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(h2h.player_id,h2h.opponent_id,h2h.tournament,h2h.start_date))
-        left outer join atp_player_nationality as nation
-            on (m.player_id=nation.player_id)
-        left outer join atp_player_nationality as nation_opp
-            on (m.opponent_id=nation_opp.player_id)
         left outer join atp_matches_prior_quarter as prev_quarter
             on ((m.player_id,m.tournament,m.start_date)=(prev_quarter.player_id,prev_quarter.tournament,prev_quarter.start_date))
         left outer join atp_matches_prior_quarter as prev_quarter_opp
@@ -539,7 +536,7 @@ input_attributes0 = [
     'had_qualifier',
     'seeded',
     'local_player',
-    'wild_card',
+    #'wild_card',
 ]
 
 # opponent attrs
