@@ -259,24 +259,12 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             case when m.court_surface='Clay' then coalesce(se_opp.clay,0)::float/(1+coalesce(se_opp.total_matches))
             else case when m.court_surface='Grass' then coalesce(se_opp.grass,0)::float/(1+coalesce(se_opp.total_matches))
             else coalesce(se_opp.hard,0)::float/(1+coalesce(se_opp.total_matches)) end end as opp_surface_experience,
-            case when coalesce(pc.left_handed,false) then 1.0 else 0.0 end as lefty,
-            case when coalesce(pc_opp.left_handed,false) then 1.0 else 0.0 end as opp_lefty,
-            coalesce(pc.height,(select avg_height from avg_player_characteristics)) as height,
-            coalesce(pc_opp.height,(select avg_height from avg_player_characteristics)) as opp_height,
-            coalesce(pc.weight,(select avg_weight from avg_player_characteristics)) as weight,
-            coalesce(pc_opp.weight,(select avg_weight from avg_player_characteristics)) as opp_weight,
             extract(epoch from coalesce(prior_match.duration,'01:30:00'::time))::float/3600.0 as duration_prev_match,
             extract(epoch from coalesce(prior_match_opp.duration,'01:30:00'::time))::float/3600.0 as opp_duration_prev_match,         
             coalesce(prior_match.games_won, 6) + coalesce(prior_match.games_against, 6) as previous_games_total,
             coalesce(prior_match_opp.games_won, 6) + coalesce(prior_match_opp.games_against, 6) as opp_previous_games_total,
             coalesce(prior_matches.games_won, 6) + coalesce(prior_matches.games_against, 0) as previous_games_total2,
             coalesce(prior_matches_opp.games_won, 6) + coalesce(prior_matches_opp.games_against, 0) as opp_previous_games_total2,
-            extract(year from m.start_date) - extract(year from pc.date_of_birth) as age,
-            extract(year from m.start_date) - extract(year from pc_opp.date_of_birth) as opp_age,
-            case when pc.turned_pro is null then (select avg_experience from avg_player_characteristics)
-                else extract(year from m.start_date) - pc.turned_pro end as experience,
-            case when pc_opp.turned_pro is null then (select avg_experience from avg_player_characteristics)
-                else extract(year from m.start_date) - pc_opp.turned_pro end as opp_experience,
         coalesce(elo.score1,100) as elo_score,
         coalesce(elo.score2,100) as opp_elo_score,
         coalesce(elo.weighted_score1,100) as elo_score_weighted,
@@ -551,8 +539,6 @@ input_attributes_spread = [
     'tourney_hist_avg_round',
     'surface_experience',
     'opp_surface_experience',
-    'experience',
-    'opp_experience',
     'prior_quarter_avg_round',
     'opp_prior_quarter_avg_round',
     'avg_games_per_set',

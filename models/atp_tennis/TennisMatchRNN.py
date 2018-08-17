@@ -2,12 +2,16 @@ from keras.layers import Dense, Reshape, Bidirectional, Add, Multiply, Recurrent
 from keras.models import Model
 from keras.optimizers import Adam
 import keras as k
-import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
-from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage
+import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
+from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage, all_attributes
 import models.atp_tennis.database.create_match_tables as database
+from models.atp_tennis.TennisMatchEmbeddings import bet_loss4_masked
 import numpy as np
+from keras.activations import relu, sigmoid
+from keras.losses import mean_squared_error
 import pandas as pd
 import datetime
+from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes0
 np.random.seed(23952)
 
 
@@ -26,12 +30,14 @@ def test_model(model, x, y):
     return avg_error
 
 
+table_creator = database.quarter_tables
+
 # previous year quality
 input_attributes = []
 opp_input_attributes = []
-max_len = database.num_prior_quarters
+max_len = table_creator.num_tables
 
-additional_attributes = list(tennis_model.input_attributes0)
+additional_attributes = list(input_attributes0)
 
 additional_attributes += [
     'clay',
@@ -41,35 +47,72 @@ additional_attributes += [
     'first_round',
 ]
 
-
 all_attributes2 = list(additional_attributes)
-for attr in tennis_model.all_attributes:
+for attr in all_attributes:
     if attr not in all_attributes2:
         all_attributes2.append(attr)
 
 
 for i in range(max_len):
-    for attr in database.attribute_names_for(i, include_opp=False):
+    for attr in table_creator.attribute_names_for(i, include_opp=False):
         input_attributes.append(attr)
-    for attr in database.attribute_names_for(i, include_opp=True, opp_only=True):
+    for attr in table_creator.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes.append(attr)
 
 if __name__ == '__main__':
-    test_date = datetime.date(2011, 1, 1)
-    data = database.load_data(date='1995-01-01', end_date='2012-01-01', include_null=False)
-    data2 = tennis_model.load_data(all_attributes2, '2012-01-01', start_year='1995-01-01', masters_min=24)
-    data = pd.DataFrame.merge(
-        data,
-        data2,
-        'inner',
-        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-        validate='1:1'
-    )
-    print('Loaded data...')
+    use_sql = True
 
-    test_data = data[data.start_date >= test_date]
-    data = data[data.start_date < test_date]
+    if use_sql:
+        num_test_years = 1
+        test_date = datetime.date(2017, 1, 1)
+        end_date = datetime.date(test_date.year+num_test_years, 1, 1)
+        start_date = datetime.date(2010, 1, 1)
+        data, test_data = tennis_model.load_data(start_year=start_date.strftime('%Y-%m-%d'), num_test_years=num_test_years, num_test_months=0, test_year=end_date,
+                                                  models=None, spread_models=None, masters_min=24, attributes=all_attributes2)
+
+        data2 = table_creator.load_data(date=start_date, end_date=end_date, include_null=False)
+        print("Merging...")
+        data = pd.DataFrame.merge(
+            data,
+            data2,
+            'inner',
+            left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            validate='m:1'
+        )
+        print("Merging test data...")
+        test_data = pd.DataFrame.merge(
+            test_data,
+            data2,
+            'inner',
+            left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            validate='m:1'
+        )
+        print('Loaded data...')
+
+        def bool_to_int(b):
+            if b:
+                return 1.0
+            else:
+                return 0.0
+
+        test_data['ml_mask'] = [bool_to_int(np.isfinite(test_data['ml_odds1'].iloc[i])) for i in range(test_data.shape[0])]
+        data['ml_mask'] = [bool_to_int(np.isfinite(data['ml_odds1'].iloc[i])) for i in range(data.shape[0])]
+
+        test_data.to_hdf('test_fixed.hdf', 'test', mode='w')
+        data.to_hdf('data_fixed.hdf', 'data', mode='w')
+        exit(0)
+    else:
+        print("Loading data from hdf...")
+        data = pd.read_hdf('data_fixed.hdf', 'data')
+        print("Loading test data from hdf...")
+        test_data = pd.read_hdf('test_fixed.hdf', 'test')
+
+    losses = [mean_squared_error, bet_loss4_masked, bet_loss4_masked]
+
+    data.fillna(value=0., inplace=True)
+    test_data.fillna(value=0., inplace=True)
 
     x = np.array(data[input_attributes])
     x_test = np.array(test_data[input_attributes])
@@ -84,15 +127,20 @@ if __name__ == '__main__':
     x2 = convert_to_3d(x2, max_len)
     x2_test = convert_to_3d(x2_test, max_len)
 
-    y = np.array(data['y'])
-    y_test = np.array(test_data['y'])
-
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
     X3 = Input((len(additional_attributes),))
 
-    data = ([x, x2, x3], y)
-    test_data = ([x_test, x2_test, x3_test], y_test)
+    y = np.array(data['y'])
+    y_test = np.array(test_data['y'])
+    ml = np.array(data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((samples,))
+    ml_test = np.array(test_data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((test_samples,))
+    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
+    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
+
+    data = ([x, x2, x3], [y, ml, spread])
+    test_data = ([x_test, x2_test, x3_test], [y_test, ml_test, spread_test])
+
 
     hidden_units = 256
     hidden_units_ff = 1024
@@ -105,7 +153,7 @@ if __name__ == '__main__':
 
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=losses)
     else:
         if use_batch_norm:
             norm = BatchNormalization()
@@ -136,20 +184,41 @@ if __name__ == '__main__':
                 model3 = Dropout(dropout)(model3)
 
         model = Concatenate()([model1, model2, model3])
-
+        model_spread = model
+        bet = model 
+        bet_spread = model
         for l in range(num_ff_cells):
             model = Dense(hidden_units_ff, activation='tanh')(model)
+            model_spread = Dense(hidden_units_ff, activation='tanh')(model_spread)
+            bet = Dense(hidden_units_ff, activation='tanh')(bet)
+            bet_spread = Dense(hidden_units_ff, activation='tanh')(bet_spread)
 
             if use_batch_norm:
                 model = BatchNormalization()(model)
+                model_spread = BatchNormalization()(model_spread)
+                bet = BatchNormalization()(bet)
+                bet_spread = BatchNormalization()(bet_spread)
 
             if dropout > 0:
                 model = Dropout(dropout)(model)
+                model_spread = Dropout(dropout)(model_spread)
+                bet = Dropout(dropout)(bet)
+                bet_spread = Dropout(dropout)(bet_spread)
 
+        outcome = Dense(hidden_units, activation='tanh')(model)
+        outcome = Dense(1, activation='sigmoid')(outcome)
+
+        def bet_activation(x_):
+            return relu(x_, alpha=0., max_value=None)
+
+        bet = Dense(1, activation=bet_activation)(bet)
+        bet_spread = Dense(1, activation=bet_activation)(bet_spread)
         model = Dense(1, activation='sigmoid')(model)
-        model = Model(inputs=[X1, X2, X3], outputs=model)
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss='binary_crossentropy', metrics=['accuracy'])
-
+        model_spread = Dense(1, activation='sigmoid')(model_spread)
+        model = Concatenate(name='y_output')([model, bet])
+        model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
+        model = Model(inputs=[X1, X2, X3], outputs=[outcome, model, model_spread])
+        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss=losses, metrics=[])
 
     model_file = 'tennis_match_rnn.h5'
     prev_error = None

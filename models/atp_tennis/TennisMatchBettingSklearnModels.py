@@ -282,7 +282,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     test_data = pd.DataFrame.merge(
         test_data,
         betting_data,
-        'inner',
+        'left',
         left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
         right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
@@ -291,7 +291,7 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     data = pd.DataFrame.merge(
         data,
         betting_data,
-        'inner',
+        'left',
         left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
         right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
