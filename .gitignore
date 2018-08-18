@@ -2,3 +2,7 @@ models/config.txt
 __init__.py
 .idea
 .idea/*
+*.hdf
+*.h5
+*.hpy
+*.pyc

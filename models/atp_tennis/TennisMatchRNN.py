@@ -1,19 +1,24 @@
+print("Loaded classes...")
 from keras.layers import Dense, Reshape, Bidirectional, Add, Multiply, Recurrent, Concatenate, LSTM, Lambda, Input, BatchNormalization, Dropout
 from keras.models import Model
 from keras.optimizers import Adam
 import keras as k
+import keras.backend as K
 import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
+print("Loaded classes...")
 from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage, all_attributes
 import models.atp_tennis.database.create_match_tables as database
 from models.atp_tennis.TennisMatchEmbeddings import bet_loss4_masked
 import numpy as np
+print("Loaded classes...")
+
 from keras.activations import relu, sigmoid
-from keras.losses import mean_squared_error
+from keras.losses import mean_squared_error, categorical_crossentropy
 import pandas as pd
 import datetime
 from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes0
 np.random.seed(23952)
-
+print("Loaded classes...")
 
 def convert_to_3d(matrix, num_steps):
     new_x_len = int(matrix.shape[1] / num_steps)
@@ -23,19 +28,47 @@ def convert_to_3d(matrix, num_steps):
     return new_matrix
 
 
-def test_model(model, x, y):
-    predictions = model.predict(x)
-    avg_error = 0
-    avg_error += np.mean(np.abs(np.array(y).flatten() - np.array(predictions).flatten()))
-    return avg_error
+def test_model(model, x, y_list):
+    y_pred = model.predict(x)
+    losses = []
+    for i in range(len(y_pred)):
+        if i % 2 == 0:
+            losses.append(np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5) * 2.0 ** i)
+        else:
+            losses.append((np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5)/12.0) * 2.0 ** i)
+    '''
+    for i in range(len(y_pred)-2, len(y_pred)):
+        y_bin = y_pred[i].astype(dtype=np.float32)
+        y = y_list[i].astype(dtype=np.float32)
+        y_bet = np.maximum(y_bin[:, 1].flatten(), 0.).astype(dtype=np.float32)
+        y_bin = y_bin[:, 0].flatten().astype(dtype=np.float32)
+        if y.shape[1] == 3:
+            y_mask = y[:, 2].flatten().astype(dtype=np.float32)
+            y_bin = y_bin * y_mask
+        y_odds = y[:, 1].flatten().astype(dtype=np.float32)
+        y = y[:, 0].flatten().astype(dtype=np.float32)
+        y_correct = y_bin * y
+        y_wrong = y_bin * (1.0 - y).astype(dtype=np.float32)
+        profit = y_bet * y_correct / ((y_odds+K.epsilon()) / (1.0 - y_odds+K.epsilon())) - y_bet * y_wrong
+        invested = y_bet * y_bin
+        print('Profit', profit)
+        loss = - np.sum(profit.astype(dtype=np.float32), axis=-1).astype(dtype=np.float32) / (np.sum(invested.astype(dtype=np.float32), axis=-1) + K.epsilon()).astype(dtype=np.float32)
+        losses.append(loss)
+    '''
+    return sum(losses)/len(losses)
 
 
-table_creator = database.quarter_tables
+quarter_tables = database.quarter_tables
+pro_tables = database.pro_tables
+itf_tables = database.itf_tables
+challenger_tables = database.challenger_tables
 
 # previous year quality
 input_attributes = []
 opp_input_attributes = []
-max_len = table_creator.num_tables
+input_attributes2 = []
+opp_input_attributes2 = []
+max_len = quarter_tables.num_tables
 
 additional_attributes = list(input_attributes0)
 
@@ -45,6 +78,7 @@ additional_attributes += [
     'tournament_rank_percent',
     'round_num_percent',
     'first_round',
+
 ]
 
 all_attributes2 = list(additional_attributes)
@@ -53,42 +87,75 @@ for attr in all_attributes:
         all_attributes2.append(attr)
 
 
+additional_attributes += [
+    #'spread1',
+    #'overall_odds_avg',
+    #'prev_odds',
+    #'opp_prev_odds',
+    #'underdog_wins',
+    #'opp_underdog_wins',
+    #'fave_wins',
+    #'opp_fave_wins',
+    # 'ml_odds_avg',
+]
+
+probability_attrs = [
+    #'overall_odds_avg',
+    #'prev_odds',
+    #'opp_prev_odds',
+]
+
 for i in range(max_len):
-    for attr in table_creator.attribute_names_for(i, include_opp=False):
+    for attr in quarter_tables.attribute_names_for(i, include_opp=False):
         input_attributes.append(attr)
-    for attr in table_creator.attribute_names_for(i, include_opp=True, opp_only=True):
+    for attr in quarter_tables.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes.append(attr)
+
+for table in [itf_tables, challenger_tables, pro_tables]:
+    for attr in table.attribute_names_for(0, include_opp=False):
+        input_attributes2.append(attr)
+    for attr in table.attribute_names_for(0, include_opp=True, opp_only=True):
+        opp_input_attributes2.append(attr)
+
 
 if __name__ == '__main__':
     use_sql = True
 
+    dataset_name = 'all_data.hdf'  # 'data_fixed.hdf'
+    test_dataset_name = 'all_test_data.hdf'  # 'test_fixed.hdf'
     if use_sql:
         num_test_years = 1
-        test_date = datetime.date(2017, 1, 1)
+        test_date = datetime.date(2016, 1, 1)
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
-        start_date = datetime.date(2010, 1, 1)
-        data, test_data = tennis_model.load_data(start_year=start_date.strftime('%Y-%m-%d'), num_test_years=num_test_years, num_test_months=0, test_year=end_date,
-                                                  models=None, spread_models=None, masters_min=24, attributes=all_attributes2)
+        start_date = datetime.date(1996, 1, 1)
 
-        data2 = table_creator.load_data(date=start_date, end_date=end_date, include_null=False)
+        data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data3 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data4 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data5 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+
+        data = load_data(all_attributes2, test_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24)
+        test_data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), test_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24)
+
         print("Merging...")
-        data = pd.DataFrame.merge(
-            data,
-            data2,
-            'inner',
-            left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-            right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-            validate='m:1'
-        )
-        print("Merging test data...")
-        test_data = pd.DataFrame.merge(
-            test_data,
-            data2,
-            'inner',
-            left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-            right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-            validate='m:1'
-        )
+        for other_data in [data2, data3, data4, data5]:
+            data = pd.DataFrame.merge(
+                data,
+                other_data,
+                'inner',
+                left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+                right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+                validate='1:1'
+            )
+            print("Merging test data...")
+            test_data = pd.DataFrame.merge(
+                test_data,
+                other_data,
+                'inner',
+                left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+                right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+                validate='1:1'
+            )
         print('Loaded data...')
 
         def bool_to_int(b):
@@ -97,20 +164,29 @@ if __name__ == '__main__':
             else:
                 return 0.0
 
-        test_data['ml_mask'] = [bool_to_int(np.isfinite(test_data['ml_odds1'].iloc[i])) for i in range(test_data.shape[0])]
-        data['ml_mask'] = [bool_to_int(np.isfinite(data['ml_odds1'].iloc[i])) for i in range(data.shape[0])]
+        #test_data['ml_mask'] = [bool_to_int(np.isfinite(test_data['ml_odds1'].iloc[i])) for i in range(test_data.shape[0])]
+        #data['ml_mask'] = [bool_to_int(np.isfinite(data['ml_odds1'].iloc[i])) for i in range(data.shape[0])]
 
-        test_data.to_hdf('test_fixed.hdf', 'test', mode='w')
-        data.to_hdf('data_fixed.hdf', 'data', mode='w')
+        test_data.to_hdf(test_dataset_name, 'test', mode='w')
+        data.to_hdf(dataset_name, 'data', mode='w')
         exit(0)
     else:
         print("Loading data from hdf...")
-        data = pd.read_hdf('data_fixed.hdf', 'data')
+        data = pd.read_hdf(dataset_name, 'data')
         print("Loading test data from hdf...")
-        test_data = pd.read_hdf('test_fixed.hdf', 'test')
+        test_data = pd.read_hdf(test_dataset_name, 'test')
+        #data = data[np.isfinite(data.price1)]
+        #test_data = test_data[np.isfinite(test_data.price1)]
 
-    losses = [mean_squared_error, bet_loss4_masked, bet_loss4_masked]
+    losses = [
+    #    bet_loss4_masked,
+    #    bet_loss4_masked
+    ]
 
+    for prob_attr in probability_attrs:
+        # fill probability attributes with 0.5 default value
+        data[prob_attr].fillna(value=0.5, inplace=True)
+        test_data[prob_attr].fillna(value=0.5, inplace=True)
     data.fillna(value=0., inplace=True)
     test_data.fillna(value=0., inplace=True)
 
@@ -118,8 +194,12 @@ if __name__ == '__main__':
     x_test = np.array(test_data[input_attributes])
     x2 = np.array(data[opp_input_attributes])
     x2_test = np.array(test_data[opp_input_attributes])
-    x3 = np.array(data[additional_attributes])
-    x3_test = np.array(test_data[additional_attributes])
+    x3 = np.array(data[input_attributes2])
+    x3_test = np.array(test_data[input_attributes2])
+    x4 = np.array(data[opp_input_attributes2])
+    x4_test = np.array(test_data[opp_input_attributes2])
+    x5 = np.array(data[additional_attributes])
+    x5_test = np.array(test_data[additional_attributes])
 
     print('Converting data for RNN')
     x = convert_to_3d(x, max_len)
@@ -129,96 +209,145 @@ if __name__ == '__main__':
 
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
-    X3 = Input((len(additional_attributes),))
+    X3 = Input((len(input_attributes2),))
+    X4 = Input((len(opp_input_attributes2),))
+    X5 = Input((len(additional_attributes),))
 
+    spread_range = range(-18, 19, 1)
+    num_possible_spreads = len(spread_range)
+    print('Num spreads: ', num_possible_spreads)
     y = np.array(data['y'])
     y_test = np.array(test_data['y'])
-    ml = np.array(data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((samples,))
-    ml_test = np.array(test_data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((test_samples,))
-    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
-    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
+    np_spread = np.array(data['spread'])
+    np_spread_test = np.array(test_data['spread'])
+    actual_spread = np.empty((data.shape[0], num_possible_spreads))
+    actual_spread_test = np.empty((test_data.shape[0], num_possible_spreads))
+    print('calculating spreads...')
+    for i in spread_range:
+        actual_spread[:, int(num_possible_spreads/2) + i] = (np_spread == i).astype(dtype=np.float32)
+        actual_spread_test[:, int(num_possible_spreads/2) + i] = (np_spread_test == i).astype(dtype=np.float32)
+    print('done')
+#    ml = np.array(data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((samples,))
+#    ml_test = np.array(test_data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((test_samples,))
+#    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
+#    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
 
-    data = ([x, x2, x3], [y, ml, spread])
-    test_data = ([x_test, x2_test, x3_test], [y_test, ml_test, spread_test])
+    data = ([x, x2, x3, x4, x5], [])
+    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test], [])
 
+    print('Test_data: ', test_data[0:10])
 
-    hidden_units = 256
-    hidden_units_ff = 1024
+    hidden_units = 128
+    hidden_units_ff = 512
     num_rnn_cells = 2
-    num_ff_cells = 4
-    batch_size = 128
-    dropout = 0
+    num_ff_cells = 12
+    batch_size = 256
+    dropout = 0.5
     load_previous = False
     use_batch_norm = True
 
+    loss_weights = {
+    #    'y_output': 10.,
+    #    'spread_output': 10.
+    }
+
+    for i in range(num_ff_cells):
+        if i % 2 == 1:
+            data[1].append(y)
+            data[1].append(actual_spread)
+            test_data[1].append(y_test)
+            test_data[1].append(actual_spread_test)
+            losses.append(mean_squared_error)
+            losses.append(categorical_crossentropy)
+            loss_weights['outcome'+str(i)] = 2.0**i
+            loss_weights['spread'+str(i)] = (2.0**i) / 12.0
+
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss=losses, metrics=losses)
+        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss_weights=loss_weights, loss=losses, metrics=losses)
     else:
         if use_batch_norm:
             norm = BatchNormalization()
+            norm2 = BatchNormalization()
             model1 = norm(X1)
             model2 = norm(X2)
-            model3 = BatchNormalization()(X3)
+            model3 = norm2(X3)
+            model4 = norm2(X4)
+            model5 = BatchNormalization()(X5)
         else:
             model1 = X1
             model2 = X2
             model3 = X3
+            model4 = X4
+            model5 = X5
 
         for i in range(num_rnn_cells):
             lstm = Bidirectional(LSTM(hidden_units, activation='tanh', return_sequences=i != num_rnn_cells-1))
             model1 = lstm(model1)
             model2 = lstm(model2)
-            model3 = Dense(hidden_units, activation='tanh')(model3)
+            dense = Dense(hidden_units, activation='tanh')
+            model3 = dense(model3)
+            model4 = dense(model4)
+            model5 = Dense(hidden_units, activation='tanh')(model5)
 
             if use_batch_norm:
                 norm = BatchNormalization()
                 model1 = norm(model1)
                 model2 = norm(model2)
-                model3 = BatchNormalization()(model3)
+                norm2 = BatchNormalization()
+                model3 = norm2(model3)
+                model4 = norm2(model4)
+                model5 = BatchNormalization()(model5)
 
             if dropout > 0:
-                dropout_layer = Dropout(dropout)
-                model1 = dropout_layer(model1)
-                model2 = dropout_layer(model2)
+                model1 = Dropout(dropout)(model1)
+                model2 = Dropout(dropout)(model2)
                 model3 = Dropout(dropout)(model3)
+                model4 = Dropout(dropout)(model4)
+                model5 = Dropout(dropout)(model5)
 
-        model = Concatenate()([model1, model2, model3])
-        model_spread = model
-        bet = model 
-        bet_spread = model
+        model = Concatenate()([model1, model2, model3, model4, model5])
+        outcomes = []
         for l in range(num_ff_cells):
+            prev_model = model
             model = Dense(hidden_units_ff, activation='tanh')(model)
-            model_spread = Dense(hidden_units_ff, activation='tanh')(model_spread)
-            bet = Dense(hidden_units_ff, activation='tanh')(bet)
-            bet_spread = Dense(hidden_units_ff, activation='tanh')(bet_spread)
+            model = Concatenate()([prev_model, model])
 
             if use_batch_norm:
                 model = BatchNormalization()(model)
-                model_spread = BatchNormalization()(model_spread)
-                bet = BatchNormalization()(bet)
-                bet_spread = BatchNormalization()(bet_spread)
 
             if dropout > 0:
                 model = Dropout(dropout)(model)
-                model_spread = Dropout(dropout)(model_spread)
-                bet = Dropout(dropout)(bet)
-                bet_spread = Dropout(dropout)(bet_spread)
 
-        outcome = Dense(hidden_units, activation='tanh')(model)
-        outcome = Dense(1, activation='sigmoid')(outcome)
+            if l % 2 == 1:
+                outcome = Dense(1, activation='sigmoid', name='outcome' + str(l))(model)
+                spread_model = Dense(num_possible_spreads, activation='softmax', name='spread' + str(l))(model)
+                outcomes.append(outcome)
+                outcomes.append(spread_model)
+
+        #model_spread = model
+        #bet = model
+        #bet_spread = model
+        #model_spread = Dense(hidden_units_ff, activation='tanh')(model_spread)
+        #bet = Dense(hidden_units_ff, activation='tanh')(bet)
+        #bet_spread = Dense(hidden_units_ff, activation='tanh')(bet_spread)
+
+        #outcome = Dense(hidden_units, activation='tanh')(model)
+        #outcome = Dense(1, activation='sigmoid')(outcome)
 
         def bet_activation(x_):
             return relu(x_, alpha=0., max_value=None)
 
-        bet = Dense(1, activation=bet_activation)(bet)
-        bet_spread = Dense(1, activation=bet_activation)(bet_spread)
-        model = Dense(1, activation='sigmoid')(model)
-        model_spread = Dense(1, activation='sigmoid')(model_spread)
-        model = Concatenate(name='y_output')([model, bet])
-        model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
-        model = Model(inputs=[X1, X2, X3], outputs=[outcome, model, model_spread])
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss=losses, metrics=[])
+        #bet = Dense(1, activation=bet_activation)(bet)
+        #bet_spread = Dense(1, activation=bet_activation)(bet_spread)
+        #model = Dense(1, activation='sigmoid')(model)
+        #model_spread = Dense(1, activation='sigmoid')(model_spread)
+        #model = Concatenate(name='y_output')([model, bet])
+        #model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
+        #outcomes.append(model)
+        #outcomes.append(model_spread)
+        model = Model(inputs=[X1, X2, X3], outputs=outcomes)
+        model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
     model_file = 'tennis_match_rnn.h5'
     prev_error = None
@@ -227,7 +356,7 @@ if __name__ == '__main__':
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data,
                   shuffle=True)
         avg_error = test_model(model, test_data[0], test_data[1])
-        print('Average error: ', to_percentage(avg_error))
+        print('Average error: ', avg_error)
         if best_error is None or best_error > avg_error:
             best_error = avg_error
             # save

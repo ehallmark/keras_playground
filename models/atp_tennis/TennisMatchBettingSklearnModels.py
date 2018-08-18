@@ -744,8 +744,8 @@ model_names = {
 }
 
 models = {}
-for name in model_names:
-    models[name] = load_outcome_model(model_names[name]+name)
+#for name in model_names:
+#    models[name] = load_outcome_model(model_names[name]+name)
 
 if __name__ == '__main__':
     num_tests = 1

@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-
+file_prefix = '/home/ehallmark/repos/keras_playground/models/atp_tennis/database/'
 
 class TableCreator:
 
@@ -30,7 +30,7 @@ class TableCreator:
             self.prefix + str(i) + '.' + 'num_tournaments as num_tournaments_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'avg_tournament_rank as avg_tournament_rank_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'atp_points as atp_points_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'better_encounters as better_encounters_' + self.prefix + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'better_encounters as better_encounters_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'worse_encounters as worse_encounters_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'spread_avg as spread_avg_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'spread_var as spread_var_' + self.prefix + str(i),
@@ -56,7 +56,7 @@ class TableCreator:
             'num_tournaments_' + self.prefix + str(i),
             'avg_tournament_rank_' + self.prefix + str(i),
             'atp_points_' + self.prefix + str(i),
-            'better_encounters_' + self.prefix + str(i),
+            'better_encounters_' + self.prefix +self.prefix + str(i),  # BUGGG TODO FIX THIS
             'worse_encounters_' + self.prefix + str(i),
             'spread_avg_' + self.prefix + str(i),
             'spread_var_' + self.prefix + str(i),
@@ -201,7 +201,7 @@ class TableCreator:
             self.all_attributes()) + ' from atp_matches_individual as m ' + ' '.join(
             [self.join_str(i) for i in range(self.num_tables)])
         df = pd.read_sql(sql, engine)
-        df.to_hdf(self.join_table_name+'.hdf', self.join_table_name, mode='w')
+        df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
         #conn.commit()
         #cursor.close()
 
@@ -221,13 +221,15 @@ class TableCreator:
         return all_attribute_names
 
     def load_data(self, date=None, end_date=None, include_null=False):
-        df = pd.read_hdf(self.join_table_name+'.hdf', self.join_table_name)
-        if not include_null:
-            df = df[np.isfinite(df.player_victory)]
+        print('Loading table:', self.join_table_name)
+        df = pd.read_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name)
+        #if not include_null:
+        #    df = df[np.df.player_victory is not None]
         if end_date is not None:
             df = df[df.start_date < end_date]
         if date is not None:
             df = df[df.start_date >= date]
+        print('Loaded.')
         return df
 
 

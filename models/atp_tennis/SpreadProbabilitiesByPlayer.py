@@ -7,32 +7,32 @@ import statsmodels.formula.api as smf
 from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface, abs_game_total_probabilities_per_surface, abs_set_total_probabilities_per_surface
 np.random.seed(1)
 
+def init():
+    conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins', conn)
+    slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
+    wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
+    losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
 
-conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-slam_wins = pd.read_sql('select * from atp_matches_spread_probabilities_slam_wins', conn)
-slam_losses = pd.read_sql('select * from atp_matches_spread_probabilities_slam_losses', conn)
-wins = pd.read_sql('select * from atp_matches_spread_probabilities_win', conn)
-losses = pd.read_sql('select * from atp_matches_spread_probabilities_losses', conn)
+    slam_wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    slam_losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 
-slam_wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-slam_losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-wins.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-losses.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #game_totals_slam = pd.read_sql('select * from atp_matches_total_probabilities_slam', conn)
+    #game_totals = pd.read_sql('select * from atp_matches_total_probabilities', conn)
+    #game_totals_slam.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #game_totals.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 
-#game_totals_slam = pd.read_sql('select * from atp_matches_total_probabilities_slam', conn)
-#game_totals = pd.read_sql('select * from atp_matches_total_probabilities', conn)
-#game_totals_slam.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-#game_totals.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #set_totals_slam_win = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_win', conn)
+    #set_totals_win = pd.read_sql('select * from atp_matches_set_total_probabilities_win', conn)
+    #set_totals_slam_win.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #set_totals_win.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 
-#set_totals_slam_win = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_win', conn)
-#set_totals_win = pd.read_sql('select * from atp_matches_set_total_probabilities_win', conn)
-#set_totals_slam_win.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-#set_totals_win.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-
-#set_totals_slam_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_loss', conn)
-#set_totals_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_loss', conn)
-#set_totals_slam_loss.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
-#set_totals_loss.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #set_totals_slam_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_slam_loss', conn)
+    #set_totals_loss = pd.read_sql('select * from atp_matches_set_total_probabilities_loss', conn)
+    #set_totals_slam_loss.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
+    #set_totals_loss.set_index(['player_id', 'tournament', 'start_date'], inplace=True)
 
 
 

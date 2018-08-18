@@ -53,7 +53,7 @@ case when ml.price1 > 0 then 100.0/(100.0 + ml.price1) else -1.0*(ml.price1/(-1.
 '''
 
 
-def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', keep_nulls=False, masters_min=101):
+def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', keep_nulls=False, masters_min=101, reload=True):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     sql_str = '''
         select 

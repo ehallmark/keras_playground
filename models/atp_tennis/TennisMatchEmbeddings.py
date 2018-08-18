@@ -35,7 +35,7 @@ def bet_loss4_masked(y, y_bin):
     y = K.flatten(y[:, 0])
     y_correct = y_bin * y
     y_wrong = y_bin * (1.0 - y)
-    profit = y_bet * y_correct / (y_odds / (1.0 - y_odds)) - y_bet * y_wrong
+    profit = y_bet * y_correct / ((y_odds+K.epsilon()) / (1.0 - y_odds + K.epsilon())) - y_bet * y_wrong
     invested = y_bet * y_bin
     print('Profit', profit)
     return - K.sum(profit, axis=-1) / (K.sum(invested, axis=-1) + K.epsilon())

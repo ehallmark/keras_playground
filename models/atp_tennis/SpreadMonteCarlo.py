@@ -110,14 +110,14 @@ sql_set_total_str = '''
     '''
 
 abs_probabilities_per_surface = {
-    'Clay': create_spread_probabilities_from_query(sql_clay),
-    'Grass': create_spread_probabilities_from_query(sql_grass),
-    'Hard': create_spread_probabilities_from_query(sql_hard)
+  #  'Clay': create_spread_probabilities_from_query(sql_clay),
+  #  'Grass': create_spread_probabilities_from_query(sql_grass),
+  #  'Hard': create_spread_probabilities_from_query(sql_hard)
 }
 
 
-abs_game_total_probabilities_per_surface = \
-    create_game_totals_probabilities_from_query(sql_game_total_str)
+abs_game_total_probabilities_per_surface = None #\
+#    create_game_totals_probabilities_from_query(sql_game_total_str)
 
-abs_set_total_probabilities_per_surface = \
-    create_set_totals_probabilities_from_query(sql_set_total_str)
+abs_set_total_probabilities_per_surface = None #\
+#    create_set_totals_probabilities_from_query(sql_set_total_str)
