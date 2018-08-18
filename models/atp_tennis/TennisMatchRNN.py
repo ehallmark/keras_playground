@@ -60,6 +60,7 @@ def test_model(model, x, y_list):
 
 quarter_tables = database.quarter_tables
 pro_tables = database.pro_tables
+junior_tables = database.junior_tables
 itf_tables = database.itf_tables
 challenger_tables = database.challenger_tables
 
@@ -111,7 +112,7 @@ for i in range(max_len):
     for attr in quarter_tables.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes.append(attr)
 
-for table in [itf_tables, challenger_tables, pro_tables]:
+for table in [junior_tables, itf_tables, challenger_tables, pro_tables]:
     for attr in table.attribute_names_for(0, include_opp=False):
         input_attributes2.append(attr)
     for attr in table.attribute_names_for(0, include_opp=True, opp_only=True):
@@ -129,12 +130,14 @@ if __name__ == '__main__':
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
         start_date = datetime.date(1996, 1, 1)
 
-        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24, save=False, reload=True)
+        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=-1, save=True, reload=False)
+        exit(0)
 
         data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data3 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data4 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data5 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data4 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data5 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data6 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
 
         print("column labels2: " + ",".join(list(data2.columns.values)))
         print("column labels3: " + ",".join(list(data3.columns.values)))
@@ -145,7 +148,7 @@ if __name__ == '__main__':
         data = data[data.start_date < test_date]
 
         print("Merging...")
-        for other_data in [data2, data3, data4, data5]:
+        for other_data in [data2, data3, data4, data5, data6]:
             if 'player_victory' in list(other_data.columns.values):
                 other_data.drop(columns=['player_victory'], inplace=True)
             data = pd.DataFrame.merge(

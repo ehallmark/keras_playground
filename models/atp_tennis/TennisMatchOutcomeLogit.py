@@ -102,11 +102,11 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
                 case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(m.num_sets-m.sets_won, m.sets_won)=3,'f')
                     then 1.0 else 0.0 end as grand_slam,
-                case when coalesce(m.seed,'')='Q' or qualifying.had_qualifier then 1.0 else 0.0 end as had_qualifier,
+                case when coalesce(m.seed,'')='Q' or qualifying.had_qualifier OR m.round like '%%Qualifying%%' then 1.0 else 0.0 end as had_qualifier,
                 case when coalesce(m.seed,'')='WC' then 1.0 else 0.0 end as wild_card,
                 case when coalesce(m.seed,'')='PR' then 1.0 else 0.0 end as protected_ranking,
                 case when coalesce(m.seed,'asdgas') ~ '^[0-9]+$' and m.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as seeded,
-                case when coalesce(m_opp.seed,'')='Q' or qualifying_opp.had_qualifier then 1.0 else 0.0 end as opp_had_qualifier,
+                case when coalesce(m_opp.seed,'')='Q' or qualifying_opp.had_qualifier OR m.round like '%%Qualifying%%' then 1.0 else 0.0 end as opp_had_qualifier,
                 case when coalesce(m_opp.seed,'')='WC' then 1.0 else 0.0 end as opp_wild_card,
                 case when coalesce(m_opp.seed,'')='PR' then 1.0 else 0.0 end as opp_protected_ranking,
                 case when coalesce(m_opp.seed,'asdgas') ~ '^[0-9]+$' and m_opp.seed::integer <= 2 ^ (5 - tournament_first_round.first_round) then 1.0 else 0.0 end as opp_seeded,
@@ -297,6 +297,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(se_opp.num_injuries, 0) as opp_injuries,
             coalesce(se.last_tournament_time, 365.25*4)::float/(365.25*4) as last_tournament_time,
             coalesce(se_opp.last_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_tournament_time,
+            coalesce(se.last_junior_tournament_time, 365.25*4)::float/(365.25*4) as last_junior_tournament_time,
+            coalesce(se_opp.last_junior_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_junior_tournament_time,
             coalesce(se.last_itf_tournament_time, 365.25*4)::float/(365.25*4) as last_itf_tournament_time,
             coalesce(se_opp.last_itf_tournament_time, 365.25*4)::float/(365.25*4) as opp_last_itf_tournament_time,
             coalesce(se.last_challenger_tournament_time, 365.25*4)::float/(365.25*4) as last_challenger_tournament_time,
@@ -307,6 +309,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(se_opp.months_not_played, 0) as opp_not_played,
             coalesce(se.percent_itf, 0) as percent_itf,
             coalesce(se_opp.percent_itf, 0) as opp_percent_itf,
+            coalesce(se.percent_juniors, 0) as percent_juniors,
+            coalesce(se_opp.percent_juniors, 0) as opp_percent_juniors,
             coalesce(se.percent_challenger, 0) as percent_challenger,
             coalesce(se_opp.percent_challenger, 0) as opp_percent_challenger,
             coalesce(se.percent_majors, 0) as percent_majors,
@@ -317,7 +321,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(t.masters, 250)::double precision/2000 as tournament_rank_percent,
             (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
             (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
-            case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
+            case when r.round is not null and r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
+            case when m.round like '%%Qualifying%%' then 1.0 else 0.0 end as is_qualifier,
             case when coalesce(dubs.played_doubles, 'f') then 1.0 else 0.0 end as played_doubles,
             case when coalesce(dubs_opp.played_doubles, 'f') then 1.0 else 0.0 end as opp_played_doubles
             from atp_matches_individual as m
@@ -422,7 +427,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 on ((m.player_id,m.start_date,m.tournament)=(atp_rank.player_id,atp_rank.start_date,atp_rank.tournament))
             left outer join atp_player_atp_rank as atp_rank_opp
                 on ((m.opponent_id,m.start_date,m.tournament)=(atp_rank_opp.player_id,atp_rank_opp.start_date,atp_rank_opp.tournament))
-            where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and r.round is not null and r.round > 0 and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date and not m.round like '%%Qualifying%%' 
+            where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date 
         '''.replace('{{MASTERS_MIN}}', str(masters_min)).replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
         if not keep_nulls:
             sql_str = sql_str + '        and m.retirement is not null '
@@ -469,6 +474,7 @@ input_attributes0 = [
     'h2h_prior_win_percent',
     'tourney_hist_avg_round',
     'tournaments_per_year',
+    'percent_juniors',
     'percent_itf',
     'percent_challenger',
     'percent_majors',
@@ -494,6 +500,7 @@ input_attributes0 = [
     'atp_rank',
     'played_doubles',
 
+    'last_junior_tournament_time',
     'last_itf_tournament_time',
     'last_challenger_tournament_time',
     'last_atp_tournament_time',

@@ -150,7 +150,7 @@ class TableCreator:
                     on ((m2.player_id,m2.tournament,m2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
                     left outer join atp_countries as country 
                     on (t2.location = country.name)
-                    where m2.player_victory is not null and t.masters > 0 and ({{WHERE_STR}})
+                    where m2.player_victory is not null and ({{WHERE_STR}})
                     group by m.player_id,m.opponent_id,m.start_date,m.tournament
                 ) as temp order by player_id,start_date,tournament,random()            
             );
@@ -202,6 +202,7 @@ class TableCreator:
             [self.join_str(i) for i in range(self.num_tables)])
         df = pd.read_sql(sql, engine)
         df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
+        print("Data size:", df.shape[0])
         #conn.commit()
         #cursor.close()
 
@@ -236,8 +237,11 @@ class TableCreator:
 quarter_tables = TableCreator(prefix='q', table='atp_matches_quarter', num_tables=16,
                               join_table_name='atp_matches_quarters_all', time_period=3, where_str="'t'")
 
+junior_tables = TableCreator(prefix='jun', table='atp_matches_juniors', num_tables=1,
+                              join_table_name='atp_matches_juniors_all', time_period=60, where_str="t2.masters = 0")
+
 itf_tables = TableCreator(prefix='itf', table='atp_matches_itf', num_tables=1,
-                              join_table_name='atp_matches_itf_all', time_period=60, where_str="t2.masters < 50")
+                              join_table_name='atp_matches_itf_all', time_period=60, where_str="t2.masters = 25")
 
 challenger_tables = TableCreator(prefix='ch', table='atp_matches_challenger', num_tables=1,
                               join_table_name='atp_matches_challenger_all', time_period=60, where_str="t2.masters = 100")
@@ -247,7 +251,9 @@ pro_tables = TableCreator(prefix='pro', table='atp_matches_pro', num_tables=1,
 
 if __name__ == '__main__':
     print('Starting quarterly tables...')
-    quarter_tables.build_tables()
+    #quarter_tables.build_tables()
+    print("Starting junior tables...")
+    #junior_tables.build_tables()
     print("Starting itf tables...")
     itf_tables.build_tables()
     print("Starting challenger tables...")
