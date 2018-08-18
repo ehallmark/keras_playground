@@ -56,7 +56,7 @@ class TableCreator:
             'num_tournaments_' + self.prefix + str(i),
             'avg_tournament_rank_' + self.prefix + str(i),
             'atp_points_' + self.prefix + str(i),
-            'better_encounters_' + self.prefix +self.prefix + str(i),  # BUGGG TODO FIX THIS
+            'better_encounters_' + self.prefix + str(i),
             'worse_encounters_' + self.prefix + str(i),
             'spread_avg_' + self.prefix + str(i),
             'spread_var_' + self.prefix + str(i),
@@ -237,14 +237,13 @@ quarter_tables = TableCreator(prefix='q', table='atp_matches_quarter', num_table
                               join_table_name='atp_matches_quarters_all', time_period=3, where_str="'t'")
 
 itf_tables = TableCreator(prefix='itf', table='atp_matches_itf', num_tables=1,
-                              join_table_name='atp_matches_itf_all', time_period=120, where_str="t2.masters < 50")
+                              join_table_name='atp_matches_itf_all', time_period=60, where_str="t2.masters < 50")
 
 challenger_tables = TableCreator(prefix='ch', table='atp_matches_challenger', num_tables=1,
-                              join_table_name='atp_matches_challenger_all', time_period=120, where_str="t2.masters = 100")
+                              join_table_name='atp_matches_challenger_all', time_period=60, where_str="t2.masters = 100")
 
 pro_tables = TableCreator(prefix='pro', table='atp_matches_pro', num_tables=1,
-                              join_table_name='atp_matches_pro_all', time_period=120, where_str="t2.masters > 200")
-
+                              join_table_name='atp_matches_pro_all', time_period=60, where_str="t2.masters > 200")
 
 if __name__ == '__main__':
     print('Starting quarterly tables...')

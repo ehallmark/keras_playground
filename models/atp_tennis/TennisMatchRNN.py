@@ -134,11 +134,18 @@ if __name__ == '__main__':
         data4 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data5 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
 
+        print("column labels2: " + ",".join(list(data2.columns.values)))
+        print("column labels3: " + ",".join(list(data3.columns.values)))
+        print("column labels4: " + ",".join(list(data4.columns.values)))
+        print("column labels5: " + ",".join(list(data5.columns.values)))
+
         data = load_data(all_attributes2, test_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24)
         test_data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), test_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24)
 
         print("Merging...")
         for other_data in [data2, data3, data4, data5]:
+            if 'player_victory' in list(other_data.columns.values):
+                other_data.drop(columns=['player_victory'], inplace=True)
             data = pd.DataFrame.merge(
                 data,
                 other_data,
@@ -156,6 +163,7 @@ if __name__ == '__main__':
                 right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
                 validate='1:1'
             )
+            print("column labels: "+",".join(list(data.columns.values)))
         print('Loaded data...')
 
         def bool_to_int(b):
