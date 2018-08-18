@@ -129,8 +129,7 @@ if __name__ == '__main__':
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
         start_date = datetime.date(1996, 1, 1)
 
-        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24, save=True, reload=False)
-        exit(0)
+        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=24, save=False, reload=True)
 
         data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data3 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
