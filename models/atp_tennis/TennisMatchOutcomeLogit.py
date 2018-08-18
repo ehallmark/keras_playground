@@ -91,14 +91,15 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 coalesce(m_opp.return_points_won, 0) as opp_current_return_points_won,
                 m.year as year,
                 m.start_date as start_date,
-                r.round as round_num,
-                r.round::float/7.0 as round_num_percent,
+                case when r.round is null then 0 else r.round as round_num,
+                case when r.round is null then 0.0 else r.round::float/7.0 end as round_num_percent,
                 m.player_id as player_id,
                 m.opponent_id as opponent_id,
                 m.tournament as tournament,
                 m.num_sets as num_sets,
                 case when t.masters=100 then 1.0 else 0.0 end as challenger,
                 case when t.masters=25 then 1.0 else 0.0 end as itf,
+                case when t.masters=0 then 1.0 else 0.0 end as juniors,
                 case when m.num_sets > 2 then 1 else 0 end as num_sets_greater_than_2,
                 case when m.tournament in ('roland-garros','wimbledon','us-open','australian-open') or coalesce(greatest(m.num_sets-m.sets_won, m.sets_won)=3,'f')
                     then 1.0 else 0.0 end as grand_slam,
@@ -602,7 +603,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['itf', 'challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['juniors', 'is_qualifier', 'itf', 'challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)

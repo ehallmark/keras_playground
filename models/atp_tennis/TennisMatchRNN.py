@@ -128,7 +128,7 @@ if __name__ == '__main__':
         num_test_years = 1
         test_date = datetime.date(2016, 1, 1)
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
-        start_date = datetime.date(1996, 1, 1)
+        start_date = datetime.date(1995, 1, 1)
 
         data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=-1, save=True, reload=False)
         exit(0)
