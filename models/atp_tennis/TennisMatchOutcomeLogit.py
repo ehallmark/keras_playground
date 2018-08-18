@@ -320,6 +320,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(se_opp.tournaments_per_year, 0) as opp_tournaments_per_year,     
             coalesce(t.masters, 250) as tournament_rank,
             coalesce(t.masters, 250)::double precision/2000 as tournament_rank_percent,
+            coalesce(ml_estimate.avg_odds, 0.5) as avg_ml_estimate,
+            case when coalesce(ml_estimate.true_prediction, 'f') then 1.0 else 0.0 end as true_prediction,
             (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
             (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
             case when r.round is not null and r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
@@ -404,6 +406,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 on ((m.player_id,m.tournament,m.start_date)=(ml.player_id,ml.tournament,ml.start_date))
             left outer join atp_matches_prior_money_lines as ml_opp
                 on ((m.opponent_id,m.tournament,m.start_date)=(ml_opp.player_id,ml_opp.tournament,ml_opp.start_date))
+            left outer join atp_matches_money_line_estimate as ml_estimate
+                on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=(ml_estimate.player_id,ml_estimate.opponent_id,ml_estimate.tournament,ml_estimate.start_date))
             left outer join atp_matches_prior_best_year as prior_best_year
                 on ((m.player_id,m.start_date)=(prior_best_year.player_id,prior_best_year.start_date))
             left outer join atp_matches_prior_best_year as prior_best_year_opp

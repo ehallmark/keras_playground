@@ -79,7 +79,8 @@ additional_attributes += [
     'tournament_rank_percent',
     'round_num_percent',
     'first_round',
-
+    'avg_ml_estimate',
+    'true_prediction',
 ]
 
 all_attributes2 = list(additional_attributes)
