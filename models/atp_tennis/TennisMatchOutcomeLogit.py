@@ -468,32 +468,22 @@ def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, sta
 input_attributes0 = [
     'h2h_prior_win_percent',
     'tourney_hist_avg_round',
-
     'tournaments_per_year',
-
     'percent_itf',
     'percent_challenger',
     'percent_majors',
-
     'not_played',
     'last_tournament_time',
 
-    # prior quarter
-    'prior_quarter_victories',
-    'prior_quarter_losses',
-
     # prior year
-    'prev_year_prior_victories',
-    'prev_year_prior_losses',
     'prev_year_avg_round',
     'prev_year_victory_closeness',
     'prev_year_loss_closeness',
 
     # prior 2 years
-    'prior_2year_victories',
-    'prior_2year_losses',
     'prev_2year_avg_round',
     'prior_2year_match_recovery',
+    'prior_2year_match_collapse',
 
     # player qualities
     'elo_score_weighted',
@@ -514,7 +504,7 @@ input_attributes0 = [
 
     # masters
     'master_avg_round',
-    'master_victories',
+    'major_encounters',
 
     # 250 level
     'avg_round_250',
