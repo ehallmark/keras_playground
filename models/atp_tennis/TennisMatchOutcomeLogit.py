@@ -91,7 +91,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 coalesce(m_opp.return_points_won, 0) as opp_current_return_points_won,
                 m.year as year,
                 m.start_date as start_date,
-                case when r.round is null then 0 else r.round as round_num,
+                case when r.round is null then 0 else r.round end as round_num,
                 case when r.round is null then 0.0 else r.round::float/7.0 end as round_num_percent,
                 m.player_id as player_id,
                 m.opponent_id as opponent_id,

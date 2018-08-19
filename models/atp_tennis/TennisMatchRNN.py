@@ -254,8 +254,9 @@ if __name__ == '__main__':
     hidden_units = 128
     hidden_units_ff = 512
     num_rnn_cells = 2
-    num_ff_cells = 12
+    num_ff_cells = 20
     batch_size = 256
+    predict_every_n = 4
     dropout = 0.5
     load_previous = False
     use_batch_norm = True
@@ -266,7 +267,7 @@ if __name__ == '__main__':
     }
 
     for i in range(num_ff_cells):
-        if i % 2 == 1:
+        if i % predict_every_n == predict_every_n-1:
             data[1].append(y)
             data[1].append(actual_spread)
             test_data[1].append(y_test)
@@ -333,7 +334,7 @@ if __name__ == '__main__':
             if dropout > 0:
                 model = Dropout(dropout)(model)
 
-            if l % 2 == 1:
+            if l % predict_every_n == predict_every_n-1:
                 outcome = Dense(1, activation='sigmoid', name='outcome' + str(l))(model)
                 spread_model = Dense(num_possible_spreads, activation='softmax', name='spread' + str(l))(model)
                 outcomes.append(outcome)
