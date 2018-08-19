@@ -432,7 +432,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 on ((m.player_id,m.start_date,m.tournament)=(atp_rank.player_id,atp_rank.start_date,atp_rank.tournament))
             left outer join atp_player_atp_rank as atp_rank_opp
                 on ((m.opponent_id,m.start_date,m.tournament)=(atp_rank_opp.player_id,atp_rank_opp.start_date,atp_rank_opp.tournament))
-            where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year.prior_encounters > 0 and prev_year_opp.prior_encounters is not null and prev_year_opp.prior_encounters > 0 and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date 
+            where t.masters > {{MASTERS_MIN}} and not m.doubles and m.court_surface in ('Clay', 'Hard', 'Grass') and prev_year.prior_encounters is not null and prev_year_opp.prior_encounters is not null and tournament_first_round.first_round is not null and (m.retirement is null or not m.retirement) and m.start_date < '{{END_DATE}}'::date and m.start_date >= '{{START_DATE}}'::date 
         '''.replace('{{MASTERS_MIN}}', str(masters_min)).replace('{{END_DATE}}', str(test_season)).replace('{{START_DATE}}', str(start_year))
         if not keep_nulls:
             sql_str = sql_str + '        and m.retirement is not null '

@@ -7,6 +7,7 @@ import numpy as np
 engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 file_prefix = '/home/ehallmark/repos/keras_playground/models/atp_tennis/database/'
 
+
 class TableCreator:
 
     def __init__(self, prefix, table, num_tables, join_table_name, time_period, where_str):
@@ -150,7 +151,7 @@ class TableCreator:
                     on ((m2.player_id,m2.tournament,m2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
                     left outer join atp_countries as country 
                     on (t2.location = country.name)
-                    where m2.player_victory is not null and ({{WHERE_STR}})
+                    where m2.player_victory is not null and t.masters > 0 and ({{WHERE_STR}})
                     group by m.player_id,m.opponent_id,m.start_date,m.tournament
                 ) as temp order by player_id,start_date,tournament,random()            
             );
@@ -255,9 +256,9 @@ if __name__ == '__main__':
     print("Starting junior tables...")
     #junior_tables.build_tables()
     print("Starting itf tables...")
-    itf_tables.build_tables()
+    #itf_tables.build_tables()
     print("Starting challenger tables...")
-    challenger_tables.build_tables()
+    #challenger_tables.build_tables()
     print("Starting pro tables...")
-    pro_tables.build_tables()
+    #pro_tables.build_tables()
 

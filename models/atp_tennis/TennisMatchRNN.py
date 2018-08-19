@@ -81,6 +81,7 @@ additional_attributes += [
     'first_round',
     'avg_ml_estimate',
     'true_prediction',
+    'is_qualifier'
 ]
 
 all_attributes2 = list(additional_attributes)
@@ -131,7 +132,7 @@ if __name__ == '__main__':
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
         start_date = datetime.date(1995, 1, 1)
 
-        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=-1, save=True, reload=False)
+        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=1, save=False, reload=True)
         exit(0)
 
         data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
