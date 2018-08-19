@@ -91,8 +91,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 coalesce(m_opp.return_points_won, 0) as opp_current_return_points_won,
                 m.year as year,
                 m.start_date as start_date,
-                case when r.round is null then 0 else r.round end as round_num,
-                case when r.round is null then 0.0 else r.round::float/7.0 end as round_num_percent,
+                r.round as round_num,
+                r.round::float/7.0 as round_num_percent,
                 m.player_id as player_id,
                 m.opponent_id as opponent_id,
                 m.tournament as tournament,
@@ -324,8 +324,8 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             case when coalesce(ml_estimate.true_prediction, 'f') then 1.0 else 0.0 end as true_prediction,
             (m.start_date - first_match.first_date)::float/365.25 as first_match_date,
             (m.start_date - first_match_opp.first_date)::float/365.25 as opp_first_match_date,
-            case when r.round is not null and r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
-            case when m.round like '%%Qualifying%%' then 1.0 else 0.0 end as is_qualifier,
+            case when r.round=tournament_first_round.first_round then 1.0 else 0.0 end as first_round,
+            case when r.round < tournament_first_round.first_round or m.round like '%%Qualifying%%' then 1.0 else 0.0 end as is_qualifier,
             case when coalesce(dubs.played_doubles, 'f') then 1.0 else 0.0 end as played_doubles,
             case when coalesce(dubs_opp.played_doubles, 'f') then 1.0 else 0.0 end as opp_played_doubles
             from atp_matches_individual as m
