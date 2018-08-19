@@ -33,9 +33,9 @@ def test_model(model, x, y_list):
     losses = []
     for i in range(len(y_pred)):
         if i % 2 == 0:
-            losses.append(np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5) * 2.0 ** i)
+            losses.append(np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5) * 2.0 ** int(i/2))
         else:
-            losses.append((np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5)/12.0) * 2.0 ** i)
+            losses.append((np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5)/12.0) * 2.0 ** int(i/2))
     '''
     for i in range(len(y_pred)-2, len(y_pred)):
         y_bin = y_pred[i].astype(dtype=np.float32)
@@ -122,7 +122,7 @@ for table in [junior_tables, itf_tables, challenger_tables, pro_tables]:
 
 
 if __name__ == '__main__':
-    use_sql = True
+    use_sql = False
 
     dataset_name = 'all_data.hdf'  # 'data_fixed.hdf'
     test_dataset_name = 'all_test_data.hdf'  # 'test_fixed.hdf'
@@ -275,6 +275,7 @@ if __name__ == '__main__':
     #    'spread_output': 10.
     }
 
+    c = 0
     for i in range(num_ff_cells):
         if i % predict_every_n == predict_every_n-1:
             data[1].append(y)
@@ -283,8 +284,9 @@ if __name__ == '__main__':
             test_data[1].append(actual_spread_test)
             losses.append(mean_squared_error)
             losses.append(categorical_crossentropy)
-            loss_weights['outcome'+str(i)] = 2.0**i
-            loss_weights['spread'+str(i)] = (2.0**i) / 12.0
+            loss_weights['outcome'+str(i)] = 2.0**c
+            loss_weights['spread'+str(i)] = (2.0**c) / 12.0
+            c += 1
 
     if load_previous:
         model = k.models.load_model('tennis_match_rnn.h5')
@@ -370,7 +372,7 @@ if __name__ == '__main__':
         #model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
         #outcomes.append(model)
         #outcomes.append(model_spread)
-        model = Model(inputs=[X1, X2, X3], outputs=outcomes)
+        model = Model(inputs=[X1, X2, X3, X4, X5], outputs=outcomes)
         model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
     model_file = 'tennis_match_rnn.h5'
