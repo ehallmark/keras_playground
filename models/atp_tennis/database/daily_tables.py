@@ -3,23 +3,13 @@ from threading import Thread
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
+from models.atp_tennis.database.create_match_tables import TableCreator
 
 engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 file_prefix = '/home/ehallmark/repos/keras_playground/models/atp_tennis/database/'
 
 
-class TableCreator:
-
-    def __init__(self, prefix, table, num_tables, join_table_name, time_period, where_str):
-        self.prefix = prefix
-        self.time_period = time_period
-        self.where_str = where_str
-        self.num_tables = num_tables
-        self.join_table_name = join_table_name
-        self.table = table
-
-    def table_name(self, i):
-        return self.table + str(i)
+class DailyTable(TableCreator):
 
     def attributes_for(self, i, include_opp=True, opp_only=False):
         attrs = [
@@ -73,16 +63,6 @@ class TableCreator:
                 attrs = attrs + opp_attrs
         return attrs
 
-    def attribute_definitions_for(self, i, include_opp=True, opp_only=False):
-        attrs = [attr + ' float' for attr in self.attribute_names_for(i, include_opp=include_opp, opp_only=opp_only)]
-        return attrs
-
-    def join_str(self, i):
-        return ' left outer join '+self.table_name(i)+' as '+self.prefix+str(i) + \
-               '  on ((m.player_id,m.tournament,m.start_date)=('+self.prefix+str(i)+'.player_id,'+self.prefix+str(i)+'.tournament,'+self.prefix+str(i)+'.start_date))' + \
-               ' left outer join '+self.table_name(i)+' as opp_'+self.prefix+str(i) + \
-               '  on ((m.opponent_id,m.tournament,m.start_date)=(opp_'+self.prefix+str(i)+'.player_id,opp_'+self.prefix+str(i)+'.tournament,opp_'+self.prefix+str(i)+'.start_date))'
-
     def run(self, i):
         time_period = self.time_period
         conn = psycopg2.connect("postgresql://localhost/ib_db?user=postgres&password=password")
@@ -112,50 +92,47 @@ class TableCreator:
                 clay_percent float not null,
                 grass_percent float not null,
                 local_percent float not null,
-                primary key(player_id, tournament, start_date)
+                primary key(player_id, opponent_id, tournament, start_date)
             );
         '''.replace("{{N}}", self.table+str(i))
         cursor.execute(sql)
         print("Created table...", i)
         sql = '''
             insert into {{N}} (
-                select distinct on (player_id,start_date,tournament) * from (
-                    select m.player_id, m.tournament, m.start_date,
-                    sum(case when m2.player_victory then 1 else 0 end)/9.0 as victories,
-                    sum(case when m2.player_victory then 0 else 1 end)/9.0 as losses,
-                    count(m2.*)::double precision/18.0 as encounters,
-                    coalesce(sum(m2.sets_won::double precision/greatest(1,coalesce(m2.num_sets,0))), 0) as match_closeness,
-                    sum(m2.games_won+m2.games_against)/greatest(12.0*sum(m2.num_sets),1) as games_per_set,
-                    count(distinct m2.tournament)/9.0 as num_tournaments,
-                    sum(coalesce(t2.masters,0))/(greatest(1,1000.0*count(m2.*))) as avg_tournament_rank,
-                    coalesce(sum(case when m2.player_victory then t2.masters else 0 end), 0)/3000.0 as atp_points,
-                    sum(case when t.masters <= t2.masters then 1.0 else 0.0 end)/18.0 as better_encounters,
-                    sum(case when t.masters >= t2.masters then 1.0 else 0.0 end)/18.0 as worse_encounters,
-                    sum(m2.games_won-m2.games_against)::double precision/(12.0*greatest(1,count(m2.*))) as spread_avg,
-                    coalesce(var_samp(m2.games_won-m2.games_against), 0)/18.0 as spread_var,
-                    coalesce(sum(case when t2.court_surface='Grass' then 1.0 else 0.0 end)/count(m2.*), 0) as grass_percent,
-                    coalesce(sum(case when t2.court_surface='Clay' then 1.0 else 0.0 end)/count(m2.*), 0) as clay_percent,
-                    coalesce(sum(case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end)/count(m2.*), 0.0) as local_percent
-                    from atp_matches_individual as m
-                    join atp_matches_individual as m2
+                select distinct on (player_id,opponent_id,start_date,tournament) * from (
+                    select
+                        p1.player_id,
+                        p1.tournament,
+                        p1.start_date,
+                        p1.opponent_id,
+                        p1.opponent_name,
+                        p2.opponent_id as prev_opponent_id,
+                        p2.opponent_name as prev_opponent_name,
+                        round_num,
+                        p2.num_sets,
+                        p2.sets_won,
+                        p2.games_won,
+                        p2.games_against,
+                        p2.tiebreaks_won,
+                        p2.tiebreaks_total,
+                        p2.duration,
+                        p2.player_victory
+                    from atp_matches_individual as p1
+                    join atp_matches_round as r1
+                    on ((p1.start_date,p1.tournament,p1.player_id,p1.opponent_id)=(r1.start_date,r1.tournament,r1.player_id,r1.opponent_id))
+                    join (
+                        select p2.*,r2.round as round_num from atp_matches_individual as p2
+                        join atp_matches_round as r2
+                        on ((p2.start_date,p2.tournament,p2.player_id,p2.opponent_id)=(r2.start_date,r2.tournament,r2.player_id,r2.opponent_id))
+                    ) as p2
                     on (
-                        m.player_id=m2.player_id
-                        and m.start_date - interval '{{MONTHS_START}} months' > m2.start_date
-                        and m.start_date - interval '{{MONTHS_END}} months' < m2.start_date
+                        (p1.player_id,p1.tournament,p1.start_date)=(p2.player_id,p2.tournament,p2.start_date) and
+                        r1.round = round_num + 1
                     )
-                    join atp_tournament_dates as t
-                    on ((t.start_date,t.tournament)=(m.start_date,m.tournament))
-                    join atp_tournament_dates as t2
-                    on ((t2.start_date,t2.tournament)=(m2.start_date,m2.tournament))
-                    join atp_player_characteristics as player1
-                    on ((m2.player_id,m2.tournament,m2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
-                    left outer join atp_countries as country 
-                    on (t2.location = country.name)
-                    where m2.player_victory is not null and t.masters > 0 and ({{WHERE_STR}})
-                    group by m.player_id,m.opponent_id,m.start_date,m.tournament
-                ) as temp order by player_id,start_date,tournament,random()            
-            );
-        '''.replace("{{N}}", self.table+str(i)).replace('{{WHERE_STR}}', self.where_str).replace("{{MONTHS_START}}", str(i * time_period)).replace("{{MONTHS_END}}", str(i * time_period + time_period))
+                    where p2.player_victory is not null 
+                ) as temp order by player_id,temp.opponent_id,start_date,tournament,random()
+                );
+        '''.replace("{{N}}", self.table+str(i)).replace('{{WHERE_STR}}', self.where_str).replace("{{START}}", str(i * time_period)).replace("{{END}}", str(i * time_period + time_period))
         print('Sql:', sql)
         cursor.execute(sql)
         conn.commit()

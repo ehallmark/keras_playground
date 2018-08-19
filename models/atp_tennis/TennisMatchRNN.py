@@ -133,7 +133,6 @@ if __name__ == '__main__':
         start_date = datetime.date(1995, 1, 1)
 
         data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=1, save=False, reload=True)
-        exit(0)
 
         data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
@@ -170,7 +169,11 @@ if __name__ == '__main__':
                 right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
                 validate='1:1'
             )
-            print("column labels: "+",".join(list(data.columns.values)))
+            all_labels = list(data.columns.values)
+            labels_set = set(all_labels)
+            for label in labels_set:
+                if all_labels.count(label) > 1:
+                    print("DUPLICATE LABEL FOUND:", label)
         print('Loaded data...')
 
         def bool_to_int(b):
@@ -181,6 +184,11 @@ if __name__ == '__main__':
 
         #test_data['ml_mask'] = [bool_to_int(np.isfinite(test_data['ml_odds1'].iloc[i])) for i in range(test_data.shape[0])]
         #data['ml_mask'] = [bool_to_int(np.isfinite(data['ml_odds1'].iloc[i])) for i in range(data.shape[0])]
+        all_labels = list(data.columns.values)
+        labels_set = set(all_labels)
+        for label in labels_set:
+            if all_labels.count(label) > 1:
+                print("DUPLICATE LABEL FOUND:", label)
 
         test_data.to_hdf(test_dataset_name, 'test', mode='w')
         data.to_hdf(dataset_name, 'data', mode='w')

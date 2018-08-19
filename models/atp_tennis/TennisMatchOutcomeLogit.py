@@ -516,7 +516,7 @@ input_attributes0 = [
 
     # masters
     'master_avg_round',
-    'major_encounters',
+    'master_encounters',
 
     # 250 level
     'avg_round_250',
