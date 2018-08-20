@@ -117,14 +117,9 @@ class DailyTable(TableCreator):
                     coalesce(sum(case when t2.court_surface='Clay' then 1.0 else 0.0 end)/count(p2.*), 0) as clay_percent,
                     coalesce(sum(case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end)/count(p2.*), 0.0) as local_percent,
                     coalesce(case when bool_or(p2.round like '%%Qualifying%%') then 1.0 else 0.0 end, 0.0)
-                from atp_matches_tournaments_history as p1
+                from atp_matches_tournaments_history_linear as p1
                 join atp_matches_individual as p2
-                on (p1.previous[{{IDX}}] is not null and (
-                        p1.player_id,
-                        p1.previous[{{IDX}}].tournament,                    
-                        p1.previous[{{IDX}}].start_date
-                    )
-                    =(p2.player_id,p2.tournament,p2.start_date))
+                on ((p1.player_id, p1.tournament{{IDX}},p1.start_date{{IDX}})=(p2.player_id,p2.tournament,p2.start_date))
                 join atp_tournament_dates as t
                 on ((t.start_date,t.tournament)=(p1.start_date,p1.tournament))
                 join atp_tournament_dates as t2
@@ -163,11 +158,11 @@ class DailyTable(TableCreator):
         print("Data size:", df.shape[0])
 
 
-daily_tables = DailyTable(prefix='q', table='atp_matches_tourney_histories', num_tables=2,
+tourney_tables = DailyTable(prefix='q', table='atp_matches_tourney_histories', num_tables=16,
                               join_table_name='atp_matches_tourney_histories_all', time_period=None, where_str="'t'")
 
 
 if __name__ == '__main__':
     print('Starting tables...')
-    daily_tables.build_tables()
+    tourney_tables.build_tables()
 

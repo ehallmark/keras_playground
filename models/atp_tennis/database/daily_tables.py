@@ -95,7 +95,7 @@ class DailyTable(TableCreator):
                     case when p2.player_victory then 1.0 else 0.0 end,
                     p2.sets_won,
                     p2.num_sets - p2.sets_won,
-                    t2.masters,
+                    coalesce(t2.masters, 250.0),
                     round_num,
                     p2.games_won,
                     p2.games_against,
@@ -103,19 +103,18 @@ class DailyTable(TableCreator):
                     case when t2.court_surface='Grass' then 1.0 else 0.0 end,
                     case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end as local,
                     case when p2.round like '%%Qualifying%%' then 1.0 else 0.0 end
-                from atp_matches_match_history as p1
+                from atp_matches_match_history_linear as p1
                 join (
                     select p2.*,r2.round as round_num from atp_matches_individual as p2
                     join atp_matches_round as r2
                     on ((p2.start_date,p2.tournament,p2.player_id,p2.opponent_id)=(r2.start_date,r2.tournament,r2.player_id,r2.opponent_id))
                 ) as p2
-                on (p1.previous[{{IDX}}] is not null and (
+                on ((
                         p1.player_id,
-                        p1.previous[{{IDX}}].tournament,                    
-                        p1.previous[{{IDX}}].start_date,
-                        p1.previous[{{IDX}}].round
-                    )
-                    =(p2.player_id,p2.tournament,p2.start_date,round_num))
+                        p1.tournament{{IDX}},                    
+                        p1.start_date{{IDX}},
+                        p1.round{{IDX}}
+                    ) =(p2.player_id,p2.tournament,p2.start_date,round_num))
                 join atp_tournament_dates as t
                 on ((t.start_date,t.tournament)=(p1.start_date,p1.tournament))
                 join atp_tournament_dates as t2

@@ -64,7 +64,7 @@ class TableCreator:
             'grass_percent_' + self.prefix + str(i),
             'clay_percent_' + self.prefix + str(i),
             'local_percent_' + self.prefix + str(i),
-            'qualifier_percent', + self.prefix + str(i),
+            'qualifier_percent' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr for attr in attrs]
