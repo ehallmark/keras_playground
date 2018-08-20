@@ -85,6 +85,7 @@ class DailyTable(TableCreator):
         print("Created table...", i)
         sql = '''
             insert into {{N}} (
+            select distinct on (player_id, opponent_id, tournament, start_date) * from (
                 select
                     p1.player_id,
                     p1.opponent_id,
@@ -122,7 +123,8 @@ class DailyTable(TableCreator):
                 left outer join atp_countries as country 
                 on (t2.location = country.name)
                 where p2.player_victory is not null and t.masters > 0 and {{WHERE_STR}}
-            )
+            ) as temp order by player_id,opponent_id,tournament,start_date,random()
+        )    
         '''.replace("{{N}}", self.table+str(i)).replace('{{WHERE_STR}}', self.where_str).replace("{{IDX}}", str(i + 1))
         print('Sql daily:', sql)
         cursor.execute(sql)
@@ -176,7 +178,7 @@ class DailyTable(TableCreator):
         #cursor.close()
 
 
-daily_tables = DailyTable(prefix='q', table='atp_matches_daily', num_tables=1,
+daily_tables = DailyTable(prefix='q', table='atp_matches_daily', num_tables=16,
                               join_table_name='atp_matches_daily_all', time_period=None, where_str="'t'")
 
 
