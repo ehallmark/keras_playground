@@ -2,7 +2,6 @@ import psycopg2
 from threading import Thread
 from sqlalchemy import create_engine
 import pandas as pd
-import numpy as np
 
 engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 file_prefix = '/home/ehallmark/repos/keras_playground/models/atp_tennis/database/'
@@ -38,6 +37,7 @@ class TableCreator:
             self.prefix + str(i) + '.' + 'grass_percent as grass_percent_' + self.prefix+str(i),
             self.prefix + str(i) + '.' + 'clay_percent as clay_percent_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'local_percent as local_percent_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'qualifier_percent as qualifier_percent_' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr.replace(' as ', ' as opp_') for attr in attrs]
@@ -64,6 +64,7 @@ class TableCreator:
             'grass_percent_' + self.prefix + str(i),
             'clay_percent_' + self.prefix + str(i),
             'local_percent_' + self.prefix + str(i),
+            'qualifier_percent', + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr for attr in attrs]
@@ -112,6 +113,7 @@ class TableCreator:
                 clay_percent float not null,
                 grass_percent float not null,
                 local_percent float not null,
+                qualifier_percent float not null,
                 primary key(player_id, tournament, start_date)
             );
         '''.replace("{{N}}", self.table+str(i))
@@ -135,7 +137,8 @@ class TableCreator:
                     coalesce(var_samp(m2.games_won-m2.games_against), 0)/18.0 as spread_var,
                     coalesce(sum(case when t2.court_surface='Grass' then 1.0 else 0.0 end)/count(m2.*), 0) as grass_percent,
                     coalesce(sum(case when t2.court_surface='Clay' then 1.0 else 0.0 end)/count(m2.*), 0) as clay_percent,
-                    coalesce(sum(case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end)/count(m2.*), 0.0) as local_percent
+                    coalesce(sum(case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end)/count(m2.*), 0.0) as local_percent,
+                    coalesce(sum(case when m2.round like '%%Qualifying%%' then 1.0 else 0.0 end)/greatest(1, count(m2.*)), 0.0)
                     from atp_matches_individual as m
                     join atp_matches_individual as m2
                     on (
@@ -174,38 +177,12 @@ class TableCreator:
 
         # build join table
         print('Building join table...')
-        #conn = psycopg2.connect("postgresql://localhost/ib_db?user=postgres&password=password")
-        #cursor = conn.cursor()
-        #sql = '''
-        #      drop table if exists {{TABLE}};
-        #  '''.replace('{{TABLE}}', self.join_table_name)
-        #cursor.execute(sql)
-        #print("Dropped table...")
-        #grouped_attr_names = []
-        #for i in range(self.num_tables):
-        #    for attr in quarter_tables.attribute_definitions_for(i, include_opp=True):
-        #        grouped_attr_names.append(attr)
-        #sql = '''
-        #     create table {{TABLE}} (
-        #          player_victory boolean,
-        #          player_id text not null,
-        #          opponent_id text not null,
-        #          tournament text not null,
-        #          start_date date not null,
-        #  '''.replace('{{TABLE}}', self.join_table_name) + ', \n'.join(grouped_attr_names) + \
-        #      ''',
-        #              primary key(player_id, opponent_id, tournament, start_date)
-        #          );
-        #      '''
-        #cursor.execute(sql)
         sql = 'select m.player_victory, m.player_id, m.opponent_id, m.tournament, m.start_date,' + ','.join(
             self.all_attributes()) + ' from atp_matches_individual as m ' + ' '.join(
             [self.join_str(i) for i in range(self.num_tables)])
         df = pd.read_sql(sql, engine)
         df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
         print("Data size:", df.shape[0])
-        #conn.commit()
-        #cursor.close()
 
     def all_attributes(self):
         all_attributes = []

@@ -8,9 +8,7 @@ from models.atp_tennis.database.create_match_tables import TableCreator
 engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
 file_prefix = '/home/ehallmark/repos/keras_playground/models/atp_tennis/database/'
 
-
 class DailyTable(TableCreator):
-
     def attributes_for(self, i, include_opp=True, opp_only=False):
         attrs = [
             self.prefix + str(i) + '.' + 'victory as victory_' + self.prefix + str(i),
@@ -24,6 +22,7 @@ class DailyTable(TableCreator):
             self.prefix + str(i) + '.' + 'clay as clay_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'grass as grass_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'local as local_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'qualifier as qualifier_' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr.replace(' as ', ' as opp_') for attr in attrs]
@@ -45,6 +44,7 @@ class DailyTable(TableCreator):
             'clay_' + self.prefix + str(i),
             'grass_' + self.prefix + str(i),
             'local_' + self.prefix + str(i),
+            'qualifier_' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr for attr in attrs]
@@ -78,6 +78,7 @@ class DailyTable(TableCreator):
                 clay float not null,
                 grass float not null,
                 local float not null,
+                qualifier float not null,
                 primary key(player_id, opponent_id, tournament, start_date)
             );
         '''.replace("{{N}}", self.table+str(i))
@@ -100,7 +101,8 @@ class DailyTable(TableCreator):
                     p2.games_against,
                     case when t2.court_surface='Clay' then 1.0 else 0.0 end,
                     case when t2.court_surface='Grass' then 1.0 else 0.0 end,
-                    case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end as local
+                    case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end as local,
+                    case when p2.round like '%%Qualifying%%' then 1.0 else 0.0 end
                 from atp_matches_match_history as p1
                 join (
                     select p2.*,r2.round as round_num from atp_matches_individual as p2
@@ -144,38 +146,12 @@ class DailyTable(TableCreator):
 
         # build join table
         print('Building join table...')
-        #conn = psycopg2.connect("postgresql://localhost/ib_db?user=postgres&password=password")
-        #cursor = conn.cursor()
-        #sql = '''
-        #      drop table if exists {{TABLE}};
-        #  '''.replace('{{TABLE}}', self.join_table_name)
-        #cursor.execute(sql)
-        #print("Dropped table...")
-        #grouped_attr_names = []
-        #for i in range(self.num_tables):
-        #    for attr in quarter_tables.attribute_definitions_for(i, include_opp=True):
-        #        grouped_attr_names.append(attr)
-        #sql = '''
-        #     create table {{TABLE}} (
-        #          player_victory boolean,
-        #          player_id text not null,
-        #          opponent_id text not null,
-        #          tournament text not null,
-        #          start_date date not null,
-        #  '''.replace('{{TABLE}}', self.join_table_name) + ', \n'.join(grouped_attr_names) + \
-        #      ''',
-        #              primary key(player_id, opponent_id, tournament, start_date)
-        #          );
-        #      '''
-        #cursor.execute(sql)
         sql = 'select m.player_victory, m.player_id, m.opponent_id, m.tournament, m.start_date,' + ','.join(
             self.all_attributes()) + ' from atp_matches_individual as m ' + ' '.join(
             [self.join_str(i) for i in range(self.num_tables)])
         df = pd.read_sql(sql, engine)
         df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
         print("Data size:", df.shape[0])
-        #conn.commit()
-        #cursor.close()
 
 
 daily_tables = DailyTable(prefix='q', table='atp_matches_daily', num_tables=16,
