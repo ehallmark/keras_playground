@@ -13,21 +13,17 @@ class DailyTable(TableCreator):
 
     def attributes_for(self, i, include_opp=True, opp_only=False):
         attrs = [
-            self.prefix + str(i) + '.' + 'victories as victories_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'losses as losses_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'encounters as encounters_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'match_closeness as match_closeness_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'games_per_set as games_per_set_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'num_tournaments as num_tournaments_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'avg_tournament_rank as avg_tournament_rank_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'atp_points as atp_points_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'better_encounters as better_encounters_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'worse_encounters as worse_encounters_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'spread_avg as spread_avg_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'spread_var as spread_var_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'grass_percent as grass_percent_' + self.prefix+str(i),
-            self.prefix + str(i) + '.' + 'clay_percent as clay_percent_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'local_percent as local_percent_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'victory as victory_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'sets_won as sets_won_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'sets_against as sets_against_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'tournament_rank as tournament_rank_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'round_num as round_num_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'better_encounter as better_encounter_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'games_won as games_won_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'games_against as games_against_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'clay as clay_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'grass as grass_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'local as local_' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr.replace(' as ', ' as opp_') for attr in attrs]
@@ -39,21 +35,16 @@ class DailyTable(TableCreator):
 
     def attribute_names_for(self, i, include_opp=True, opp_only=False):
         attrs = [
-            'victories_' + self.prefix + str(i),
-            'losses_' + self.prefix + str(i),
-            'encounters_' + self.prefix + str(i),
-            'match_closeness_' + self.prefix + str(i),
-            'games_per_set_' + self.prefix + str(i),
-            'num_tournaments_' + self.prefix + str(i),
-            'avg_tournament_rank_' + self.prefix + str(i),
-            'atp_points_' + self.prefix + str(i),
-            'better_encounters_' + self.prefix + str(i),
-            'worse_encounters_' + self.prefix + str(i),
-            'spread_avg_' + self.prefix + str(i),
-            'spread_var_' + self.prefix + str(i),
-            'grass_percent_' + self.prefix + str(i),
-            'clay_percent_' + self.prefix + str(i),
-            'local_percent_' + self.prefix + str(i),
+            'victory_' + self.prefix + str(i),
+            'sets_won_' + self.prefix + str(i),
+            'sets_against_' + self.prefix + str(i),
+            'tournament_rank_' + self.prefix + str(i),
+            'round_num' + self.prefix + str(i),
+            'games_won_' + self.prefix + str(i),
+            'games_against_' + self.prefix + str(i),
+            'clay_' + self.prefix + str(i),
+            'grass_' + self.prefix + str(i),
+            'local_' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr for attr in attrs]
@@ -64,34 +55,29 @@ class DailyTable(TableCreator):
         return attrs
 
     def run(self, i):
-        time_period = self.time_period
         conn = psycopg2.connect("postgresql://localhost/ib_db?user=postgres&password=password")
         cursor = conn.cursor()
         sql = '''
             drop table if exists {{N}};
         '''.replace("{{N}}", self.table+str(i))
         cursor.execute(sql)
-        print("Dropped table...", i)
+        print("Dropped daily table...", i)
         sql = '''
             create table {{N}} (
                 player_id text not null,
+                opponent_id text not null,
                 tournament text not null,
                 start_date date not null,
-                victories float not null,
-                losses float not null,
-                encounters float not null,
-                match_closeness float not null,
-                games_per_set float not null,
-                num_tournaments float not null,
-                avg_tournament_rank float not null,
-                atp_points float not null,
-                better_encounters float not null,
-                worse_encounters float not null,
-                spread_avg float not null,
-                spread_var float not null,
-                clay_percent float not null,
-                grass_percent float not null,
-                local_percent float not null,
+                victory float not null,
+                sets_won float not null,
+                sets_against float not null,
+                tournament_rank float not null,
+                round_num float not null,
+                games_won float not null,
+                games_against float not null,
+                clay float not null,
+                grass float not null,
+                local float not null,
                 primary key(player_id, opponent_id, tournament, start_date)
             );
         '''.replace("{{N}}", self.table+str(i))
@@ -99,41 +85,46 @@ class DailyTable(TableCreator):
         print("Created table...", i)
         sql = '''
             insert into {{N}} (
-                select distinct on (player_id,opponent_id,start_date,tournament) * from (
-                    select
+                select
+                    p1.player_id,
+                    p1.opponent_id,
+                    p1.tournament,
+                    p1.start_date,
+                    case when p2.player_victory then 1.0 else 0.0 end,
+                    p2.sets_won,
+                    p2.num_sets - p2.sets_won,
+                    t2.masters,
+                    round_num,
+                    p2.games_won,
+                    p2.games_against,
+                    case when t2.court_surface='Clay' then 1.0 else 0.0 end,
+                    case when t2.court_surface='Grass' then 1.0 else 0.0 end,
+                    case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end as local
+                from atp_matches_match_history as p1
+                join (
+                    select p2.*,r2.round as round_num from atp_matches_individual as p2
+                    join atp_matches_round as r2
+                    on ((p2.start_date,p2.tournament,p2.player_id,p2.opponent_id)=(r2.start_date,r2.tournament,r2.player_id,r2.opponent_id))
+                ) as p2
+                on (p1.previous[{{IDX}}] is not null and (
                         p1.player_id,
-                        p1.tournament,
-                        p1.start_date,
-                        p1.opponent_id,
-                        p1.opponent_name,
-                        p2.opponent_id as prev_opponent_id,
-                        p2.opponent_name as prev_opponent_name,
-                        round_num,
-                        p2.num_sets,
-                        p2.sets_won,
-                        p2.games_won,
-                        p2.games_against,
-                        p2.tiebreaks_won,
-                        p2.tiebreaks_total,
-                        p2.duration,
-                        p2.player_victory
-                    from atp_matches_individual as p1
-                    join atp_matches_round as r1
-                    on ((p1.start_date,p1.tournament,p1.player_id,p1.opponent_id)=(r1.start_date,r1.tournament,r1.player_id,r1.opponent_id))
-                    join (
-                        select p2.*,r2.round as round_num from atp_matches_individual as p2
-                        join atp_matches_round as r2
-                        on ((p2.start_date,p2.tournament,p2.player_id,p2.opponent_id)=(r2.start_date,r2.tournament,r2.player_id,r2.opponent_id))
-                    ) as p2
-                    on (
-                        (p1.player_id,p1.tournament,p1.start_date)=(p2.player_id,p2.tournament,p2.start_date) and
-                        r1.round = round_num + 1
+                        p1.previous[{{IDX}}].tournament,                    
+                        p1.previous[{{IDX}}].start_date,
+                        p1.previous[{{IDX}}].round
                     )
-                    where p2.player_victory is not null 
-                ) as temp order by player_id,temp.opponent_id,start_date,tournament,random()
-                );
-        '''.replace("{{N}}", self.table+str(i)).replace('{{WHERE_STR}}', self.where_str).replace("{{START}}", str(i * time_period)).replace("{{END}}", str(i * time_period + time_period))
-        print('Sql:', sql)
+                    =(p2.player_id,p2.tournament,p2.start_date,round_num))
+                join atp_tournament_dates as t
+                on ((t.start_date,t.tournament)=(p1.start_date,p1.tournament))
+                join atp_tournament_dates as t2
+                on ((t2.start_date,t2.tournament)=(p2.start_date,p2.tournament))
+                join atp_player_characteristics as player1
+                on ((p2.player_id,p2.tournament,p2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
+                left outer join atp_countries as country 
+                on (t2.location = country.name)
+                where p2.player_victory is not null and t.masters > 0 and {{WHERE_STR}}
+            )
+        '''.replace("{{N}}", self.table+str(i)).replace('{{WHERE_STR}}', self.where_str).replace("{{IDX}}", str(i + 1))
+        print('Sql daily:', sql)
         cursor.execute(sql)
         conn.commit()
         print("Executed query...", i)
@@ -184,58 +175,12 @@ class DailyTable(TableCreator):
         #conn.commit()
         #cursor.close()
 
-    def all_attributes(self):
-        all_attributes = []
-        for i in range(self.num_tables):
-            for attr in self.attributes_for(i, include_opp=True):
-                all_attributes.append(attr)
 
-        return all_attributes
+daily_tables = DailyTable(prefix='q', table='atp_matches_daily', num_tables=1,
+                              join_table_name='atp_matches_daily_all', time_period=None, where_str="'t'")
 
-    def all_attribute_names(self):
-        all_attribute_names = []
-        for i in range(self.num_tables):
-            for attr in self.attribute_names_for(i, include_opp=True):
-                all_attribute_names.append(attr)
-        return all_attribute_names
-
-    def load_data(self, date=None, end_date=None, include_null=False):
-        print('Loading table:', self.join_table_name)
-        df = pd.read_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name)
-        #if not include_null:
-        #    df = df[np.df.player_victory is not None]
-        if end_date is not None:
-            df = df[df.start_date < end_date]
-        if date is not None:
-            df = df[df.start_date >= date]
-        print('Loaded.')
-        return df
-
-
-quarter_tables = TableCreator(prefix='q', table='atp_matches_quarter', num_tables=16,
-                              join_table_name='atp_matches_quarters_all', time_period=3, where_str="'t'")
-
-junior_tables = TableCreator(prefix='jun', table='atp_matches_juniors', num_tables=1,
-                              join_table_name='atp_matches_juniors_all', time_period=60, where_str="t2.masters = 0")
-
-itf_tables = TableCreator(prefix='itf', table='atp_matches_itf', num_tables=1,
-                              join_table_name='atp_matches_itf_all', time_period=60, where_str="t2.masters = 25")
-
-challenger_tables = TableCreator(prefix='ch', table='atp_matches_challenger', num_tables=1,
-                              join_table_name='atp_matches_challenger_all', time_period=60, where_str="t2.masters = 100")
-
-pro_tables = TableCreator(prefix='pro', table='atp_matches_pro', num_tables=1,
-                              join_table_name='atp_matches_pro_all', time_period=60, where_str="t2.masters > 200")
 
 if __name__ == '__main__':
-    print('Starting quarterly tables...')
-    quarter_tables.build_tables()
-    print("Starting junior tables...")
-    junior_tables.build_tables()
-    print("Starting itf tables...")
-    itf_tables.build_tables()
-    print("Starting challenger tables...")
-    challenger_tables.build_tables()
-    print("Starting pro tables...")
-    pro_tables.build_tables()
+    print('Starting tables...')
+    daily_tables.build_tables()
 

@@ -123,6 +123,7 @@ for table in [junior_tables, itf_tables, challenger_tables, pro_tables]:
 
 if __name__ == '__main__':
     use_sql = False
+    reload_sql = False
 
     dataset_name = 'all_data.hdf'  # 'data_fixed.hdf'
     test_dataset_name = 'all_test_data.hdf'  # 'test_fixed.hdf'
@@ -132,7 +133,10 @@ if __name__ == '__main__':
         end_date = datetime.date(test_date.year+num_test_years, 1, 1)
         start_date = datetime.date(1995, 1, 1)
 
-        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'), keep_nulls=False, masters_min=1, save=False, reload=True)
+        data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'),
+                         keep_nulls=False, masters_min=1, save=reload_sql, reload=not reload_sql)
+        if reload_sql:
+            exit(0)
 
         data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
