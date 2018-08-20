@@ -251,14 +251,15 @@ pro_tables = TableCreator(prefix='pro', table='atp_matches_pro', num_tables=1,
                               join_table_name='atp_matches_pro_all', time_period=60, where_str="t2.masters > 200")
 
 if __name__ == '__main__':
+    threads = []
+    for func in [junior_tables.build_tables, itf_tables.build_tables,
+                 challenger_tables.build_tables, pro_tables.build_tables]:
+        thread = Thread(target=func, args=())
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
     print('Starting quarterly tables...')
     quarter_tables.build_tables()
-    print("Starting junior tables...")
-    junior_tables.build_tables()
-    print("Starting itf tables...")
-    itf_tables.build_tables()
-    print("Starting challenger tables...")
-    challenger_tables.build_tables()
-    print("Starting pro tables...")
-    pro_tables.build_tables()
-
