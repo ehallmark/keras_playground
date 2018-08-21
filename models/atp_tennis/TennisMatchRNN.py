@@ -430,9 +430,13 @@ if __name__ == '__main__':
         model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
     model.summary()
+    avg_error = test_model(model, test_data[0], test_data[1])
+    print("Starting model score: ", avg_error)
     model_file = 'tennis_match_rnn.h5'
     prev_error = None
     best_error = None
+    errors = []
+    errors.append(avg_error)
     for i in range(10):
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data,
                   shuffle=True)
@@ -444,8 +448,9 @@ if __name__ == '__main__':
             model.save(model_file)
             print('Saved.')
         prev_error = avg_error
+        errors.append(prev_error)
 
     print(model.summary())
     print('Most recent model error: ', prev_error)
     print('Best model error: ', best_error)
-
+    print("Error history: ", errors)
