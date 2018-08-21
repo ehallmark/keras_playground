@@ -311,13 +311,13 @@ if __name__ == '__main__':
 
     print('Test_data: ', test_data[0:10])
 
-    hidden_units = 128
+    hidden_units = 256
     hidden_units_ff = 512
-    num_rnn_cells = 2
-    num_ff_cells = 20
+    num_rnn_cells = 1
+    num_ff_cells = 6
     batch_size = 256
-    predict_every_n = 4
-    dropout = 0.5
+    predict_every_n = 3
+    dropout = 0.25
     load_previous = False
     use_batch_norm = True
 

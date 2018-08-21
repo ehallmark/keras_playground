@@ -37,7 +37,7 @@ class DailyTable(TableCreator):
             'sets_won_' + self.prefix + str(i),
             'sets_against_' + self.prefix + str(i),
             'tournament_rank_' + self.prefix + str(i),
-            'round_num' + self.prefix + str(i),
+            'round_num_' + self.prefix + str(i),
             'games_won_' + self.prefix + str(i),
             'games_against_' + self.prefix + str(i),
             'clay_' + self.prefix + str(i),
@@ -52,6 +52,12 @@ class DailyTable(TableCreator):
             else:
                 attrs = attrs + opp_attrs
         return attrs
+
+    def join_str(self, i):
+        return ' left outer join '+self.table_name(i)+' as '+self.prefix+str(i) + \
+               '  on ((m.player_id,m.opponent_id,m.tournament,m.start_date)=('+self.prefix+str(i)+'.player_id,'+self.prefix+str(i)+'.opponent_id,'+self.prefix+str(i)+'.tournament,'+self.prefix+str(i)+'.start_date))' + \
+               ' left outer join '+self.table_name(i)+' as opp_'+self.prefix+str(i) + \
+               '  on ((m.opponent_id,m.player_id,m.tournament,m.start_date)=(opp_'+self.prefix+str(i)+'.player_id,opp_'+self.prefix+str(i)+'.opponent_id,opp_'+self.prefix+str(i)+'.tournament,opp_'+self.prefix+str(i)+'.start_date))'
 
     def run(self, i):
         conn = psycopg2.connect("postgresql://localhost/ib_db?user=postgres&password=password")
@@ -129,21 +135,22 @@ class DailyTable(TableCreator):
     def build_tables(self):
         print('Running aggregations in parallel')
         threads = []
-        for i in range(self.num_tables):
-            thread = Thread(target=self.run, args=(i,))
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        #for i in range(self.num_tables):
+        #    thread = Thread(target=self.run, args=(i,))
+        #    thread.start()
+        #    threads.append(thread)
+        #for thread in threads:
+        #    thread.join()
 
         # build join table
         print('Building join table...')
         sql = 'select m.player_victory, m.player_id, m.opponent_id, m.tournament, m.start_date,' + ','.join(
             self.all_attributes()) + ' from atp_matches_individual as m ' + ' '.join(
             [self.join_str(i) for i in range(self.num_tables)])
-        df = pd.read_sql(sql, engine)
-        df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
-        print("Data size:", df.shape[0])
+        print("Using sql: "+sql)
+        #df = pd.read_sql(sql, engine)
+        #df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
+        #print("Data size:", df.shape[0])
 
 
 daily_tables = DailyTable(prefix='dly', table='atp_matches_daily', num_tables=16,
