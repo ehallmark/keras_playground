@@ -66,6 +66,7 @@ junior_tables = database.junior_tables
 itf_tables = database.itf_tables
 challenger_tables = database.challenger_tables
 tournament_tables = tourney_database.tourney_tables
+day_tables = daily_database.daily_tables
 
 # previous year quality
 input_attributes = []
@@ -74,8 +75,11 @@ input_attributes2 = []
 opp_input_attributes2 = []
 input_attributes3 = []
 opp_input_attributes3 = []
+input_attributes4 = []
+opp_input_attributes4 = []
 max_len = quarter_tables.num_tables
 max_len2 = tournament_tables.num_tables
+max_len3 = day_tables.num_tables
 print("Max len2:", max_len2)
 
 additional_attributes = list(input_attributes0)
@@ -133,6 +137,12 @@ for i in range(max_len2):
     for attr in tournament_tables.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes3.append(attr)
 
+for i in range(max_len3):
+    for attr in day_tables.attribute_names_for(i, include_opp=False):
+        input_attributes4.append(attr)
+    for attr in day_tables.attribute_names_for(i, include_opp=True, opp_only=True):
+        opp_input_attributes4.append(attr)
+
 if __name__ == '__main__':
     use_sql = False
     reload_sql = False
@@ -156,6 +166,7 @@ if __name__ == '__main__':
         data5 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data6 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
         data7 = tournament_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+        data8 = day_tables.load_data(date=start_date, end_date=end_date, include_null=False)
 
         print("column labels2: " + ",".join(list(data2.columns.values)))
         print("column labels3: " + ",".join(list(data3.columns.values)))
@@ -166,7 +177,7 @@ if __name__ == '__main__':
         data = data[data.start_date < test_date]
 
         print("Merging...")
-        for other_data in [data2, data3, data4, data5, data6, data7]:
+        for other_data in [data2, data3, data4, data5, data6, data7, data8]:
             if 'player_victory' in list(other_data.columns.values):
                 other_data.drop(columns=['player_victory'], inplace=True)
             data = pd.DataFrame.merge(
@@ -243,8 +254,12 @@ if __name__ == '__main__':
     x5_test = np.array(test_data[input_attributes3])
     x6 = np.array(data[opp_input_attributes3])
     x6_test = np.array(test_data[opp_input_attributes3])
-    x7 = np.array(data[additional_attributes])
-    x7_test = np.array(test_data[additional_attributes])
+    x7 = np.array(data[input_attributes4])
+    x7_test = np.array(test_data[input_attributes4])
+    x8 = np.array(data[opp_input_attributes4])
+    x8_test = np.array(test_data[opp_input_attributes4])
+    x9 = np.array(data[additional_attributes])
+    x9_test = np.array(test_data[additional_attributes])
 
     print('Converting data for RNN')
     x = convert_to_3d(x, max_len)
@@ -257,13 +272,20 @@ if __name__ == '__main__':
     x6 = convert_to_3d(x6, max_len2)
     x6_test = convert_to_3d(x6_test, max_len2)
 
+    x7 = convert_to_3d(x7, max_len3)
+    x7_test = convert_to_3d(x7_test, max_len3)
+    x8 = convert_to_3d(x8, max_len3)
+    x8_test = convert_to_3d(x8_test, max_len3)
+
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
     X3 = Input((len(input_attributes2),))
     X4 = Input((len(opp_input_attributes2),))
     X5 = Input((int(len(input_attributes3)/max_len2), max_len2))
     X6 = Input((int(len(opp_input_attributes3)/max_len2), max_len2))
-    X7 = Input((len(additional_attributes),))
+    X7 = Input((int(len(input_attributes4) / max_len3), max_len3))
+    X8 = Input((int(len(opp_input_attributes4) / max_len3), max_len3))
+    X9 = Input((len(additional_attributes),))
 
     spread_range = range(-18, 19, 1)
     num_possible_spreads = len(spread_range)
@@ -284,8 +306,8 @@ if __name__ == '__main__':
 #    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
 #    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
 
-    data = ([x, x2, x3, x4, x5, x6, x7], [])
-    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test], [])
+    data = ([x, x2, x3, x4, x5, x6, x7, x8, x9], [])
+    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test, x8_test, x9_test], [])
 
     print('Test_data: ', test_data[0:10])
 
@@ -325,13 +347,16 @@ if __name__ == '__main__':
             norm = BatchNormalization()
             norm2 = BatchNormalization()
             norm3 = BatchNormalization()
+            norm4 = BatchNormalization()
             model1 = norm(X1)
             model2 = norm(X2)
             model3 = norm2(X3)
             model4 = norm2(X4)
             model5 = norm3(X5)
             model6 = norm3(X6)
-            model7 = BatchNormalization()(X7)
+            model7 = norm4(X7)
+            model8 = norm4(X8)
+            model9 = BatchNormalization()(X9)
         else:
             model1 = X1
             model2 = X2
@@ -340,18 +365,23 @@ if __name__ == '__main__':
             model5 = X5
             model6 = X6
             model7 = X7
+            model8 = X8
+            model9 = X9
 
         for i in range(num_rnn_cells):
             lstm = Bidirectional(LSTM(hidden_units, activation='tanh', return_sequences=i != num_rnn_cells-1))
             lstm2 = Bidirectional(LSTM(hidden_units, activation='tanh', return_sequences=i != num_rnn_cells-1))
+            lstm3 = Bidirectional(LSTM(hidden_units, activation='tanh', return_sequences=i != num_rnn_cells-1))
+            dense = Dense(hidden_units, activation='tanh')
             model1 = lstm(model1)
             model2 = lstm(model2)
-            dense = Dense(hidden_units, activation='tanh')
             model3 = dense(model3)
             model4 = dense(model4)
             model5 = lstm2(model5)
             model6 = lstm2(model6)
-            model7 = Dense(hidden_units, activation='tanh')(model7)
+            model7 = lstm3(model7)
+            model8 = lstm3(model8)
+            model9 = Dense(hidden_units, activation='tanh')(model9)
 
             if use_batch_norm:
                 norm = BatchNormalization()
@@ -363,7 +393,10 @@ if __name__ == '__main__':
                 norm3 = BatchNormalization()
                 model5 = norm3(model5)
                 model6 = norm3(model6)
-                model7 = BatchNormalization()(model7)
+                norm4 = BatchNormalization()
+                model7 = norm4(model7)
+                model8 = norm4(model8)
+                model9 = BatchNormalization()(model9)
 
             if dropout > 0:
                 model1 = Dropout(dropout)(model1)
@@ -373,8 +406,10 @@ if __name__ == '__main__':
                 model5 = Dropout(dropout)(model5)
                 model6 = Dropout(dropout)(model6)
                 model7 = Dropout(dropout)(model7)
+                model8 = Dropout(dropout)(model8)
+                model9 = Dropout(dropout)(model9)
 
-        model = Concatenate()([model1, model2, model3, model4, model5, model6, model7])
+        model = Concatenate()([model1, model2, model3, model4, model5, model6, model7, model8, model9])
         outcomes = []
         for l in range(num_ff_cells):
             prev_model = model
@@ -414,7 +449,7 @@ if __name__ == '__main__':
         #model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
         #outcomes.append(model)
         #outcomes.append(model_spread)
-        model = Model(inputs=[X1, X2, X3, X4, X5, X6, X7], outputs=outcomes)
+        model = Model(inputs=[X1, X2, X3, X4, X5, X6, X7, X8, X9], outputs=outcomes)
         model.compile(optimizer=Adam(lr=0.001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
     model_file = 'tennis_match_rnn.h5'

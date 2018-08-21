@@ -16,7 +16,6 @@ class DailyTable(TableCreator):
             self.prefix + str(i) + '.' + 'sets_against as sets_against_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'tournament_rank as tournament_rank_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'round_num as round_num_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'better_encounter as better_encounter_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'games_won as games_won_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'games_against as games_against_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'clay as clay_' + self.prefix + str(i),
