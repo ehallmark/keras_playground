@@ -134,7 +134,7 @@ for i in range(max_len2):
         opp_input_attributes3.append(attr)
 
 if __name__ == '__main__':
-    use_sql = True
+    use_sql = False
     reload_sql = False
 
     dataset_name = 'all_data.hdf'  # 'data_fixed.hdf'
@@ -222,6 +222,7 @@ if __name__ == '__main__':
     #    bet_loss4_masked,
     #    bet_loss4_masked
     ]
+    print("column labels: " + ",".join(list(data.columns.values)))
 
     for prob_attr in probability_attrs:
         # fill probability attributes with 0.5 default value

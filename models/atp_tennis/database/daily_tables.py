@@ -95,34 +95,28 @@ class DailyTable(TableCreator):
                     case when p2.player_victory then 1.0 else 0.0 end,
                     p2.sets_won,
                     p2.num_sets - p2.sets_won,
-                    coalesce(t2.masters, 250.0),
-                    round_num,
+                    p2.masters,
+                    p2.round_num,
                     p2.games_won,
                     p2.games_against,
-                    case when t2.court_surface='Clay' then 1.0 else 0.0 end,
-                    case when t2.court_surface='Grass' then 1.0 else 0.0 end,
-                    case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, t2.location) then 1.0 else 0.0 end end as local,
+                    case when p2.court_surface='Clay' then 1.0 else 0.0 end,
+                    case when p2.court_surface='Grass' then 1.0 else 0.0 end,
+                    case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, p2.nation) then 1.0 else 0.0 end end as local,
                     case when p2.round like '%%Qualifying%%' then 1.0 else 0.0 end
                 from atp_matches_match_history_linear as p1
-                join (
-                    select p2.*,r2.round as round_num from atp_matches_individual as p2
-                    join atp_matches_round as r2
-                    on ((p2.start_date,p2.tournament,p2.player_id,p2.opponent_id)=(r2.start_date,r2.tournament,r2.player_id,r2.opponent_id))
-                ) as p2
+                join  atp_matches_individual_with_meta as p2
                 on ((
                         p1.player_id,
                         p1.tournament{{IDX}},                    
                         p1.start_date{{IDX}},
                         p1.round{{IDX}}
-                    ) =(p2.player_id,p2.tournament,p2.start_date,round_num))
+                    ) =(p2.player_id,p2.tournament,p2.start_date,p2.round_num))
                 join atp_tournament_dates as t
                 on ((t.start_date,t.tournament)=(p1.start_date,p1.tournament))
-                join atp_tournament_dates as t2
-                on ((t2.start_date,t2.tournament)=(p2.start_date,p2.tournament))
                 join atp_player_characteristics as player1
                 on ((p2.player_id,p2.tournament,p2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
                 left outer join atp_countries as country 
-                on (t2.location = country.name)
+                on (p2.nation = country.name)
                 where p2.player_victory is not null and t.masters > 0 and {{WHERE_STR}}
             ) as temp order by player_id,opponent_id,tournament,start_date,random()
         )    
@@ -153,7 +147,7 @@ class DailyTable(TableCreator):
         print("Data size:", df.shape[0])
 
 
-daily_tables = DailyTable(prefix='q', table='atp_matches_daily', num_tables=16,
+daily_tables = DailyTable(prefix='dly', table='atp_matches_daily', num_tables=16,
                               join_table_name='atp_matches_daily_all', time_period=None, where_str="'t'")
 
 

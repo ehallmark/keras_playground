@@ -53,7 +53,7 @@ class DailyTable(TableCreator):
             'grass_percent_' + self.prefix + str(i),
             'clay_percent_' + self.prefix + str(i),
             'local_percent_' + self.prefix + str(i),
-            'qualifier_percent', + self.prefix + str(i),
+            'qualifier_percent' + self.prefix + str(i),
         ]
         if include_opp or opp_only:
             opp_attrs = ['opp_'+attr for attr in attrs]
@@ -158,7 +158,7 @@ class DailyTable(TableCreator):
         print("Data size:", df.shape[0])
 
 
-tourney_tables = DailyTable(prefix='q', table='atp_matches_tourney_histories', num_tables=16,
+tourney_tables = DailyTable(prefix='tnt', table='atp_matches_tourney_histories', num_tables=16,
                               join_table_name='atp_matches_tourney_histories_all', time_period=None, where_str="'t'")
 
 
