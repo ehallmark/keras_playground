@@ -11,6 +11,7 @@ import models.atp_tennis.database.create_match_tables as database
 import models.atp_tennis.database.tournament_tables as tourney_database
 import models.atp_tennis.database.daily_tables as daily_database
 from models.atp_tennis.TennisMatchEmbeddings import bet_loss4_masked
+import sklearn.metrics as metrics
 import numpy as np
 print("Loaded classes...")
 
@@ -35,9 +36,10 @@ def test_model(model, x, y_list):
     losses = []
     for i in range(len(y_pred)):
         if i % 2 == 0:
-            losses.append(np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5) * 2.0 ** int(i/2))
+            losses.append(metrics.mean_squared_error(y_list[i], y_pred[i]) * 2.0 ** int(i/2))
         else:
-            losses.append((np.mean(((y_pred[i]-y_list[i]) ** 2.0)**0.5)/12.0) * 2.0 ** int(i/2))
+            losses.append(metrics.log_loss(y_list[i], y_pred[i]) * (2.0 ** int(i/2)) / 12.0)
+
     '''
     for i in range(len(y_pred)-2, len(y_pred)):
         y_bin = y_pred[i].astype(dtype=np.float32)
@@ -57,7 +59,7 @@ def test_model(model, x, y_list):
         loss = - np.sum(profit.astype(dtype=np.float32), axis=-1).astype(dtype=np.float32) / (np.sum(invested.astype(dtype=np.float32), axis=-1) + K.epsilon()).astype(dtype=np.float32)
         losses.append(loss)
     '''
-    return sum(losses)/len(losses)
+    return sum(losses)
 
 
 quarter_tables = database.quarter_tables
@@ -262,16 +264,19 @@ if __name__ == '__main__':
     x9_test = np.array(test_data[additional_attributes])
 
     print('Converting data for RNN')
+    # quarterly
     x = convert_to_3d(x, max_len)
     x_test = convert_to_3d(x_test, max_len)
     x2 = convert_to_3d(x2, max_len)
     x2_test = convert_to_3d(x2_test, max_len)
 
+    # by tourney
     x5 = convert_to_3d(x5, max_len2)
     x5_test = convert_to_3d(x5_test, max_len2)
     x6 = convert_to_3d(x6, max_len2)
     x6_test = convert_to_3d(x6_test, max_len2)
 
+    # daily
     x7 = convert_to_3d(x7, max_len3)
     x7_test = convert_to_3d(x7_test, max_len3)
     x8 = convert_to_3d(x8, max_len3)
@@ -301,15 +306,11 @@ if __name__ == '__main__':
         actual_spread[:, int(num_possible_spreads/2) + i] = (np_spread == i).astype(dtype=np.float32)
         actual_spread_test[:, int(num_possible_spreads/2) + i] = (np_spread_test == i).astype(dtype=np.float32)
     print('done')
-#    ml = np.array(data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((samples,))
-#    ml_test = np.array(test_data[['y', 'ml_odds1', 'ml_mask']])  # np.zeros((test_samples,))
-#    spread = np.array(data[['beat_spread', 'odds1', 'spread_mask']])
-#    spread_test = np.array(test_data[['beat_spread', 'odds1', 'spread_mask']])
 
     data = ([x, x2, x3, x4, x5, x6, x7, x8, x9], [])
     test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test, x8_test, x9_test], [])
 
-    print('Test_data: ', test_data[0:10])
+    #print('Test_data: ', test_data[0:10])
 
     hidden_units = 128
     hidden_units_ff = 128
@@ -321,10 +322,7 @@ if __name__ == '__main__':
     load_previous = False
     use_batch_norm = True
 
-    loss_weights = {
-    #    'y_output': 10.,
-    #    'spread_output': 10.
-    }
+    loss_weights = {}
 
     c = 0
     for i in range(num_ff_cells):
@@ -428,30 +426,10 @@ if __name__ == '__main__':
                 outcomes.append(outcome)
                 outcomes.append(spread_model)
 
-        #model_spread = model
-        #bet = model
-        #bet_spread = model
-        #model_spread = Dense(hidden_units_ff, activation='tanh')(model_spread)
-        #bet = Dense(hidden_units_ff, activation='tanh')(bet)
-        #bet_spread = Dense(hidden_units_ff, activation='tanh')(bet_spread)
-
-        #outcome = Dense(hidden_units, activation='tanh')(model)
-        #outcome = Dense(1, activation='sigmoid')(outcome)
-
-        def bet_activation(x_):
-            return relu(x_, alpha=0., max_value=None)
-
-        #bet = Dense(1, activation=bet_activation)(bet)
-        #bet_spread = Dense(1, activation=bet_activation)(bet_spread)
-        #model = Dense(1, activation='sigmoid')(model)
-        #model_spread = Dense(1, activation='sigmoid')(model_spread)
-        #model = Concatenate(name='y_output')([model, bet])
-        #model_spread = Concatenate(name='spread_output')([model_spread, bet_spread])
-        #outcomes.append(model)
-        #outcomes.append(model_spread)
         model = Model(inputs=[X1, X2, X3, X4, X5, X6, X7, X8, X9], outputs=outcomes)
         model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
+    model.summary()
     model_file = 'tennis_match_rnn.h5'
     prev_error = None
     best_error = None
