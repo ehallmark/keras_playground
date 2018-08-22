@@ -1,4 +1,3 @@
-print("Loaded classes...")
 from keras.layers import Dense, Reshape, Bidirectional, Add, Multiply, Recurrent, Concatenate, LSTM, Lambda, Input, BatchNormalization, Dropout
 from keras.models import Model
 from keras.optimizers import Adam
@@ -145,6 +144,118 @@ for i in range(max_len3):
     for attr in day_tables.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes4.append(attr)
 
+
+hidden_units = 128
+hidden_units_ff = 128
+num_rnn_cells = 1
+num_ff_cells = 8
+batch_size = 256
+predict_every_n = 4
+dropout = 0.1
+use_batch_norm = True
+loss_weights = {}
+losses = []
+c = 0
+for i in range(num_ff_cells):
+    if i % predict_every_n == predict_every_n-1:
+        losses.append(mean_squared_error)
+        losses.append(categorical_crossentropy)
+        loss_weights['outcome'+str(i)] = 2.0**c
+        loss_weights['spread'+str(i)] = (2.0**c) / 12.0
+        c += 1
+
+
+def load_nn():
+    model = k.models.load_model(model_file)
+    model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss_weights=loss_weights, loss=losses, metrics=[])
+    return model
+
+
+spread_range = range(-18, 19, 1)
+num_possible_spreads = len(spread_range)
+
+
+def predict_nn(model, data, test_data):
+    data, test_data = get_data_nn(data, test_data)
+    data = data[0]
+    test_data = test_data[0]
+    y = model.predict(data)
+    y_test = model.predict(test_data)
+    return y, y_test
+
+
+def get_data_nn(data, test_data):
+
+    for prob_attr in probability_attrs:
+        # fill probability attributes with 0.5 default value
+        data[prob_attr].fillna(value=0.5, inplace=True)
+        test_data[prob_attr].fillna(value=0.5, inplace=True)
+    data.fillna(value=0., inplace=True)
+    test_data.fillna(value=0., inplace=True)
+
+    x = np.array(data[input_attributes])
+    x_test = np.array(test_data[input_attributes])
+    x2 = np.array(data[opp_input_attributes])
+    x2_test = np.array(test_data[opp_input_attributes])
+    x3 = np.array(data[input_attributes2])
+    x3_test = np.array(test_data[input_attributes2])
+    x4 = np.array(data[opp_input_attributes2])
+    x4_test = np.array(test_data[opp_input_attributes2])
+    x5 = np.array(data[input_attributes3])
+    x5_test = np.array(test_data[input_attributes3])
+    x6 = np.array(data[opp_input_attributes3])
+    x6_test = np.array(test_data[opp_input_attributes3])
+    x7 = np.array(data[input_attributes4])
+    x7_test = np.array(test_data[input_attributes4])
+    x8 = np.array(data[opp_input_attributes4])
+    x8_test = np.array(test_data[opp_input_attributes4])
+    x9 = np.array(data[additional_attributes])
+    x9_test = np.array(test_data[additional_attributes])
+
+    print('Converting data for RNN')
+    # quarterly
+    x = convert_to_3d(x, max_len)
+    x_test = convert_to_3d(x_test, max_len)
+    x2 = convert_to_3d(x2, max_len)
+    x2_test = convert_to_3d(x2_test, max_len)
+
+    # by tourney
+    x5 = convert_to_3d(x5, max_len2)
+    x5_test = convert_to_3d(x5_test, max_len2)
+    x6 = convert_to_3d(x6, max_len2)
+    x6_test = convert_to_3d(x6_test, max_len2)
+
+    # daily
+    x7 = convert_to_3d(x7, max_len3)
+    x7_test = convert_to_3d(x7_test, max_len3)
+    x8 = convert_to_3d(x8, max_len3)
+    x8_test = convert_to_3d(x8_test, max_len3)
+
+    print('Num spreads: ', num_possible_spreads)
+    y = np.array(data['y'])
+    y_test = np.array(test_data['y'])
+    np_spread = np.array(data['spread'])
+    np_spread_test = np.array(test_data['spread'])
+    actual_spread = np.empty((data.shape[0], num_possible_spreads))
+    actual_spread_test = np.empty((test_data.shape[0], num_possible_spreads))
+    print('calculating spreads...')
+    for i in spread_range:
+        actual_spread[:, int(num_possible_spreads/2) + i] = (np_spread == i).astype(dtype=np.float32)
+        actual_spread_test[:, int(num_possible_spreads/2) + i] = (np_spread_test == i).astype(dtype=np.float32)
+    print('done')
+
+    data = ([x, x2, x3, x4, x5, x6, x7, x8, x9], [])
+    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test, x8_test, x9_test], [])
+
+    for i in range(num_ff_cells):
+        if i % predict_every_n == predict_every_n - 1:
+            data[1].append(y)
+            data[1].append(actual_spread)
+            test_data[1].append(y_test)
+            test_data[1].append(actual_spread_test)
+    return data, test_data
+
+
 if __name__ == '__main__':
     use_sql = False
     reload_sql = False
@@ -231,56 +342,9 @@ if __name__ == '__main__':
         #data = data[np.isfinite(data.price1)]
         #test_data = test_data[np.isfinite(test_data.price1)]
 
-    losses = [
-    #    bet_loss4_masked,
-    #    bet_loss4_masked
-    ]
     print("column labels: " + ",".join(list(data.columns.values)))
 
-    for prob_attr in probability_attrs:
-        # fill probability attributes with 0.5 default value
-        data[prob_attr].fillna(value=0.5, inplace=True)
-        test_data[prob_attr].fillna(value=0.5, inplace=True)
-    data.fillna(value=0., inplace=True)
-    test_data.fillna(value=0., inplace=True)
-
-    x = np.array(data[input_attributes])
-    x_test = np.array(test_data[input_attributes])
-    x2 = np.array(data[opp_input_attributes])
-    x2_test = np.array(test_data[opp_input_attributes])
-    x3 = np.array(data[input_attributes2])
-    x3_test = np.array(test_data[input_attributes2])
-    x4 = np.array(data[opp_input_attributes2])
-    x4_test = np.array(test_data[opp_input_attributes2])
-    x5 = np.array(data[input_attributes3])
-    x5_test = np.array(test_data[input_attributes3])
-    x6 = np.array(data[opp_input_attributes3])
-    x6_test = np.array(test_data[opp_input_attributes3])
-    x7 = np.array(data[input_attributes4])
-    x7_test = np.array(test_data[input_attributes4])
-    x8 = np.array(data[opp_input_attributes4])
-    x8_test = np.array(test_data[opp_input_attributes4])
-    x9 = np.array(data[additional_attributes])
-    x9_test = np.array(test_data[additional_attributes])
-
-    print('Converting data for RNN')
-    # quarterly
-    x = convert_to_3d(x, max_len)
-    x_test = convert_to_3d(x_test, max_len)
-    x2 = convert_to_3d(x2, max_len)
-    x2_test = convert_to_3d(x2_test, max_len)
-
-    # by tourney
-    x5 = convert_to_3d(x5, max_len2)
-    x5_test = convert_to_3d(x5_test, max_len2)
-    x6 = convert_to_3d(x6, max_len2)
-    x6_test = convert_to_3d(x6_test, max_len2)
-
-    # daily
-    x7 = convert_to_3d(x7, max_len3)
-    x7_test = convert_to_3d(x7_test, max_len3)
-    x8 = convert_to_3d(x8, max_len3)
-    x8_test = convert_to_3d(x8_test, max_len3)
+    data, test_data = get_data_nn(data, test_data)
 
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
@@ -292,55 +356,14 @@ if __name__ == '__main__':
     X8 = Input((int(len(opp_input_attributes4) / max_len3), max_len3))
     X9 = Input((len(additional_attributes),))
 
-    spread_range = range(-18, 19, 1)
-    num_possible_spreads = len(spread_range)
-    print('Num spreads: ', num_possible_spreads)
-    y = np.array(data['y'])
-    y_test = np.array(test_data['y'])
-    np_spread = np.array(data['spread'])
-    np_spread_test = np.array(test_data['spread'])
-    actual_spread = np.empty((data.shape[0], num_possible_spreads))
-    actual_spread_test = np.empty((test_data.shape[0], num_possible_spreads))
-    print('calculating spreads...')
-    for i in spread_range:
-        actual_spread[:, int(num_possible_spreads/2) + i] = (np_spread == i).astype(dtype=np.float32)
-        actual_spread_test[:, int(num_possible_spreads/2) + i] = (np_spread_test == i).astype(dtype=np.float32)
-    print('done')
-
-    data = ([x, x2, x3, x4, x5, x6, x7, x8, x9], [])
-    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test, x8_test, x9_test], [])
-
     #print('Test_data: ', test_data[0:10])
 
-    hidden_units = 128
-    hidden_units_ff = 128
-    num_rnn_cells = 1
-    num_ff_cells = 8
-    batch_size = 256
-    predict_every_n = 4
-    dropout = 0.1
-    use_batch_norm = True
-
     load_previous = False
+    model_file = 'tennis_match_rnn.h5'
 
-    loss_weights = {}
-
-    c = 0
-    for i in range(num_ff_cells):
-        if i % predict_every_n == predict_every_n-1:
-            data[1].append(y)
-            data[1].append(actual_spread)
-            test_data[1].append(y_test)
-            test_data[1].append(actual_spread_test)
-            losses.append(mean_squared_error)
-            losses.append(categorical_crossentropy)
-            loss_weights['outcome'+str(i)] = 2.0**c
-            loss_weights['spread'+str(i)] = (2.0**c) / 12.0
-            c += 1
 
     if load_previous:
-        model = k.models.load_model('tennis_match_rnn.h5')
-        model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss_weights=loss_weights, loss=losses, metrics=losses)
+        model = load_nn()
     else:
         if use_batch_norm:
             norm = BatchNormalization()
@@ -433,7 +456,6 @@ if __name__ == '__main__':
     model.summary()
     avg_error = test_model(model, test_data[0], test_data[1])
     print("Starting model score: ", avg_error)
-    model_file = 'tennis_match_rnn.h5'
     prev_error = avg_error
     best_error = avg_error
     errors = []
