@@ -319,8 +319,9 @@ if __name__ == '__main__':
     batch_size = 256
     predict_every_n = 4
     dropout = 0.1
-    load_previous = False
     use_batch_norm = True
+
+    load_previous = False
 
     loss_weights = {}
 
@@ -427,17 +428,17 @@ if __name__ == '__main__':
                 outcomes.append(spread_model)
 
         model = Model(inputs=[X1, X2, X3, X4, X5, X6, X7, X8, X9], outputs=outcomes)
-        model.compile(optimizer=Adam(lr=0.0001, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
+        model.compile(optimizer=Adam(lr=0.0005, decay=0.01), loss_weights=loss_weights, loss=losses, metrics=[])
 
     model.summary()
     avg_error = test_model(model, test_data[0], test_data[1])
     print("Starting model score: ", avg_error)
     model_file = 'tennis_match_rnn.h5'
-    prev_error = None
-    best_error = None
+    prev_error = avg_error
+    best_error = avg_error
     errors = []
     errors.append(avg_error)
-    for i in range(10):
+    for i in range(30):
         model.fit(data[0], data[1], batch_size=batch_size, initial_epoch=i, epochs=i+1, validation_data=test_data,
                   shuffle=True)
         avg_error = test_model(model, test_data[0], test_data[1])
