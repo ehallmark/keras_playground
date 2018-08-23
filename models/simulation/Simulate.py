@@ -34,8 +34,10 @@ class BetOption:
         if self.best_odds2 < 0.0 or self.best_odds2 > 1.0:
             raise ArithmeticError('Best odds2: ' + str(self.best_odds2))
 
-        self.payout = 1.0 / (self.best_odds1 + self.best_odds2)
-
+        if (self.best_odds1 + self.best_odds2) > 0:
+            self.payout = 1.0 / (self.best_odds1 + self.best_odds2)
+        else:
+            self.payout = 0.0
 
 def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, actual_totals_func, decision_func, test_meta_data,
                         price_str='max_price', spread_price_str='price', totals_price_str='totals_price', num_trials=50, sampling=0, verbose=False,

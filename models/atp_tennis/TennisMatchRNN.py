@@ -19,6 +19,7 @@ from models.atp_tennis.TennisMatchOutcomeLogit import input_attributes0
 np.random.seed(23952)
 print("Loaded classes...")
 
+
 def convert_to_3d(matrix, num_steps):
     new_x_len = int(matrix.shape[1] / num_steps)
     new_matrix = np.empty((matrix.shape[0], new_x_len, num_steps))
@@ -149,7 +150,7 @@ num_ff_cells = 8
 batch_size = 256
 predict_every_n = 4
 dropout = 0.1
-use_batch_norm = True
+use_batch_norm = False
 loss_weights = {}
 losses = []
 c = 0
@@ -181,16 +182,8 @@ def predict_nn(model, data):
     return y
 
 
-def predict_by_batch(model, data, batch_size=5000):
-    predictions = [[], [], [], []]
-    for i in range(0, data[0].shape[0], batch_size):
-        chunks = [d[i:min(d.shape[0], i+batch_size)] for d in data]
-        prediction_chunks = model.predict(chunks)
-        print('predicted', i, 'out of', data[0].shape[0])
-        for j in range(len(prediction_chunks)):
-            prediction_chunk = prediction_chunks[j]
-            for p in prediction_chunk:
-                predictions[j].append(p)
+def predict_by_batch(model, data, batch_size=256):
+    return model.predict(data, batch_size=batch_size)
 
 
 def get_data_nn(data):
@@ -321,6 +314,13 @@ if __name__ == '__main__':
 
     data = get_data_nn(data)
     test_data = get_data_nn(test_data)
+
+    means = [np.mean(d, 0, keepdims=True) for d in data[0]]
+    vars = [np.var(d, 0, keepdims=True) for d in data[0]]
+
+    for i in range(len(means)):
+        data[0][i] = (data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
+        test_data[0][i] = (test_data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
 
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))

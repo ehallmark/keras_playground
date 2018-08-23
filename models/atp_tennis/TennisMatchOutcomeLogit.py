@@ -468,6 +468,7 @@ def get_date_from(test_season, num_test_years, num_test_months):
     date = datetime.date(year-num_test_years, month, day).strftime('%Y-%m-%d')
     return date
 
+
 def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101, num_test_months=0):
     date = get_date_from(test_season, num_test_years, num_test_months)
     data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False, masters_min=masters_min)

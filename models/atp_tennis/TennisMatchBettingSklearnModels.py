@@ -216,7 +216,7 @@ def load_data(start_year, test_year, test_tournament=None, masters_min=101, attr
     data = pd.DataFrame.merge(
         data,
         betting_data,
-        'left',
+        'inner',
         left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
         right_on=['start_date', 'team1', 'team2', 'tournament'],
         validate='1:m'
@@ -229,7 +229,7 @@ def load_data(start_year, test_year, test_tournament=None, masters_min=101, attr
         else:
             return 1.
 
-    data = data.assign(spread_mask=pd.Series([mask_func(x) for x in data['spread1'].iloc[:]]).values)
+    #data = data.assign(spread_mask=pd.Series([mask_func(x) for x in data['spread1'].iloc[:]]).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
@@ -257,15 +257,15 @@ def bet_func(epsilon, bet_ml=True):
 
         if bet_row['itf'] > 0.5:
             min_odds = 0.20
-            max_odds = 0.525
+            max_odds = 0.60
             epsilon_real = epsilon
         elif bet_row['challenger'] > 0.5:
             min_odds = 0.20
-            max_odds = 0.525
+            max_odds = 0.60
             epsilon_real = epsilon
         else:
             min_odds = 0.20
-            max_odds = 0.5
+            max_odds = 0.60
             epsilon_real = epsilon
 
         if odds < min_odds or odds > max_odds:
@@ -347,7 +347,7 @@ def spread_bet_func(epsilon, bet_spread=True):
             exit(1)
 
         #if odds < 0.425 or odds > 0.525:
-        if odds < 0.40 or odds > 0.5:
+        if odds < 0.45 or odds > 0.525:
             return 0
 
         double_down_below = 0  # 0.35
@@ -392,7 +392,7 @@ def predict(predictions, prediction_function, train=False):
 
 def spread_prob(predictions_spread, spread, win=True):
     spread_pos = -int(spread) + 1
-    prob = predictions_spread[19 + spread_pos:].sum()
+    prob = predictions_spread[18 + spread_pos:].sum()
     if not win:
         prob = 1.0 - prob
     return prob
@@ -422,7 +422,8 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
                 (not bet_on_itf and bet_row['itf'] > 0.5) or \
                 bet_row['opp_prev_year_prior_encounters'] < 3 or \
                 (not bet_on_clay and bet_row['clay'] > 0.5) or \
-                (not bet_first_round and bet_row['first_row']>0.5) or \
+                (not bet_first_round and bet_row['first_round']>0.5) or \
+                (bet_row['is_qualifier'] > 0.5) or \
                 bet_row['prev_year_prior_encounters'] < 3:
             return {
                 'ml_bet1': 0,
@@ -433,14 +434,10 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
                 'under_bet': 0
             }
 
-        spread_prob_win1 = spread_prob(bet_row['predictions_spread'],
+        spread_prob_win1 = spread_prob(np.array(bet_row['predictions_spread']).flatten(),
                                        spread_bet_option.spread1 - spread_cushion, win=True)
-        spread_prob_win2 = spread_prob(bet_row['predictions_spread'].flip(),
-                                       spread_bet_option.spread2 - spread_cushion, win=True)
-        spread_prob_loss1 = spread_prob(bet_row['predictions_spread'],
+        spread_prob_loss1 = spread_prob(np.array(bet_row['predictions_spread']).flatten(),
                                         spread_bet_option.spread1 - spread_cushion, win=False)
-        spread_prob_loss2 = spread_prob(bet_row['predictions_spread'].flip(),
-                                        spread_bet_option.spread2 - spread_cushion, win=False)
 
         if bet_totals:
             if totals_type_by_betting_site[bet_row['book_name']] == 'Game':
@@ -484,12 +481,9 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
 
         if spread_payout < min_payout:
             spread_bet1 = 0
-            spread_bet2 = 0
         else:
             spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1, spread_prob_loss1,
                                       prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
-            spread_bet2 = spread_func(spread_bet_option.max_price2, spread_bet_option.best_odds2, spread_prob_win2, spread_prob_loss2,
-                                      1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
 
         if totals_payout < min_payout:
             over_bet = 0
@@ -504,17 +498,28 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
         #   basically, we don't want to bet against them...
         if bet_row['grand_slam'] > 0.5:
             spread_bet1 = check_player_for_spread(spread_bet1, bet_row['opponent_id'])
-            spread_bet2 = check_player_for_spread(spread_bet2, bet_row['player_id'])
 
         return {
             'ml_bet1': ml_bet1,
-            'ml_bet2': ml_bet2,
+            'ml_bet2': 0,
             'spread_bet1': spread_bet1,
-            'spread_bet2': spread_bet2,
+            'spread_bet2': 0,
             'over_bet': over_bet,
             'under_bet': under_bet
         }
     return decision_func_helper
+
+
+def flip(m, axis):
+    if not hasattr(m, 'ndim'):
+        m = np.asarray(m)
+    indexer = [slice(None)] * m.ndim
+    try:
+        indexer[axis] = slice(None, None, -1)
+    except IndexError:
+        raise ValueError("axis=%i is invalid for the %i-dimensional input array"
+                         % (axis, m.ndim))
+    return m[tuple(indexer)]
 
 
 def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
@@ -553,7 +558,7 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
     return prediction_func_helper
 
 
-start_year = '2018-01-01'
+start_year = '2015-01-01'
 
 if __name__ == '__main__':
     model = load_nn()
@@ -562,8 +567,8 @@ if __name__ == '__main__':
     bet_totals = False
     bet_on_challengers = True
     bet_on_pros = True
-    bet_on_itf = True
-    bet_on_clay = True
+    bet_on_itf = False
+    bet_on_clay = False
     bet_first_round = True
     min_payout = 0.92
     if bet_on_itf:
@@ -582,16 +587,18 @@ if __name__ == '__main__':
             predictions_nn=pd.Series([(y_nn[2][i] + y_nn[0][i]) / 2.0 for i in range(data.shape[0])]).values)
         data = data.assign(
             predictions_spread=pd.Series([(y_nn[1][i] + y_nn[3][i]) / 2.0 for i in range(data.shape[0])]).values)
-
+    all_labels = list(data.columns.values)
+    print("ALL ATTRS: ", all_labels)
     print("TEST")
     num_test_years = 0
-    for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
+    for test_year in [datetime.date(2016, 6, 1), datetime.date(2016, 1, 1), datetime.date(2017, 1, 1)]:
         for num_test_months in [3, 6, 12]:
             graph = False
             all_predictions = []
             date = tennis_model.get_date_from(test_year.strftime('%Y-%m-%d'), num_test_years, num_test_months)
-            test_data = data[data.start_date >= date]
-            test_data = test_data[test_data.start_date < datetime.datetime.strptime(test_year, '%Y-%m-%d')]
+            print("Using date: ", date)
+            test_data = data[data.start_date >= datetime.datetime.strptime(date, '%Y-%m-%d').date()]
+            test_data = test_data[test_data.start_date < test_year]
             predictions = np.array(test_data['predictions_nn'])
             predict(predictions, prediction_function=prediction_func(
                 min_payout=min_payout, bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
