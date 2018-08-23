@@ -16,6 +16,7 @@ class TableCreator:
         self.num_tables = num_tables
         self.join_table_name = join_table_name
         self.table = table
+        self.data = None
 
     def table_name(self, i):
         return self.table + str(i)
@@ -200,8 +201,12 @@ class TableCreator:
         return all_attribute_names
 
     def load_data(self, date=None, end_date=None, include_null=False):
-        print('Loading table:', self.join_table_name)
-        df = pd.read_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name)
+        if self.data is None:
+            print('Loading table:', self.join_table_name)
+            df = pd.read_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name)
+            self.data = df
+        else:
+            df = self.data
         #if not include_null:
         #    df = df[np.df.player_victory is not None]
         if end_date is not None:

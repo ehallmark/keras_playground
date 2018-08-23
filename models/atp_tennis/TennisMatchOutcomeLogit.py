@@ -446,7 +446,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
     return sql
 
 
-def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101, num_test_months=0):
+def get_date_from(test_season, num_test_years, num_test_months):
     month = int(test_season[5:7])
     year = int(test_season[0:4])
     day = int(test_season[8:10])
@@ -464,12 +464,17 @@ def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, sta
         day = 28
     elif month in [4, 6, 9, 11] and day > 30:
         day = 30
+
     date = datetime.date(year-num_test_years, month, day).strftime('%Y-%m-%d')
+    return date
+
+def get_all_data(all_attributes, test_season='2017-01-01', num_test_years=1, start_year='2005-01-01', tournament=None, masters_min=101, num_test_months=0):
+    date = get_date_from(test_season, num_test_years, num_test_months)
     data = load_data(all_attributes, test_season=date, start_year=start_year, keep_nulls=False, masters_min=masters_min)
     test_data = load_data(all_attributes, test_season=test_season, start_year=date, keep_nulls=tournament is not None, masters_min=masters_min)
     if tournament is not None:
-        #data = data[data.tournament==tournament]
-        test_data = test_data[test_data.tournament==tournament]
+        data = data[data.tournament == tournament]
+        test_data = test_data[test_data.tournament == tournament]
         print('data size after tournament filter:', data.shape, test_data.shape)
     return data, test_data
 

@@ -2,14 +2,11 @@ from keras.layers import Dense, Reshape, Bidirectional, Add, Multiply, Recurrent
 from keras.models import Model
 from keras.optimizers import Adam
 import keras as k
-import keras.backend as K
-import models.atp_tennis.TennisMatchBettingSklearnModels as tennis_model
 print("Loaded classes...")
 from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage, all_attributes
 import models.atp_tennis.database.create_match_tables as database
 import models.atp_tennis.database.tournament_tables as tourney_database
 import models.atp_tennis.database.daily_tables as daily_database
-from models.atp_tennis.TennisMatchEmbeddings import bet_loss4_masked
 import sklearn.metrics as metrics
 import numpy as np
 print("Loaded classes...")
@@ -166,8 +163,10 @@ for i in range(num_ff_cells):
 
 
 def load_nn():
+    print('Loading model...')
     model = k.models.load_model(model_file)
     model.compile(optimizer=Adam(lr=0.00001, decay=0.001), loss_weights=loss_weights, loss=losses, metrics=[])
+    print('Loaded.')
     return model
 
 
@@ -175,87 +174,101 @@ spread_range = range(-18, 19, 1)
 num_possible_spreads = len(spread_range)
 
 
-def predict_nn(model, data, test_data):
-    data, test_data = get_data_nn(data, test_data)
+def predict_nn(model, data):
+    data = get_data_nn(data)
     data = data[0]
-    test_data = test_data[0]
-    y = model.predict(data)
-    y_test = model.predict(test_data)
-    return y, y_test
+    y = predict_by_batch(model, data)
+    return y
 
 
-def get_data_nn(data, test_data):
+def predict_by_batch(model, data, batch_size=5000):
+    predictions = [[], [], [], []]
+    for i in range(0, data[0].shape[0], batch_size):
+        chunks = [d[i:min(d.shape[0], i+batch_size)] for d in data]
+        prediction_chunks = model.predict(chunks)
+        print('predicted', i, 'out of', data[0].shape[0])
+        for j in range(len(prediction_chunks)):
+            prediction_chunk = prediction_chunks[j]
+            for p in prediction_chunk:
+                predictions[j].append(p)
 
+
+def get_data_nn(data):
     for prob_attr in probability_attrs:
         # fill probability attributes with 0.5 default value
         data[prob_attr].fillna(value=0.5, inplace=True)
-        test_data[prob_attr].fillna(value=0.5, inplace=True)
     data.fillna(value=0., inplace=True)
-    test_data.fillna(value=0., inplace=True)
 
     x = np.array(data[input_attributes])
-    x_test = np.array(test_data[input_attributes])
     x2 = np.array(data[opp_input_attributes])
-    x2_test = np.array(test_data[opp_input_attributes])
     x3 = np.array(data[input_attributes2])
-    x3_test = np.array(test_data[input_attributes2])
     x4 = np.array(data[opp_input_attributes2])
-    x4_test = np.array(test_data[opp_input_attributes2])
     x5 = np.array(data[input_attributes3])
-    x5_test = np.array(test_data[input_attributes3])
     x6 = np.array(data[opp_input_attributes3])
-    x6_test = np.array(test_data[opp_input_attributes3])
     x7 = np.array(data[input_attributes4])
-    x7_test = np.array(test_data[input_attributes4])
     x8 = np.array(data[opp_input_attributes4])
-    x8_test = np.array(test_data[opp_input_attributes4])
     x9 = np.array(data[additional_attributes])
-    x9_test = np.array(test_data[additional_attributes])
 
     print('Converting data for RNN')
     # quarterly
     x = convert_to_3d(x, max_len)
-    x_test = convert_to_3d(x_test, max_len)
     x2 = convert_to_3d(x2, max_len)
-    x2_test = convert_to_3d(x2_test, max_len)
 
     # by tourney
     x5 = convert_to_3d(x5, max_len2)
-    x5_test = convert_to_3d(x5_test, max_len2)
     x6 = convert_to_3d(x6, max_len2)
-    x6_test = convert_to_3d(x6_test, max_len2)
 
     # daily
     x7 = convert_to_3d(x7, max_len3)
-    x7_test = convert_to_3d(x7_test, max_len3)
     x8 = convert_to_3d(x8, max_len3)
-    x8_test = convert_to_3d(x8_test, max_len3)
 
     print('Num spreads: ', num_possible_spreads)
     y = np.array(data['y'])
-    y_test = np.array(test_data['y'])
     np_spread = np.array(data['spread'])
-    np_spread_test = np.array(test_data['spread'])
     actual_spread = np.empty((data.shape[0], num_possible_spreads))
-    actual_spread_test = np.empty((test_data.shape[0], num_possible_spreads))
     print('calculating spreads...')
     for i in spread_range:
         actual_spread[:, int(num_possible_spreads/2) + i] = (np_spread == i).astype(dtype=np.float32)
-        actual_spread_test[:, int(num_possible_spreads/2) + i] = (np_spread_test == i).astype(dtype=np.float32)
     print('done')
 
     data = ([x, x2, x3, x4, x5, x6, x7, x8, x9], [])
-    test_data = ([x_test, x2_test, x3_test, x4_test, x5_test, x6_test, x7_test, x8_test, x9_test], [])
-
     for i in range(num_ff_cells):
         if i % predict_every_n == predict_every_n - 1:
             data[1].append(y)
             data[1].append(actual_spread)
-            test_data[1].append(y_test)
-            test_data[1].append(actual_spread_test)
-    return data, test_data
+    return data
 
 
+def merge_data(data, start_date, end_date):
+    data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data4 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data5 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data6 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data7 = tournament_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data8 = day_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+
+    for other_data in [data2, data3, data4, data5, data6, data7, data8]:
+        if 'player_victory' in list(other_data.columns.values):
+            other_data.drop(columns=['player_victory'], inplace=True)
+        data = pd.DataFrame.merge(
+            data,
+            other_data,
+            'inner',
+            left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
+            validate='1:1'
+        )
+        all_labels = list(data.columns.values)
+        labels_set = set(all_labels)
+        for label in labels_set:
+            if all_labels.count(label) > 1:
+                print("DUPLICATE LABEL FOUND:", label)
+    print('Loaded data...')
+    return data
+
+
+model_file = 'tennis_match_rnn.h5'
 if __name__ == '__main__':
     use_sql = False
     reload_sql = False
@@ -270,52 +283,14 @@ if __name__ == '__main__':
 
         data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'),
                          keep_nulls=False, masters_min=1, save=reload_sql, reload=not reload_sql)
-        if reload_sql:
-            exit(0)
-
-        data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data4 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data5 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data6 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data7 = tournament_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-        data8 = day_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-
-        print("column labels2: " + ",".join(list(data2.columns.values)))
-        print("column labels3: " + ",".join(list(data3.columns.values)))
-        print("column labels4: " + ",".join(list(data4.columns.values)))
-        print("column labels5: " + ",".join(list(data5.columns.values)))
 
         test_data = data[data.start_date >= test_date]
         data = data[data.start_date < test_date]
 
-        print("Merging...")
-        for other_data in [data2, data3, data4, data5, data6, data7, data8]:
-            if 'player_victory' in list(other_data.columns.values):
-                other_data.drop(columns=['player_victory'], inplace=True)
-            data = pd.DataFrame.merge(
-                data,
-                other_data,
-                'inner',
-                left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-                right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-                validate='1:1'
-            )
-            print("Merging test data...")
-            test_data = pd.DataFrame.merge(
-                test_data,
-                other_data,
-                'inner',
-                left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-                right_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-                validate='1:1'
-            )
-            all_labels = list(data.columns.values)
-            labels_set = set(all_labels)
-            for label in labels_set:
-                if all_labels.count(label) > 1:
-                    print("DUPLICATE LABEL FOUND:", label)
-        print('Loaded data...')
+        data, test_data = merge_data(data, start_date, end_date), merge_data(test_data, start_date, end_date)
+
+        if reload_sql:
+            exit(0)
 
         def bool_to_int(b):
             if b:
@@ -344,7 +319,8 @@ if __name__ == '__main__':
 
     print("column labels: " + ",".join(list(data.columns.values)))
 
-    data, test_data = get_data_nn(data, test_data)
+    data = get_data_nn(data)
+    test_data = get_data_nn(test_data)
 
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
@@ -359,8 +335,6 @@ if __name__ == '__main__':
     #print('Test_data: ', test_data[0:10])
 
     load_previous = False
-    model_file = 'tennis_match_rnn.h5'
-
 
     if load_previous:
         model = load_nn()

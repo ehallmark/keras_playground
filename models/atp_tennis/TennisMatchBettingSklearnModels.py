@@ -1,4 +1,6 @@
 from models.atp_tennis.TennisMatchOutcomeLogit import test_model, to_percentage
+from models.atp_tennis.TennisMatchRNN import load_nn, predict_nn
+import models.atp_tennis.TennisMatchRNN as nn
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import LinearSVC
@@ -16,8 +18,6 @@ from models.simulation.Simulate import simulate_money_line
 import datetime
 import keras as k
 from keras.optimizers import Adam
-import models.atp_tennis.TennisMatchRNN as nn
-from models.atp_tennis.TennisMatchRNN import load_nn, predict_nn
 
 totals_type_by_betting_site = {  # describes the totals type for each betting site
     'Bovada': 'Set',
@@ -60,7 +60,7 @@ for meta in meta_attributes:
     if meta not in all_attributes:
         all_attributes.append(meta)
 
-for attr in nn.input_attributes:
+for attr in nn.additional_attributes:
     if attr not in all_attributes:
         all_attributes.append(attr)
 
@@ -190,18 +190,14 @@ def extract_beat_spread_binary(spreads, spread_actuals):
     return res
 
 
-def load_outcome_predictions_and_actuals(attributes, test_tournament=None, model=None, test_year=datetime.date.today(), num_test_years = 1, start_year='2005-01-01', masters_min=101, num_test_months=0):
-    data, test_data = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=num_test_years, start_year=start_year, masters_min=masters_min, num_test_months=num_test_months)
-    if model is not None:
-        y_nn, y_nn_test = predict_nn(model, data, test_data)
-        data = data.assign(predictions_nn=pd.Series([(y_nn[2][i] + y_nn[0][i])/2.0 for i in range(data.shape[0])]).values)
-        test_data = test_data.assign(predictions_nn=pd.Series([(y_nn_test[2][i]+y_nn_test[0])/2.0 for i in range(test_data.shape[0])]).values)
-        data = data.assign(predictions_spread=pd.Series([(y_nn[1][i] + y_nn[3][i])/2.0 for i in range(data.shape[0])]).values)
-        test_data = test_data.assign(predictions_spread=pd.Series([(y_nn_test[1][i]+y_nn_test[3])/2.0 for i in range(test_data.shape[0])]).values)
-    return data, test_data
+def load_outcome_predictions_and_actuals(attributes, test_tournament=None, test_year=datetime.date.today(), start_year='2005-01-01', masters_min=101):
+    data, _ = tennis_model.get_all_data(attributes, tournament=test_tournament, test_season=test_year.strftime('%Y-%m-%d'), num_test_years=0, start_year=start_year, masters_min=masters_min, num_test_months=0)
+    start_year = datetime.datetime.strptime(start_year, '%Y-%m-%d').date()
+    data = nn.merge_data(data, start_year, test_year)
+    return data
 
 
-def load_data(start_year, test_year, num_test_years, test_tournament=None, model=None, masters_min=101, num_test_months=0, attributes=list(tennis_model.all_attributes)):
+def load_data(start_year, test_year, test_tournament=None, masters_min=101, attributes=list(tennis_model.all_attributes)):
     if 'spread' not in attributes:
         attributes.append('spread')
     if 'totals' not in attributes:
@@ -213,19 +209,10 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
     for attr in all_attributes:
         if attr not in betting_only_attributes and attr not in attributes:
             attributes.append(attr)
-    data, test_data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, model=model, test_year=test_year, num_test_years=num_test_years,
-                                                               start_year=start_year, masters_min=masters_min, num_test_months=num_test_months)
+    data = load_outcome_predictions_and_actuals(attributes, test_tournament=test_tournament, start_year=start_year, test_year=test_year, masters_min=masters_min)
 
     betting_data = load_betting_data(betting_sites, test_year=test_year)
 
-    test_data = pd.DataFrame.merge(
-        test_data,
-        betting_data,
-        'left',
-        left_on=['start_date', 'player_id', 'opponent_id', 'tournament'],
-        right_on=['start_date', 'team1', 'team2', 'tournament'],
-        validate='1:m'
-    )
     data = pd.DataFrame.merge(
         data,
         betting_data,
@@ -243,12 +230,11 @@ def load_data(start_year, test_year, num_test_years, test_tournament=None, model
             return 1.
 
     data = data.assign(spread_mask=pd.Series([mask_func(x) for x in data['spread1'].iloc[:]]).values)
-    test_data = test_data.assign(spread_mask=pd.Series([mask_func(x) for x in test_data['spread1'].iloc[:]]).values)
     #data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #test_data.sort_values(by=['betting_date'], inplace=True, ascending=True, kind='mergesort')
     #data.reset_index(drop=True, inplace=True)
     #test_data.reset_index(drop=True, inplace=True)
-    return data, test_data
+    return data
 
 
 alpha = 1.0
@@ -392,109 +378,15 @@ def spread_bet_func(epsilon, bet_spread=True):
     return bet_func_helper
 
 
-def predict(data, test_data, graph=False, train=True, prediction_function=None):
-    all_predictions = []
-    lr = lambda: LogisticRegression()
-    rf = lambda: RandomForestClassifier(n_estimators=300)
-    nb = lambda: GaussianNB()
-    plt.figure(figsize=(10, 10))
-    ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
-    ax2 = plt.subplot2grid((3, 1), (2, 0))
-    ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    y_str = 'y'  # 'beat_spread'
-    X_train = np.array(data[betting_input_attributes].iloc[:, :])
-    y_train = np.array(data[y_str].iloc[:]).flatten()
-    X_test = np.array(test_data[betting_input_attributes].iloc[:, :])
-    y_test = np.array(test_data[y_str].iloc[:]).flatten()
-    for _model, name in [
-        (lr, 'Logit Regression'),
-        # (svm, 'Support Vector'),
-        (nb, 'Naive Bayes'),
-        (rf, 'Random Forest'),
-    ]:
-        #print('With betting model: ', name)
-        model_predictions = []
-        all_predictions.append(model_predictions)
-        seed = int(np.random.randint(0, high=1000000, size=1)) * 2
-        if name == 'Random Forest':
-            model = _model()
-            model.fit(X_train, y_train)
-            prob_pos = predict_proba(model, X_test)
-            model_predictions.append(prob_pos)
-        else:
-            for i in range(150):
-                model = _model()
-                ratio = 0.75
-                X_train_sample = sample2d(X_train, seed + i, ratio)
-                y_train_sample = sample2d(y_train, seed + i, ratio)
-                model.fit(X_train_sample, y_train_sample)
-                prob_pos = predict_proba(model, X_test)
-                model_predictions.append(prob_pos)
-                if graph:
-                    fraction_of_positives, mean_predicted_value = \
-                        calibration_curve(y_test, prob_pos, n_bins=10)
-                    ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                             label="%s" % (name,))
-                    ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                             histtype="step", lw=2)
-
-                # test_return, num_bets = simulate_spread(lambda j: prob_pos[j], lambda j: test_data['spread'].iloc[j],
-                #                                  bet_func(model_to_epsilon[name]), test_data,
-                #                                  'price', 2, sampling=0, shuffle=True)
-                # print('Final test return:', test_return, ' Num bets:', num_bets, ' Avg Error:', to_percentage(avg_error), ' Test years:', num_test_years, ' Year:', test_year)
-                # print('---------------------------------------------------------')
-
-    if graph:
-        ax1.set_ylabel("Fraction of positives")
-        ax1.set_ylim([-0.05, 1.05])
-        ax1.legend(loc="lower right")
-        ax1.set_title('Calibration plots  (reliability curve)')
-
-        ax2.set_xlabel("Mean predicted value")
-        ax2.set_ylabel("Count")
-        ax2.legend(loc="upper center", ncol=2)
-
-        plt.tight_layout()
-        plt.show()
-
-    predictions = []
-
+def predict(predictions, prediction_function, train=False):
     # parameters
-    train_params = [
-        [0.33, 0.33, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        [0.1, 0.8, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        [0.8, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-        [0.1, 0.1, [0., 0.01, 0.025, 0.05, 0.1, 0.20]],
-    ]
+    epsilons = [0., 0.01, 0.025, 0.05, 0.1, 0.20]
+    if not train:
+        epsilons = [0.]
 
-    test_idx = 0
-
-    if train:
-        params = train_params
-    else:
-        test_params = [
-            [train_params[test_idx][0], train_params[test_idx][1], [train_params[test_idx][2][0]]]
-        ]
-        params = test_params
-        # print("Test params: ", params)
-
-    for bayes_model_percent, logit_percent, epsilons in params:
+    if prediction_function is not None:
         for epsilon in epsilons:
-            if train:
-                variance = 0.0001
-                bayes_model_percent = bayes_model_percent + float(np.random.randn(1) * variance)
-                epsilon = epsilon + float(np.random.randn(1) * variance)
-            print('Avg Model ->  Bayes Percentage:', bayes_model_percent, ' Logit Percentage:', logit_percent, ' Epsilon:', epsilon, ' Alpha:', alpha)
-            rf_model_percent = 1.0 - logit_percent - bayes_model_percent
-           # logit_percent = 1.0 - bayes_model_percent
-            total = logit_percent * len(all_predictions[0]) + bayes_model_percent * len(all_predictions[1]) + rf_model_percent * len(all_predictions[2])
-            avg_predictions = np.vstack([np.vstack(all_predictions[0]) * logit_percent,
-                                         np.vstack(all_predictions[1]) * bayes_model_percent,
-                                         np.vstack(all_predictions[2]) * rf_model_percent
-                                        ]).sum(0) / total
-            predictions.append(avg_predictions)
-            if prediction_function is not None:
-                prediction_function(avg_predictions, epsilon)
+            prediction_function(predictions, epsilon)
     return predictions
 
 
@@ -661,11 +553,10 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
     return prediction_func_helper
 
 
-start_year = '2016-01-01'
+start_year = '2018-01-01'
 
 if __name__ == '__main__':
     model = load_nn()
-    num_tests = 1
     bet_spread = True
     bet_ml = True
     bet_totals = False
@@ -681,18 +572,29 @@ if __name__ == '__main__':
         masters = 99
     else:
         masters = 101
-    for i in range(num_tests):
-        print("TEST: ", i)
-        num_test_years = 0
-        for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
-            for num_test_months in [3, 6, 12]:
-                graph = False
-                all_predictions = []
-                data, test_data = load_data(start_year=start_year, num_test_years=num_test_years,
-                                            test_year=test_year, model=model, masters_min=masters,
-                                            num_test_months=num_test_months)
-                avg_predictions = predict(data, test_data, prediction_function=prediction_func(
-                    min_payout=min_payout, bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
-                    bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round,
-                    bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals
-                ), graph=False, train=True)
+
+    data = load_data(start_year=start_year, test_year=datetime.date.today(), masters_min=masters)
+    if model is not None:
+        print('Making predictions...')
+        y_nn = predict_nn(model, data)
+        print('Done.')
+        data = data.assign(
+            predictions_nn=pd.Series([(y_nn[2][i] + y_nn[0][i]) / 2.0 for i in range(data.shape[0])]).values)
+        data = data.assign(
+            predictions_spread=pd.Series([(y_nn[1][i] + y_nn[3][i]) / 2.0 for i in range(data.shape[0])]).values)
+
+    print("TEST")
+    num_test_years = 0
+    for test_year in [datetime.date.today(), datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 1, 1)]:
+        for num_test_months in [3, 6, 12]:
+            graph = False
+            all_predictions = []
+            date = tennis_model.get_date_from(test_year.strftime('%Y-%m-%d'), num_test_years, num_test_months)
+            test_data = data[data.start_date >= date]
+            test_data = test_data[test_data.start_date < datetime.datetime.strptime(test_year, '%Y-%m-%d')]
+            predictions = np.array(test_data['predictions_nn'])
+            predict(predictions, prediction_function=prediction_func(
+                min_payout=min_payout, bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
+                bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round,
+                bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals
+            ), train=True)
