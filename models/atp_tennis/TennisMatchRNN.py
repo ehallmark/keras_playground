@@ -189,7 +189,7 @@ def predict_by_batch(model, data, batch_size=256):
 
 def get_tournament_label_processor():
     engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
-    sql = 'select distinct tournament from atp_tournament_dates where coalesce(masters,250) > 200 and start_date <= \'2018-08-24\'::date'
+    sql = 'select distinct tournament from atp_tournament_dates where coalesce(masters,250) > 200 and start_date <= \'2018-08-24\'::date order by tournament'
     df = pd.read_sql(sql, engine)
     tournaments = list(df['tournament'].iloc[:])
     tournaments.append('Challenger')

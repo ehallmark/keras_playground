@@ -16,8 +16,8 @@ import keras as k
 from keras.optimizers import Adam
 
 totals_type_by_betting_site = {  # describes the totals type for each betting site
-    'bovada': 'Set',
-    'dimes': 'Game',
+    #'bovada': 'Set',
+    #'dimes': 'Game',
     'betonline': 'Game',
     #'OddsPortal': 'Game'
 }
@@ -83,24 +83,24 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select m.start_date,m.tournament,m.team1 as team1,m.team2 as team2,
-        s.bovada_price1 as price1,
-        s.bovada_price2 as price2,
-        s.bovada_spread1 as spread1,
-        s.bovada_spread2 as spread2,
-        s.bovada_odds1 as odds1,
-        s.bovada_odds2 as odds2,
-        s.dimes_price1 as price1,
-        s.dimes_price2 as price2,
-        s.dimes_spread1 as spread1,
-        s.dimes_spread2 as spread2,
-        s.dimes_odds1 as odds1,
-        s.dimes_odds2 as odds2,
-        s.betonline_price1 as price1,
-        s.betonline_price2 as price2,
-        s.betonline_spread1 as spread1,
-        s.betonline_spread2 as spread2,
-        s.betonline_odds1 as odds1,
-        s.betonline_odds2 as odds2,
+        s.bovada_price1 as bovada_price1,
+        s.bovada_price2 as bovada_price2,
+        s.bovada_spread1 as bovada_spread1,
+        s.bovada_spread2 as bovada_spread2,
+        s.bovada_odds1 as bovada_odds1,
+        s.bovada_odds2 as bovada_odds2,
+        s.dimes_price1 as dimes_price1,
+        s.dimes_price2 as dimes_price2,
+        s.dimes_spread1 as dimes_spread1,
+        s.dimes_spread2 as dimes_spread2,
+        s.dimes_odds1 as dimes_odds1,
+        s.dimes_odds2 as dimes_odds2,
+        s.betonline_price1 as betonline_price1,
+        s.betonline_price2 as betonline_price2,
+        s.betonline_spread1 as betonline_spread1,
+        s.betonline_spread2 as betonline_spread2,
+        s.betonline_odds1 as betonline_odds1,
+        s.betonline_odds2 as betonline_odds2,
         coalesce(m.betting_date,s.betting_date) as betting_date,
         m.best_odds1 as ml_odds1,
         m.best_odds2 as ml_odds2,   
@@ -258,8 +258,8 @@ def bet_func(epsilon, bet_ml=True, useRatio=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        min_odds = 0.20
-        max_odds = 0.60
+        min_odds = 0.30
+        max_odds = 0.525
 
         if odds < min_odds or odds > max_odds:
             return 0
@@ -331,7 +331,7 @@ def spread_bet_func(epsilon, bet_spread=True, useRatio=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.45 or odds > 0.525:
+        if odds < 0.45 or odds > 0.55:
             return 0
 
         if useRatio:
@@ -356,7 +356,7 @@ def spread_bet_func(epsilon, bet_spread=True, useRatio=True):
 
 def predict(predictions, prediction_function, train=False):
     # parameters
-    epsilons = [0., 0.01, 0.025, 0.05, 0.1, 0.20]
+    epsilons = [0., 0.05, 0.1, 0.25, 0.5, 1.]
     if not train:
         epsilons = [0.]
 
@@ -520,7 +520,7 @@ def prediction_func(test_data, bet_ml=True, bet_spread=True, bet_totals=True,
                                                                       bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
                                                                       bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, min_payout=min_payout),
                                                         test_data,
-                                                        'max_price', 'price', 'totals_price', 1, sampling=0,
+                                                        'max_price', betting_sites[0]+'_price', betting_sites[0]+'_spread', 'totals_price', 1, sampling=0,
                                                         shuffle=True, verbose=False)
             total_test_return += test_return
             total_num_bets += num_bets
@@ -540,7 +540,7 @@ def prediction_func(test_data, bet_ml=True, bet_spread=True, bet_totals=True,
                                                                           bet_first_round=bet_first_round,
                                                                           min_payout=min_payout),
                                                             test_data,
-                                                            'max_price', book+'_price', 'totals_price', 1, sampling=0,
+                                                            'max_price', book+'_price', book+'_spread', 'totals_price', 1, sampling=0,
                                                             shuffle=True, verbose=False)
 
                 total_test_return += test_return
@@ -565,10 +565,10 @@ if __name__ == '__main__':
     bet_spread = True
     bet_ml = True
     bet_totals = False
-    bet_on_challengers = False
+    bet_on_challengers = True
     bet_on_pros = True
     bet_on_itf = False
-    bet_on_clay = True
+    bet_on_clay = False
     bet_first_round = True
     min_payout = 0.92
     if bet_on_itf:

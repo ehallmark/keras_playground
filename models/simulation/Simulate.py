@@ -6,7 +6,7 @@ import math
 
 
 class BetOption:
-    def __init__(self, bet_row, price_str):
+    def __init__(self, bet_row, price_str, spread_str):
         self.max_price1 = np.array(bet_row[price_str + '1']).flatten()[0]
         self.max_price2 = np.array(bet_row[price_str + '2']).flatten()[0]
         # calculate odds ratio
@@ -14,8 +14,8 @@ class BetOption:
         Implied probability	=	( - ( 'minus' moneyline odds ) ) / ( - ( 'minus' moneyline odds ) ) + 100
         Implied probability	=	100 / ( 'plus' moneyline odds + 100 )
         '''
-        self.spread1 = bet_row['spread1']
-        self.spread2 = bet_row['spread2']
+        self.spread1 = bet_row[spread_str+str(1)]
+        self.spread2 = bet_row[spread_str+str(2)]
         self.over = bet_row['over']
         self.under = bet_row['under']
         self.is_under1 = self.max_price1 < 0
@@ -40,7 +40,7 @@ class BetOption:
             self.payout = 0.0
 
 def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, actual_totals_func, decision_func, test_meta_data,
-                        price_str='max_price', spread_price_str='price', totals_price_str='totals_price', num_trials=50, sampling=0, verbose=False,
+                        price_str='max_price', spread_price_str='price', spread_str='spread', totals_price_str='totals_price', num_trials=50, sampling=0, verbose=False,
                         shuffle=False, initial_capital=10000, after_bet_function=None):
 
     avg_best = 0.0
@@ -74,7 +74,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
         if sampling > 0:
             indices = indices[0: round(sampling*len(indices))]
         for i in indices:
-            row = test_meta_data.iloc[i]
+            row = test_meta_data.iloc[i, :]
             prediction = predictor_func(i)
             #prediction = float(np.random.rand(1))  # test on random predictions
             bet_row = row
@@ -82,9 +82,9 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
                 # make betting decision
                 return_game = 0.0
 
-                ml_bet_option = BetOption(bet_row, price_str)
-                spread_bet_option = BetOption(bet_row, spread_price_str)
-                totals_bet_option = BetOption(bet_row, totals_price_str)
+                ml_bet_option = BetOption(bet_row, price_str, spread_str)
+                spread_bet_option = BetOption(bet_row, spread_price_str, spread_str)
+                totals_bet_option = BetOption(bet_row, totals_price_str, spread_str)
                 bet_decision = decision_func(ml_bet_option, spread_bet_option, totals_bet_option, bet_row, prediction)
                 ml_bet1 = bet_decision['ml_bet1']
                 ml_bet2 = bet_decision['ml_bet2']
@@ -116,7 +116,7 @@ def simulate_money_line(predictor_func, actual_label_func, actual_spread_func, a
                 # money line result
                 actual_result = actual_label_func(i)
                 actual_spread = actual_spread_func(i)
-                actual_totals = actual_totals_func(i)
+                actual_totals = 0 # actual_totals_func(i)
 
                 won_ml = None
                 won_spread = None
