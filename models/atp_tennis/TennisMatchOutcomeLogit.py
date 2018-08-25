@@ -90,6 +90,7 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
                 coalesce(m.return_points_won, 0) as current_return_points_won,
                 coalesce(m_opp.return_points_won, 0) as opp_current_return_points_won,
                 m.year as year,
+                m.round as round,
                 m.start_date as start_date,
                 r.round as round_num,
                 r.round::float/7.0 as round_num_percent,
@@ -290,10 +291,10 @@ def load_data(attributes, test_season='2017-01-01', start_year='1995-01-01', kee
             coalesce(ml_opp.under_wins,0.5) as opp_underdog_wins,
             coalesce(ml.under_losses,0.5) as underdog_losses,
             coalesce(ml_opp.under_losses,0.5) as opp_underdog_losses,
-            m.year-coalesce(prior_best_year.best_year,m.year) as best_year,
-            m.year-coalesce(prior_best_year_opp.best_year,m.year) as opp_best_year,
-            m.year-coalesce(prior_worst_year.worst_year,m.year) as worst_year,
-            m.year-coalesce(prior_worst_year_opp.worst_year,m.year) as opp_worst_year,
+            m.year-coalesce(prior_best_year.best_year,m.year)/10.0 as best_year,
+            m.year-coalesce(prior_best_year_opp.best_year,m.year)/10.0 as opp_best_year,
+            m.year-coalesce(prior_worst_year.worst_year,m.year)/10.0 as worst_year,
+            m.year-coalesce(prior_worst_year_opp.worst_year,m.year)/10.0 as opp_worst_year,
             coalesce(se.num_injuries, 0) as injuries,
             coalesce(se_opp.num_injuries, 0) as opp_injuries,
             coalesce(se.last_tournament_time, 365.25*4)::float/(365.25*4) as last_tournament_time,
@@ -492,16 +493,6 @@ input_attributes0 = [
     'not_played',
     'last_tournament_time',
 
-    # prior year
-    'prev_year_avg_round',
-    'prev_year_victory_closeness',
-    'prev_year_loss_closeness',
-
-    # prior 2 years
-    'prev_2year_avg_round',
-    'prior_2year_match_recovery',
-    'prior_2year_match_collapse',
-
     # player qualities
     'elo_score_weighted',
     'surface_experience',
@@ -613,7 +604,7 @@ all_attributes.append(y_total_games)
 all_attributes.append(y_total_sets)
 all_attributes.append(y_total_sets_bin)
 
-meta_attributes = ['juniors', 'is_qualifier', 'itf', 'challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
+meta_attributes = ['juniors', 'is_qualifier', 'itf', 'round', 'challenger', 'start_date', 'first_round', 'tournament_rank', 'clay', 'hard', 'grass', 'prev_year_prior_encounters', 'opp_prev_year_prior_encounters', 'player_id', 'opponent_id', 'tournament', 'year', 'grand_slam', 'round_num', 'court_surface']
 for attr in input_attributes_spread:
     if attr not in all_attributes:
         all_attributes.append(attr)

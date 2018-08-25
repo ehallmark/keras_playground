@@ -3,10 +3,6 @@ from models.atp_tennis.TennisMatchRNN import load_nn, predict_nn
 import models.atp_tennis.TennisMatchRNN as nn
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import LinearSVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from sklearn.neighbors import KNeighborsClassifier
 import models.atp_tennis.TennisMatchOutcomeLogit as tennis_model
 from models.atp_tennis.SpreadMonteCarlo import abs_probabilities_per_surface
 import matplotlib.pyplot as plt
@@ -23,7 +19,7 @@ totals_type_by_betting_site = {  # describes the totals type for each betting si
     'Bovada': 'Set',
     'BetOnline': 'Game',
     '5Dimes': 'Game',
-    'OddsPortal': 'Game'
+    #'OddsPortal': 'Game'
 }
 
 betting_sites = list(totals_type_by_betting_site.keys())
@@ -51,7 +47,6 @@ for attr in betting_only_attributes:
 
 betting_only_attributes.append('ml_odds_avg')
 betting_only_attributes.append('overall_odds_avg')
-betting_only_attributes.append('spread_odds_avg')
 
 
 all_attributes = list(betting_input_attributes)
@@ -88,68 +83,78 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
     conn = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
     betting_data = pd.read_sql('''
         select m.start_date,m.tournament,m.team1 as team1,m.team2 as team2,
-        m.book_name,
-        s.price1 as price1,
-        s.price2 as price2,
-        s.spread1 as spread1,
-        s.spread2 as spread2,
-        coalesce(s.odds1,0.5) as odds1,
-        coalesce(s.odds2,0.5) as odds2,
-        coalesce( (s.odds1+(1.0-s.odds2))/2.0, 0.5) as spread_odds_avg,        
-        coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
-        m.odds1 as ml_odds1,
-        m.odds2 as ml_odds2,   
-        (m.odds1+(1.0-m.odds2))/2.0 as ml_odds_avg,
-        m.price1 as max_price1,
-        m.price2 as max_price2,
-        t.price1 as totals_price1,
-        t.price2 as totals_price2,
-        t.over,
-        t.under,
+        s.bovada_price1 as price1,
+        s.bovada_price2 as price2,
+        s.bovada_spread1 as spread1,
+        s.bovada_spread2 as spread2,
+        s.bovada_odds1 as odds1,
+        s.bovada_odds2 as odds2,
+        s.dimes_price1 as price1,
+        s.dimes_price2 as price2,
+        s.dimes_spread1 as spread1,
+        s.dimes_spread2 as spread2,
+        s.dimes_odds1 as odds1,
+        s.dimes_odds2 as odds2,
+        s.betonline_price1 as price1,
+        s.betonline_price2 as price2,
+        s.betonline_spread1 as spread1,
+        s.betonline_spread2 as spread2,
+        s.betonline_odds1 as odds1,
+        s.betonline_odds2 as odds2,
+        coalesce(m.betting_date,s.betting_date) as betting_date,
+        m.best_odds1 as ml_odds1,
+        m.best_odds2 as ml_odds2,   
+        (m.avg_odds1+(1.0-m.avg_odds2))/2.0 as ml_odds_avg,
+        m.best_price1 as max_price1,
+        m.best_price2 as max_price2,
+        100 as totals_price1,
+        100 as totals_price2,
+        100 as over,
+        100 as under,
         ml_overall_avg.avg_odds as overall_odds_avg  
-        from atp_tennis_betting_link as m 
-        left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date)
-            and (s.book_id=m.book_id or (s.book_id < 0 and m.book_id < 0))
-            and s.spread1=-s.spread2)
-        left outer join atp_tennis_betting_link_totals as t
-        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(t.team1,t.team2,t.tournament,t.book_id,t.start_date)
-            and t.over=t.under)
+        from atp_tennis_betting_link_common as m 
+        left outer join atp_tennis_betting_link_spread_common as s
+        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date))
         left outer join atp_matches_money_line_average as ml_overall_avg
             on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
-        where m.betting_date<='{{YEAR}}'::date + interval '30 days' and m.book_name in ({{BOOK_NAMES}})
+        where m.start_date<='{{YEAR}}'::date
     union all
         select m.start_date,m.tournament,m.team2 as team1,m.team1 as team2,
-        m.book_name,
-        s.price2 as price1,
-        s.price1 as price2,
-        s.spread2 as spread1,
-        s.spread1 as spread2,
-        coalesce(s.odds2, 0.5) as odds1,
-        coalesce(s.odds1, 0.5) as odds2,
-        coalesce( (s.odds2+(1.0-s.odds1))/2.0, 0.5) as spread_odds_avg,        
-        coalesce(coalesce(m.betting_date,s.betting_date),t.betting_date) as betting_date,
-        m.odds2 as ml_odds1,   
-        m.odds1 as ml_odds2,
-        (m.odds2+(1.0-m.odds1))/2.0 as ml_odds_avg,
-        m.price2 as max_price1,
-        m.price1 as max_price2,
-        t.price1 as totals_price1,
-        t.price2 as totals_price2,
-        t.over,
-        t.under,
+        s.bovada_price2 as bovada_price1,
+        s.bovada_price1 as bovada_price2,
+        s.bovada_spread2 as bovada_spread1,
+        s.bovada_spread1 as bovada_spread2,
+        s.bovada_odds2 as bovada_odds1,
+        s.bovada_odds1 as bovada_odds2,
+        s.dimes_price2 as dimes_price1,
+        s.dimes_price1 as dimes_price2,
+        s.dimes_spread2 as dimes_spread1,
+        s.dimes_spread1 as dimes_spread2,
+        s.dimes_odds2 as dimes_odds1,
+        s.dimes_odds1 as dimes_odds2,
+        s.betonline_price2 as betonline_price1,
+        s.betonline_price1 as betonline_price2,
+        s.betonline_spread2 as betonline_spread1,
+        s.betonline_spread1 as betonline_spread2,
+        s.betonline_odds2 as betonline_odds1,
+        s.betonline_odds1 as betonline_odds2,     
+        coalesce(m.betting_date,s.betting_date) as betting_date,
+        m.best_odds2 as ml_odds1,   
+        m.best_odds1 as ml_odds2,
+        (m.avg_odds2+(1.0-m.avg_odds1))/2.0 as ml_odds_avg,
+        m.best_price2 as max_price1,
+        m.best_price1 as max_price2,
+        100 as totals_price1,
+        100 as totals_price2,
+        100 as over,
+        100 as under,
         1.0 - ml_overall_avg.avg_odds as overall_odds_avg  
-        from atp_tennis_betting_link as m 
-        left outer join atp_tennis_betting_link_spread  as s
-        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date)
-            and (s.book_id=m.book_id or (s.book_id < 0 and m.book_id < 0))
-            and s.spread1=-s.spread2)
-        left outer join atp_tennis_betting_link_totals as t
-        on ((m.team1,m.team2,m.tournament,m.book_id,m.start_date)=(t.team1,t.team2,t.tournament,t.book_id,t.start_date)
-            and t.over=t.under)
+        from atp_tennis_betting_link_common as m 
+        left outer join atp_tennis_betting_link_spread_common as s
+        on ((m.team1,m.team2,m.tournament,m.start_date)=(s.team1,s.team2,s.tournament,s.start_date))
         left outer join atp_matches_money_line_average as ml_overall_avg
             on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
-        where m.betting_date<='{{YEAR}}'::date + interval '30 days' and m.book_name in ({{BOOK_NAMES}})        
+        where m.start_date<='{{YEAR}}'::date      
     '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
     return betting_data
 
@@ -242,11 +247,9 @@ spread_cushion = 0.0
 dont_bet_against_spread = {}
 
 
-def bet_func(epsilon, bet_ml=True):
+def bet_func(epsilon, bet_ml=True, useRatio=True):
     def bet_func_helper(price, odds, prediction, bet_row):
         if not bet_ml:
-            return 0
-        if bet_row['first_round'] > 0.5 and bet_row['tournament_rank'] > 1000:
             return 0
 
         alpha_odds = bet_row['overall_odds_avg']
@@ -255,42 +258,34 @@ def bet_func(epsilon, bet_ml=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if bet_row['itf'] > 0.5:
-            min_odds = 0.20
-            max_odds = 0.60
-            epsilon_real = epsilon
-        elif bet_row['challenger'] > 0.5:
-            min_odds = 0.20
-            max_odds = 0.60
-            epsilon_real = epsilon
-        else:
-            min_odds = 0.20
-            max_odds = 0.60
-            epsilon_real = epsilon
+        min_odds = 0.20
+        max_odds = 0.60
 
         if odds < min_odds or odds > max_odds:
             return 0
 
-        if price > 0:
-            expectation_implied = odds * price + (1. - odds) * -100.
-            expectation = prediction * price + (1. - prediction) * -100.
-            expectation /= 100.
-            expectation_implied /= 100.
+        if useRatio:
+            expectation = (prediction / odds) - 1.0
         else:
-            expectation_implied = odds * 100. + (1. - odds) * price
-            expectation = prediction * 100. + (1. - prediction) * price
-            expectation /= -price
-            expectation_implied /= -price
-        if expectation > epsilon_real:
+            if price > 0:
+                expectation_implied = odds * price + (1. - odds) * -100.
+                expectation = prediction * price + (1. - prediction) * -100.
+                expectation /= 100.
+                expectation_implied /= 100.
+            else:
+                expectation_implied = odds * 100. + (1. - odds) * price
+                expectation = prediction * 100. + (1. - prediction) * price
+                expectation /= -price
+                expectation_implied /= -price
+        if expectation > epsilon:
             return 1. + expectation
         else:
             return 0
     return bet_func_helper
 
 
-def totals_bet_func(epsilon, bet_totals=True):
-    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player,
-                        ml_bet_opp, ml_opp_odds):
+def totals_bet_func(epsilon, bet_totals=True, useRatio=True):
+    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row):
         if not bet_totals:
             return 0
         alpha_odds = bet_row['overall_odds_avg']
@@ -304,27 +299,19 @@ def totals_bet_func(epsilon, bet_totals=True):
         if odds < 0.40 or odds > 0.5:
             return 0
 
-        double_down_below = 0  # 0.35
-        hedge_below = 0  # 0.45
-
-        if double_down_below > 0:
-            if ml_bet_player > 0 and (1.0 - ml_opp_odds) < double_down_below:
-                return 1.05
-
-        if hedge_below > 0:
-            if ml_bet_opp > 0.0 and ml_opp_odds < hedge_below:
-                return 1.05
-
-        if price > 0:
-            expectation_implied = odds * price + (1. - odds) * -100.
-            expectation = prediction * price + (1. - prediction) * -100.
-            expectation /= 100.
-            expectation_implied /= 100.
+        if useRatio:
+            expectation = (prediction / odds) - 1.0
         else:
-            expectation_implied = odds * 100. + (1. - odds) * price
-            expectation = prediction * 100. + (1. - prediction) * price
-            expectation /= -price
-            expectation_implied /= -price
+            if price > 0:
+                expectation_implied = odds * price + (1. - odds) * -100.
+                expectation = prediction * price + (1. - prediction) * -100.
+                expectation /= 100.
+                expectation_implied /= 100.
+            else:
+                expectation_implied = odds * 100. + (1. - odds) * price
+                expectation = prediction * 100. + (1. - prediction) * price
+                expectation /= -price
+                expectation_implied /= -price
         if expectation > epsilon:
             return 1. + expectation
         else:
@@ -333,44 +320,33 @@ def totals_bet_func(epsilon, bet_totals=True):
     return bet_func_helper
 
 
-def spread_bet_func(epsilon, bet_spread=True):
-    def bet_func_helper(price, odds, spread_prob_win, spread_prob_loss, prediction, bet_row, ml_bet_player, ml_bet_opp, ml_opp_odds):
+def spread_bet_func(epsilon, bet_spread=True, useRatio=True):
+    def bet_func_helper(price, odds, spread_prob_win):
         if not bet_spread:
             return 0
 
-        alpha_odds = bet_row['overall_odds_avg']
-        prediction = prediction * alpha + (1.0 - alpha) * alpha_odds
-        prediction = spread_prob_win * prediction + spread_prob_loss * (1.0-prediction)
+        prediction = spread_prob_win
 
         if 0 > prediction or prediction > 1:
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        #if odds < 0.425 or odds > 0.525:
         if odds < 0.45 or odds > 0.525:
             return 0
 
-        double_down_below = 0  # 0.35
-        hedge_below = 0  # 0.45
-
-        if double_down_below > 0:
-            if ml_bet_player > 0 and (1.0 - ml_opp_odds) < double_down_below:
-                return 1.05
-
-        if hedge_below > 0:
-            if ml_bet_opp > 0.0 and ml_opp_odds < hedge_below:
-                return 1.05
-
-        if price > 0:
-            expectation_implied = odds * price + (1. - odds) * -100.
-            expectation = prediction * price + (1. - prediction) * -100.
-            expectation /= 100.
-            expectation_implied /= 100.
+        if useRatio:
+            expectation = (prediction / odds) - 1.0
         else:
-            expectation_implied = odds * 100. + (1. - odds) * price
-            expectation = prediction * 100. + (1. - prediction) * price
-            expectation /= -price
-            expectation_implied /= -price
+            if price > 0:
+                expectation_implied = odds * price + (1. - odds) * -100.
+                expectation = prediction * price + (1. - prediction) * -100.
+                expectation /= 100.
+                expectation_implied /= 100.
+            else:
+                expectation_implied = odds * 100. + (1. - odds) * price
+                expectation = prediction * 100. + (1. - prediction) * price
+                expectation /= -price
+                expectation_implied /= -price
         if expectation > epsilon:
             return 1. + expectation
         else:
@@ -472,27 +448,24 @@ def decision_func(epsilon, bet_ml=True, bet_spread=True, bet_totals=True,
             totals_prob_under_loss = 0
             totals_prob_over_loss = 0
 
-        if ml_payout < min_payout:
+        if not bet_ml or ml_payout < min_payout:
             ml_bet1 = 0
-            ml_bet2 = 0
         else:
             ml_bet1 = ml_func(ml_bet_option.max_price1, ml_bet_option.best_odds1, prediction, bet_row)
-            ml_bet2 = ml_func(ml_bet_option.max_price2, ml_bet_option.best_odds2, 1.0 - prediction, bet_row)
 
-        if spread_payout < min_payout:
+        if not bet_spread or spread_payout < min_payout:
             spread_bet1 = 0
         else:
-            spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1, spread_prob_loss1,
-                                      prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+            spread_bet1 = spread_func(spread_bet_option.max_price1, spread_bet_option.best_odds1, spread_prob_win1)
 
-        if totals_payout < min_payout:
+        if not bet_totals or totals_payout < min_payout:
             over_bet = 0
             under_bet = 0
         else:
             over_bet = totals_func(totals_bet_option.max_price1, totals_bet_option.best_odds1, totals_prob_over_win, totals_prob_over_loss,
-                                   prediction, bet_row, ml_bet1, ml_bet2, ml_bet_option.best_odds2)
+                                   prediction, bet_row)
             under_bet = totals_func(totals_bet_option.max_price2, totals_bet_option.best_odds2, totals_prob_under_win, totals_prob_under_loss,
-                                    1.0 - prediction, bet_row, ml_bet2, ml_bet1, ml_bet_option.best_odds1)
+                                    1.0 - prediction, bet_row)
 
         # check whether it's an amazing player in a grand slam
         #   basically, we don't want to bet against them...
@@ -565,10 +538,10 @@ if __name__ == '__main__':
     bet_spread = True
     bet_ml = True
     bet_totals = False
-    bet_on_challengers = True
+    bet_on_challengers = False
     bet_on_pros = True
     bet_on_itf = False
-    bet_on_clay = False
+    bet_on_clay = True
     bet_first_round = True
     min_payout = 0.92
     if bet_on_itf:
@@ -584,15 +557,15 @@ if __name__ == '__main__':
         y_nn = predict_nn(model, data)
         print('Done.')
         data = data.assign(
-            predictions_nn=pd.Series([(y_nn[2][i] + y_nn[0][i]) / 2.0 for i in range(data.shape[0])]).values)
+            predictions_nn=pd.Series([y_nn[0][i] for i in range(data.shape[0])]).values)
         data = data.assign(
-            predictions_spread=pd.Series([(y_nn[1][i] + y_nn[3][i]) / 2.0 for i in range(data.shape[0])]).values)
+            predictions_spread=pd.Series([y_nn[1][i] for i in range(data.shape[0])]).values)
     all_labels = list(data.columns.values)
     print("ALL ATTRS: ", all_labels)
     print("TEST")
     num_test_years = 0
-    for test_year in [datetime.date(2016, 6, 1), datetime.date(2016, 1, 1), datetime.date(2017, 1, 1)]:
-        for num_test_months in [3, 6, 12]:
+    for test_year in [datetime.date(2018, 6, 1), datetime.date(2018, 1, 1), datetime.date(2017, 6, 1)]:
+        for num_test_months in [12, 18, 24]:
             graph = False
             all_predictions = []
             date = tennis_model.get_date_from(test_year.strftime('%Y-%m-%d'), num_test_years, num_test_months)

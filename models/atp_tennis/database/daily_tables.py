@@ -13,13 +13,13 @@ class DailyTable(TableCreator):
         attrs = [
             self.prefix + str(i) + '.' + 'victory as victory_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'sets_won as sets_won_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'sets_against as sets_against_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'tournament_rank as tournament_rank_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'round_num as round_num_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'games_won as games_won_' + self.prefix + str(i),
-            self.prefix + str(i) + '.' + 'games_against as games_against_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'elo1 as elo1_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'clay as clay_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'grass as grass_' + self.prefix + str(i),
+            self.prefix + str(i) + '.' + 'hard as hard_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'local as local_' + self.prefix + str(i),
             self.prefix + str(i) + '.' + 'qualifier as qualifier_' + self.prefix + str(i),
         ]
@@ -35,13 +35,13 @@ class DailyTable(TableCreator):
         attrs = [
             'victory_' + self.prefix + str(i),
             'sets_won_' + self.prefix + str(i),
-            'sets_against_' + self.prefix + str(i),
             'tournament_rank_' + self.prefix + str(i),
             'round_num_' + self.prefix + str(i),
             'games_won_' + self.prefix + str(i),
-            'games_against_' + self.prefix + str(i),
+            'elo1_' + self.prefix + str(i),
             'clay_' + self.prefix + str(i),
             'grass_' + self.prefix + str(i),
+            'hard_' + self.prefix + str(i),
             'local_' + self.prefix + str(i),
             'qualifier_' + self.prefix + str(i),
         ]
@@ -75,13 +75,13 @@ class DailyTable(TableCreator):
                 start_date date not null,
                 victory float not null,
                 sets_won float not null,
-                sets_against float not null,
                 tournament_rank float not null,
                 round_num float not null,
                 games_won float not null,
-                games_against float not null,
+                elo1 float not null,
                 clay float not null,
                 grass float not null,
+                hard float not null,
                 local float not null,
                 qualifier float not null,
                 primary key(player_id, opponent_id, tournament, start_date)
@@ -98,14 +98,14 @@ class DailyTable(TableCreator):
                     p1.tournament,
                     p1.start_date,
                     case when p2.player_victory then 1.0 else 0.0 end,
-                    p2.sets_won,
-                    p2.num_sets - p2.sets_won,
-                    p2.masters,
-                    p2.round_num,
-                    p2.games_won,
-                    p2.games_against,
+                    p2.sets_won::float/greatest(1,p2.num_sets),
+                    p2.masters / 2000.0,
+                    p2.round_num::float/7.0,
+                    p2.games_won::float/18.0,
+                    coalesce(weighted_score1, 100.0)/1000.0,
                     case when p2.court_surface='Clay' then 1.0 else 0.0 end,
                     case when p2.court_surface='Grass' then 1.0 else 0.0 end,
+                    case when p2.court_surface='Hard' then 1.0 else 0.0 end,
                     case when player1.country is null then 0.0 else case when player1.country = coalesce(country.code, p2.nation) then 1.0 else 0.0 end end as local,
                     case when p2.round like '%%Qualifying%%' then 1.0 else 0.0 end
                 from atp_matches_match_history_linear as p1
@@ -120,8 +120,10 @@ class DailyTable(TableCreator):
                 on ((t.start_date,t.tournament)=(p1.start_date,p1.tournament))
                 join atp_player_characteristics as player1
                 on ((p2.player_id,p2.tournament,p2.start_date)=(player1.player_id,player1.tournament,player1.start_date))
-                left outer join atp_countries as country 
+                left outer join atp_countries as country
                 on (p2.nation = country.name)
+                left outer join atp_player_opponent_score as elo
+                on ((elo.player_id,elo.opponent_id,elo.tournament,elo.start_date)=(p2.player_id,p2.opponent_id,p2.tournament,p2.start_date))
                 where p2.player_victory is not null and t.masters > 0 and {{WHERE_STR}}
             ) as temp order by player_id,opponent_id,tournament,start_date,random()
         )    
@@ -135,12 +137,12 @@ class DailyTable(TableCreator):
     def build_tables(self):
         print('Running aggregations in parallel')
         threads = []
-        #for i in range(self.num_tables):
-        #    thread = Thread(target=self.run, args=(i,))
-        #    thread.start()
-        #    threads.append(thread)
-        #for thread in threads:
-        #    thread.join()
+        for i in range(self.num_tables):
+            thread = Thread(target=self.run, args=(i,))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
 
         # build join table
         print('Building join table...')
@@ -148,9 +150,9 @@ class DailyTable(TableCreator):
             self.all_attributes()) + ' from atp_matches_individual as m ' + ' '.join(
             [self.join_str(i) for i in range(self.num_tables)])
         print("Using sql: "+sql)
-        #df = pd.read_sql(sql, engine)
-        #df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
-        #print("Data size:", df.shape[0])
+        df = pd.read_sql(sql, engine)
+        df.to_hdf(file_prefix+self.join_table_name+'.hdf', self.join_table_name, mode='w')
+        print("Data size:", df.shape[0])
 
 
 daily_tables = DailyTable(prefix='dly', table='atp_matches_daily', num_tables=16,

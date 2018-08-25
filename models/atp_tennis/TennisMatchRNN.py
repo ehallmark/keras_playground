@@ -1,6 +1,8 @@
 from keras.layers import Dense, Reshape, Bidirectional, Add, Multiply, Recurrent, Concatenate, LSTM, Lambda, Input, BatchNormalization, Dropout
 from keras.models import Model
 from keras.optimizers import Adam
+from sklearn import preprocessing
+from sqlalchemy import create_engine
 import keras as k
 print("Loaded classes...")
 from models.atp_tennis.TennisMatchOutcomeLogit import load_data, to_percentage, all_attributes
@@ -61,8 +63,6 @@ def test_model(model, x, y_list):
 
 quarter_tables = database.quarter_tables
 pro_tables = database.pro_tables
-junior_tables = database.junior_tables
-itf_tables = database.itf_tables
 challenger_tables = database.challenger_tables
 tournament_tables = tourney_database.tourney_tables
 day_tables = daily_database.daily_tables
@@ -86,10 +86,11 @@ additional_attributes = list(input_attributes0)
 additional_attributes += [
     'clay',
     'grass',
+    'hard',
     'tournament_rank_percent',
     'round_num_percent',
     'first_round',
-    'avg_ml_estimate',
+    #'avg_ml_estimate',
     'true_prediction',
     'is_qualifier'
 ]
@@ -124,7 +125,7 @@ for i in range(max_len):
     for attr in quarter_tables.attribute_names_for(i, include_opp=True, opp_only=True):
         opp_input_attributes.append(attr)
 
-for table in [junior_tables, itf_tables, challenger_tables, pro_tables]:
+for table in [challenger_tables, pro_tables]:
     for attr in table.attribute_names_for(0, include_opp=False):
         input_attributes2.append(attr)
     for attr in table.attribute_names_for(0, include_opp=True, opp_only=True):
@@ -143,14 +144,14 @@ for i in range(max_len3):
         opp_input_attributes4.append(attr)
 
 
-hidden_units = 128
-hidden_units_ff = 128
+hidden_units = 96
+hidden_units_ff = 96
 num_rnn_cells = 1
-num_ff_cells = 8
+num_ff_cells = 4
 batch_size = 256
 predict_every_n = 4
-dropout = 0.1
-use_batch_norm = False
+dropout = 0.25
+use_batch_norm = True
 loss_weights = {}
 losses = []
 c = 0
@@ -186,11 +187,61 @@ def predict_by_batch(model, data, batch_size=256):
     return model.predict(data, batch_size=batch_size)
 
 
+def get_tournament_label_processor():
+    engine = create_engine("postgresql://localhost/ib_db?user=postgres&password=password")
+    sql = 'select distinct tournament from atp_tournament_dates where coalesce(masters,250) > 200 and start_date <= \'2018-08-24\'::date'
+    df = pd.read_sql(sql, engine)
+    tournaments = list(df['tournament'].iloc[:])
+    tournaments.append('Challenger')
+    le = preprocessing.LabelEncoder()
+    le.fit(tournaments)
+    return le
+
+
+def get_round_label_processor():
+    data = [
+        'Round of 16',
+        'Round of 64',
+        'Finals',
+        'Round of 32',
+        'Round of 128',
+        'Semi-Finals',
+        'Quarter-Finals',
+        '1st Round Qualifying',
+        '2nd Round Qualifying',
+        '3rd Round Qualifying',
+        '4th Round Qualifying',
+    ]
+    le = preprocessing.LabelEncoder()
+    le.fit(data)
+    return le
+
+
 def get_data_nn(data):
     for prob_attr in probability_attrs:
         # fill probability attributes with 0.5 default value
         data[prob_attr].fillna(value=0.5, inplace=True)
     data.fillna(value=0., inplace=True)
+
+    le = get_tournament_label_processor()
+    tourney_set = set(le.classes_)
+    print('Tournament classes: ', tourney_set)
+    data['pro_tournament'] = [data['tournament'].iloc[i] if data['tournament_rank'].iloc[i] > 200 else 'Challenger' for i in range(data.shape[0])]
+    tournaments = data['pro_tournament']
+    tournaments = le.transform(tournaments)
+    tournament_encod = np.zeros([len(tournaments),len(le.classes_)])
+    for i in range(len(tournaments)):
+        tournament_encod[i, tournaments[i]] += 1
+
+    le = get_round_label_processor()
+    rounds = data['round']
+    rounds = le.transform(rounds)
+    round_encod = np.zeros([len(rounds),len(le.classes_)])
+    for i in range(len(rounds)):
+        round_encod[i, rounds[i]] += 1
+
+    print('Shape of tournament encodings:', tournament_encod.shape)
+    print('Shape of round encodings:', round_encod.shape)
 
     x = np.array(data[input_attributes])
     x2 = np.array(data[opp_input_attributes])
@@ -201,6 +252,7 @@ def get_data_nn(data):
     x7 = np.array(data[input_attributes4])
     x8 = np.array(data[opp_input_attributes4])
     x9 = np.array(data[additional_attributes])
+    x9 = np.hstack((x9, tournament_encod, round_encod))
 
     print('Converting data for RNN')
     # quarterly
@@ -234,14 +286,12 @@ def get_data_nn(data):
 
 def merge_data(data, start_date, end_date):
     data2 = quarter_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data3 = junior_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data4 = itf_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data5 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data6 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data7 = tournament_tables.load_data(date=start_date, end_date=end_date, include_null=False)
-    data8 = day_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data3 = challenger_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data4 = pro_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data5 = tournament_tables.load_data(date=start_date, end_date=end_date, include_null=False)
+    data6 = day_tables.load_data(date=start_date, end_date=end_date, include_null=False)
 
-    for other_data in [data2, data3, data4, data5, data6, data7, data8]:
+    for other_data in [data2, data3, data4, data5, data6]:
         if 'player_victory' in list(other_data.columns.values):
             other_data.drop(columns=['player_victory'], inplace=True)
         data = pd.DataFrame.merge(
@@ -275,15 +325,15 @@ if __name__ == '__main__':
         start_date = datetime.date(1995, 1, 1)
 
         data = load_data(all_attributes2, end_date.strftime('%Y-%m-%d'), start_date.strftime('%Y-%m-%d'),
-                         keep_nulls=False, masters_min=1, save=reload_sql, reload=not reload_sql)
+                         keep_nulls=False, masters_min=99, save=reload_sql, reload=not reload_sql)
 
         test_data = data[data.start_date >= test_date]
         data = data[data.start_date < test_date]
 
-        data, test_data = merge_data(data, start_date, end_date), merge_data(test_data, start_date, end_date)
-
         if reload_sql:
             exit(0)
+
+        data, test_data = merge_data(data, start_date, end_date), merge_data(test_data, start_date, end_date)
 
         def bool_to_int(b):
             if b:
@@ -315,12 +365,12 @@ if __name__ == '__main__':
     data = get_data_nn(data)
     test_data = get_data_nn(test_data)
 
-    means = [np.mean(d, 0, keepdims=True) for d in data[0]]
-    vars = [np.var(d, 0, keepdims=True) for d in data[0]]
+    #means = [np.mean(d, 0, keepdims=True) for d in data[0]]
+    #vars = [np.var(d, 0, keepdims=True) for d in data[0]]
 
-    for i in range(len(means)):
-        data[0][i] = (data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
-        test_data[0][i] = (test_data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
+    #for i in range(len(means)):
+    #    data[0][i] = (data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
+    #    test_data[0][i] = (test_data[0][i] - means[i]) / (np.sqrt(vars[i])+10e-8)
 
     X1 = Input((int(len(input_attributes)/max_len), max_len))
     X2 = Input((int(len(opp_input_attributes)/max_len), max_len))
@@ -330,7 +380,7 @@ if __name__ == '__main__':
     X6 = Input((int(len(opp_input_attributes3)/max_len2), max_len2))
     X7 = Input((int(len(input_attributes4) / max_len3), max_len3))
     X8 = Input((int(len(opp_input_attributes4) / max_len3), max_len3))
-    X9 = Input((len(additional_attributes),))
+    X9 = Input((data[0][-1].shape[1],))
 
     #print('Test_data: ', test_data[0:10])
 
@@ -339,30 +389,30 @@ if __name__ == '__main__':
     if load_previous:
         model = load_nn()
     else:
-        if use_batch_norm:
-            norm = BatchNormalization()
-            norm2 = BatchNormalization()
-            norm3 = BatchNormalization()
-            norm4 = BatchNormalization()
-            model1 = norm(X1)
-            model2 = norm(X2)
-            model3 = norm2(X3)
-            model4 = norm2(X4)
-            model5 = norm3(X5)
-            model6 = norm3(X6)
-            model7 = norm4(X7)
-            model8 = norm4(X8)
-            model9 = BatchNormalization()(X9)
-        else:
-            model1 = X1
-            model2 = X2
-            model3 = X3
-            model4 = X4
-            model5 = X5
-            model6 = X6
-            model7 = X7
-            model8 = X8
-            model9 = X9
+        #if use_batch_norm:
+        #    norm = BatchNormalization()
+        #    norm2 = BatchNormalization()
+        #    norm3 = BatchNormalization()
+        #    norm4 = BatchNormalization()
+        #    model1 = norm(X1)
+        #    model2 = norm(X2)
+        #    model3 = norm2(X3)
+        #    model4 = norm2(X4)
+        #    model5 = norm3(X5)
+        #    model6 = norm3(X6)
+        #    model7 = norm4(X7)
+        #    model8 = norm4(X8)
+        #    model9 = BatchNormalization()(X9)
+        #else:
+        model1 = X1
+        model2 = X2
+        model3 = X3
+        model4 = X4
+        model5 = X5
+        model6 = X6
+        model7 = X7
+        model8 = X8
+        model9 = X9
 
         for i in range(num_rnn_cells):
             lstm = Bidirectional(LSTM(hidden_units, activation='tanh', return_sequences=i != num_rnn_cells-1))
