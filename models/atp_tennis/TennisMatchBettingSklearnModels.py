@@ -16,9 +16,9 @@ import keras as k
 from keras.optimizers import Adam
 
 totals_type_by_betting_site = {  # describes the totals type for each betting site
-    'Bovada': 'Set',
-    'BetOnline': 'Game',
-    '5Dimes': 'Game',
+    'bovada': 'Set',
+    'dimes': 'Game',
+    'betonline': 'Game',
     #'OddsPortal': 'Game'
 }
 
@@ -155,7 +155,7 @@ def load_betting_data(betting_sites, test_year=datetime.date.today()):
         left outer join atp_matches_money_line_average as ml_overall_avg
             on ((m.team1,m.team2,m.start_date,m.tournament)=(ml_overall_avg.player_id,ml_overall_avg.opponent_id,ml_overall_avg.start_date,ml_overall_avg.tournament))        
         where m.start_date<='{{YEAR}}'::date      
-    '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))).replace('{{BOOK_NAMES}}', '\''+'\',\''.join(betting_sites)+'\''), conn)
+    '''.replace('{{YEAR}}', str(test_year.strftime('%Y-%m-%d'))), conn)
     return betting_data
 
 
@@ -495,7 +495,7 @@ def flip(m, axis):
     return m[tuple(indexer)]
 
 
-def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
+def prediction_func(test_data, bet_ml=True, bet_spread=True, bet_totals=True,
                   bet_on_challengers=False, bet_on_pros=True, bet_on_itf=False,
                   bet_on_clay = False, bet_first_round=True, min_payout=0.92):
     def prediction_func_helper(avg_predictions, epsilon):
@@ -507,26 +507,53 @@ def prediction_func(bet_ml=True, bet_spread=True, bet_totals=True,
             else:
                 return test_data['num_sets'].iloc[i]
 
-        test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
-                                                    lambda j: test_data['y'].iloc[j],
-                                                    lambda j: test_data['spread'].iloc[j],
-                                                    lambda j: game_or_set_totals_func(j),
-                                                    decision_func(epsilon, bet_ml=bet_ml, bet_spread=bet_spread,
-                                                                  bet_totals=bet_totals, bet_on_challengers=bet_on_challengers,
-                                                                  bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
-                                                                  bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, min_payout=min_payout),
-                                                    test_data,
-                                                    'max_price', 'price', 'totals_price', 1, sampling=0,
-                                                    shuffle=True, verbose=False)
-        if num_bets is None:
-            num_bets = 0
-        if num_bets > 0:
-            return_per_bet = to_percentage(test_return / (num_bets * 100))
+        total_test_return = 0.0
+        total_num_bets = 0
+
+        if bet_ml or bet_totals:
+            test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
+                                                        lambda j: test_data['y'].iloc[j],
+                                                        lambda j: test_data['spread'].iloc[j],
+                                                        lambda j: game_or_set_totals_func(j),
+                                                        decision_func(epsilon, bet_ml=bet_ml, bet_spread=False,
+                                                                      bet_totals=bet_totals, bet_on_challengers=bet_on_challengers,
+                                                                      bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
+                                                                      bet_on_clay=bet_on_clay, bet_first_round=bet_first_round, min_payout=min_payout),
+                                                        test_data,
+                                                        'max_price', 'price', 'totals_price', 1, sampling=0,
+                                                        shuffle=True, verbose=False)
+            total_test_return += test_return
+            total_num_bets += num_bets
+
+        if bet_spread:
+            for book in betting_sites:
+                test_return, num_bets = simulate_money_line(lambda j: avg_predictions[j],
+                                                            lambda j: test_data['y'].iloc[j],
+                                                            lambda j: test_data['spread'].iloc[j],
+                                                            lambda j: game_or_set_totals_func(j),
+                                                            decision_func(epsilon, bet_ml=False, bet_spread=bet_spread,
+                                                                          bet_totals=False,
+                                                                          bet_on_challengers=bet_on_challengers,
+                                                                          bet_on_pros=bet_on_pros,
+                                                                          bet_on_itf=bet_on_itf,
+                                                                          bet_on_clay=bet_on_clay,
+                                                                          bet_first_round=bet_first_round,
+                                                                          min_payout=min_payout),
+                                                            test_data,
+                                                            'max_price', book+'_price', 'totals_price', 1, sampling=0,
+                                                            shuffle=True, verbose=False)
+
+                total_test_return += test_return
+                total_num_bets += num_bets
+        if total_num_bets is None:
+            total_num_bets = 0
+        if total_num_bets > 0:
+            return_per_bet = to_percentage(total_test_return / (total_num_bets * 100))
         else:
             return_per_bet = 0
-        print('Final test return:', test_return, ' Return per bet:', return_per_bet, ' Num bets:', num_bets, ' Avg Error:',
+        print('Final test return:', total_test_return, ' Return per bet:', return_per_bet, ' Num bets:', total_num_bets, ' Avg Error:',
               to_percentage(avg_error),
-              ' Test years:', num_test_years, ' Year:', test_year)
+              ' Test years:', num_test_years, ' Test Months:', num_test_months, ' Year:', test_year)
         print('---------------------------------------------------------')
     return prediction_func_helper
 
@@ -573,7 +600,7 @@ if __name__ == '__main__':
             test_data = data[data.start_date >= datetime.datetime.strptime(date, '%Y-%m-%d').date()]
             test_data = test_data[test_data.start_date < test_year]
             predictions = np.array(test_data['predictions_nn'])
-            predict(predictions, prediction_function=prediction_func(
+            predict(predictions, prediction_function=prediction_func(test_data,
                 min_payout=min_payout, bet_on_pros=bet_on_pros, bet_on_itf=bet_on_itf,
                 bet_on_challengers=bet_on_challengers, bet_on_clay=bet_on_clay, bet_first_round=bet_first_round,
                 bet_ml=bet_ml, bet_spread=bet_spread, bet_totals=bet_totals
