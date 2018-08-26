@@ -261,8 +261,8 @@ def bet_func(epsilon, bet_ml=True, useRatio=True):
         min_odds = 0.30
         max_odds = 0.525
 
-        if odds < min_odds or odds > max_odds:
-            return 0
+        #if odds < min_odds or odds > max_odds:
+        #    return 0
 
         if useRatio:
             expectation = (prediction / odds) - 1.0
@@ -296,8 +296,8 @@ def totals_bet_func(epsilon, bet_totals=True, useRatio=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.40 or odds > 0.5:
-            return 0
+        #if odds < 0.40 or odds > 0.5:
+        #    return 0
 
         if useRatio:
             expectation = (prediction / odds) - 1.0
@@ -331,8 +331,8 @@ def spread_bet_func(epsilon, bet_spread=True, useRatio=True):
             print('Invalid prediction: ', prediction)
             exit(1)
 
-        if odds < 0.45 or odds > 0.55:
-            return 0
+        #if odds < 0.45 or odds > 0.55:
+        #    return 0
 
         if useRatio:
             expectation = (prediction / odds) - 1.0
